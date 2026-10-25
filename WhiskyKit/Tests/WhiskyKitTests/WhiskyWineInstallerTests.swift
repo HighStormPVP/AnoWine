@@ -141,7 +141,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
         if wine64 {
             let binDir = folder.appending(path: "Wine").appending(path: "bin")
             try FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
-            try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "wine64"))
+            try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "anowine"))
         }
     }
 
