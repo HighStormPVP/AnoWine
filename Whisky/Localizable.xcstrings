@@ -4013,6 +4013,12 @@
             "value" : "Enables workarounds for common game controller detection and mapping issues on macOS (frankea/Whisky#42)"
           }
         },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enables workarounds for common game controller detection and mapping issues on macOS (frankea/Whisky#42)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",

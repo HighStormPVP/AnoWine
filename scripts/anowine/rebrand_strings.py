@@ -10,6 +10,9 @@ merge; it is idempotent.
 A key whose text mentions Whisky but has no English localization gets one,
 because Xcode would otherwise show the key itself.
 
+After rewriting, also run upstream's scripts/british-english.py: a key that
+gains an English entry here needs a matching en-GB entry (CI checks both).
+
 Usage: python3 rebrand_strings.py [--check] <Localizable.xcstrings>
   --check  exit 1 if a rewrite would change the file, without writing it
 """

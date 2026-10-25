@@ -29,5 +29,6 @@ jobs:
 
       # Fails after an upstream merge brings new "Whisky" strings; fix by running
       # python3 scripts/anowine/rebrand_strings.py Whisky/Localizable.xcstrings
+      # then python3 scripts/british-english.py
       - name: UI strings are rebranded
         run: python3 "$GITHUB_WORKSPACE/scripts/anowine/rebrand_strings.py" --check "$GITHUB_WORKSPACE/Whisky/Localizable.xcstrings"
