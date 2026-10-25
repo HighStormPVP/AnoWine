@@ -112,7 +112,7 @@ final class DistributionConfigTests: XCTestCase {
         let url = DistributionConfig.librariesURL(version: version)
 
         // Verify the URL follows the expected pattern
-        let pattern = "^https://github\\.com/frankea/Whisky/releases/download/"
+        let pattern = "^https://github\\.com/HighStormPVP/AnoWine/releases/download/"
             + "v\\d+\\.\\d+\\.\\d+/Libraries\\.tar\\.gz$"
         guard let regex = try? NSRegularExpression(pattern: pattern) else {
             XCTFail("Invalid regex pattern: \(pattern)")
@@ -365,7 +365,7 @@ final class DistributionConfigTests: XCTestCase {
         let versionURL = URL(string: DistributionConfig.versionPlistURL)
         XCTAssertNotNil(versionURL, "Version plist URL should be valid")
         XCTAssertEqual(versionURL?.scheme, "https")
-        XCTAssertEqual(versionURL?.host, "frankea.github.io")
+        XCTAssertEqual(versionURL?.host, "highstormpvp.github.io")
 
         // Libraries download URL
         let librariesURL = URL(string: DistributionConfig.librariesURL(version: "2.5.0"))
@@ -377,7 +377,7 @@ final class DistributionConfigTests: XCTestCase {
         let appcastURL = URL(string: DistributionConfig.appcastURL)
         XCTAssertNotNil(appcastURL, "Appcast URL should be valid")
         XCTAssertEqual(appcastURL?.scheme, "https")
-        XCTAssertEqual(appcastURL?.host, "frankea.github.io")
+        XCTAssertEqual(appcastURL?.host, "highstormpvp.github.io")
     }
 }
 
