@@ -30,6 +30,14 @@ struct ShortcutLiveScriptTests {
         #expect(script.contains("mdfind"))
     }
 
+    @Test("Shortcuts run AnoWine's CLI, never Whisky's")
+    func anoWineNotWhisky() {
+        let script = ShortcutCreator.liveLaunchScript(for: .steamGame(appId: 4_576_510))
+
+        #expect(script.contains(#"WHISKY_CMD="/Applications/AnoWine.app/Contents/Resources/WhiskyCmd""#))
+        #expect(!script.contains("Whisky.app"))
+    }
+
     @Test("Program target quotes bottle name and Windows path")
     func programScript() {
         let script = ShortcutCreator.liveLaunchScript(

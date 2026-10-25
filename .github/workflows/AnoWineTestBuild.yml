@@ -58,6 +58,12 @@ jobs:
       - name: Verify AnoWine identity
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
 
+      - name: Verify the bundled CLI uses AnoWine's data folder
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-cli-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+
+      - name: Test the M2 sandbox check script (stubbed Wine)
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-m2-sandbox-check.sh"
+
       - name: Package
         run: |
           cd "$RUNNER_TEMP/dd/Build/Products/Release"
