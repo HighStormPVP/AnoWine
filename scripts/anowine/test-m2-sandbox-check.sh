@@ -13,7 +13,9 @@ mkdir -p "$T/bin" "$T/prefix/drive_c/Program Files (x86)/Steam"
 cat > "$T/bin/anowine" <<'EOF'
 #!/bin/bash
 echo "stub loader started: $(basename "$1")"
-exit 0
+# Stay alive like a running Steam, under this command line (pgrep sees it).
+trap 'exit 0' TERM
+for _ in $(seq 60); do sleep 1; done
 EOF
 cat > "$T/bin/anowine-server" <<'EOF'
 #!/bin/bash
@@ -31,10 +33,11 @@ echo "== script exit: $rc"
 status=0
 check() { if eval "$2"; then echo "PASS: $1"; else echo "FAIL: $1"; status=1; fi; }
 check "script exits 0" '[ "$rc" -eq 0 ]'
-check "normal round answers and exit status recorded" \
-  'grep -q "^normal: steam_window=yes store_page=yes game=no launch_exit=0$" <<<"$OUT"'
-check "sandboxed round ran inside sandbox-exec and exited 0" \
-  'grep -q "^sandboxed: steam_window=yes store_page=yes game=no launch_exit=0$" <<<"$OUT"'
+check "no stub left running" '! pgrep -f "$T/bin/anowine" >/dev/null'
+check "normal round answers recorded, Steam still running when checked" \
+  'grep -q "^normal: steam_window=yes store_page=yes game=no launch=running$" <<<"$OUT"'
+check "sandboxed round ran inside sandbox-exec, Steam still running when checked" \
+  'grep -q "^sandboxed: steam_window=yes store_page=yes game=no launch=running$" <<<"$OUT"'
 check "each round's launch log is included" \
   '[ "$(grep -c "stub loader started: steam.exe" <<<"$OUT")" -ge 2 ]'
 exit "$status"

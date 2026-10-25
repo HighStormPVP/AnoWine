@@ -16,6 +16,9 @@ check() { if eval "$2"; then echo "PASS: $1"; else echo "::error::$1"; status=1;
 check "bundled CLI exists" '[ -x "$CLI" ]'
 check "no Whisky data before the run" '! ls -d "$CONTAINERS"/com.franke.* "$SUPPORT"/com.franke.* >/dev/null 2>&1'
 "$CLI" list || { echo "::error::WhiskyCmd list failed"; status=1; }
+echo "folders after the run:"
+ls -d "$CONTAINERS"/*AnoWine* "$CONTAINERS"/*Whisky* "$CONTAINERS"/*franke*   "$SUPPORT"/*AnoWine* "$SUPPORT"/*Whisky* "$SUPPORT"/*franke* 2>/dev/null | sed 's/^/  /'
 check "CLI created AnoWine's bottle registry" '[ -f "$CONTAINERS/io.github.highstormpvp.AnoWine/BottleVM.plist" ]'
 check "CLI touched no Whisky folder" '! ls -d "$CONTAINERS"/com.franke.* "$SUPPORT"/com.franke.* >/dev/null 2>&1'
+check "CLI made no separate AnoWineCmd folder" '! ls -d "$CONTAINERS"/*AnoWineCmd* "$SUPPORT"/*AnoWineCmd* >/dev/null 2>&1'
 exit "$status"

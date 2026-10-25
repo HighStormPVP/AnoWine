@@ -20,6 +20,15 @@ import Foundation
 
 public extension Bundle {
     static var whiskyBundleIdentifier: String {
-        Bundle.main.bundleIdentifier ?? "com.franke.Whisky"
+        resolveWhiskyBundleIdentifier(Bundle.main.bundleIdentifier)
+    }
+
+    /// The bundled CLI (WhiskyCmd) must use the app's folders, or it never
+    /// sees the app's bottles: map both a missing identifier and the CLI
+    /// target's own identifier to the app's.
+    static func resolveWhiskyBundleIdentifier(_ identifier: String?) -> String {
+        let app = "io.github.highstormpvp.AnoWine"
+        guard let identifier, identifier != app + "Cmd" else { return app }
+        return identifier
     }
 }

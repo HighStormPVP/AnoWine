@@ -60,7 +60,9 @@ struct WhiskyApp: App {
 
     init() {
         updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
+            // AnoWine has no update signing key yet; Sparkle can't start
+            // without one, so only start it once Info.plist carries SUPublicEDKey.
+            startingUpdater: Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") != nil,
             updaterDelegate: nil,
             userDriverDelegate: SparkleUpdaterDelegate.shared
         )

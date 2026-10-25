@@ -20,11 +20,20 @@
 import XCTest
 
 final class AnoWineIdentityTests: XCTestCase {
-    /// WhiskyCmd has no Info.plist of its own, so it always takes the fallback.
-    /// Falling back to Whisky's identifier would point the CLI, Open Terminal
-    /// and desktop shortcuts at the user's Whisky bottles.
+    /// Without an identifier (e.g. the bundled CLI), falling back to Whisky's
+    /// would point the CLI, Open Terminal and desktop shortcuts at the user's
+    /// Whisky bottles.
     func testFallbackBundleIdentifierIsAnoWine() {
         XCTAssertEqual(Bundle.resolveWhiskyBundleIdentifier(nil), "io.github.highstormpvp.AnoWine")
+    }
+
+    /// If the CLI does carry an identifier, it is its own target's. It still
+    /// has to use the app's folders, or it never sees the app's bottles.
+    func testCLIIdentifierResolvesToTheApp() {
+        XCTAssertEqual(
+            Bundle.resolveWhiskyBundleIdentifier("io.github.highstormpvp.AnoWineCmd"),
+            "io.github.highstormpvp.AnoWine"
+        )
     }
 
     func testRealBundleIdentifierWins() {
