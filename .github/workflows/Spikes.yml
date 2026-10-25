@@ -1,0 +1,76 @@
+name: AnoWine Spikes
+
+# Throwaway feasibility probes for the proxy feature (Plan 1, Tasks 2-5).
+# Each probe step runs even if an earlier one failed, so one run reports all.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'spikes/**'
+      - '.github/workflows/Spikes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spikes:
+    name: Feasibility probes
+    runs-on: macos-15
+    env:
+      SPIKE_WORK: ${{ runner.temp }}/anowine-spike
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          /usr/bin/pgrep -q oahd && echo "Rosetta running" || softwareupdate --install-rosetta --agree-to-license
+          brew install mingw-w64
+
+      - name: Build probes
+        run: |
+          mkdir -p "$SPIKE_WORK/bin"
+          x86_64-w64-mingw32-gcc -O2 -o "$SPIKE_WORK/bin/netprobe.exe" "$GITHUB_WORKSPACE/spikes/netprobe/netprobe.c" -lws2_32
+          clang -arch x86_64 -dynamiclib -O2 -o "$SPIKE_WORK/bin/liblogshim.dylib" "$GITHUB_WORKSPACE/spikes/interposer/logshim.c"
+          clang -arch x86_64 -dynamiclib -O2 -o "$SPIKE_WORK/bin/libudpshim.dylib" "$GITHUB_WORKSPACE/spikes/interposer/udpshim.c"
+          clang -arch arm64 -arch x86_64 -O2 -o "$SPIKE_WORK/bin/shim" "$GITHUB_WORKSPACE/spikes/sandbox/shim.c"
+          file "$SPIKE_WORK/bin/"*
+
+      - name: Probe - injection
+        id: injection
+        continue-on-error: true
+        run: bash "$GITHUB_WORKSPACE/spikes/probe_injection.sh"
+
+      - name: Probe - rename
+        id: rename
+        continue-on-error: true
+        run: bash "$GITHUB_WORKSPACE/spikes/probe_rename.sh"
+
+      - name: Probe - sandbox
+        id: sandbox
+        continue-on-error: true
+        run: bash "$GITHUB_WORKSPACE/spikes/probe_sandbox.sh"
+
+      - name: Probe - udp
+        id: udp
+        continue-on-error: true
+        run: bash "$GITHUB_WORKSPACE/spikes/probe_udp.sh"
+
+      - name: Upload spike logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: spike-logs
+          path: ${{ runner.temp }}/anowine-spike/logs
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "injection: ${{ steps.injection.outcome }}"
+          echo "rename:    ${{ steps.rename.outcome }}"
+          echo "sandbox:   ${{ steps.sandbox.outcome }}"
+          echo "udp:       ${{ steps.udp.outcome }}"
+          [ "${{ steps.injection.outcome }}" = "success" ] && [ "${{ steps.rename.outcome }}" = "success" ]             && [ "${{ steps.sandbox.outcome }}" = "success" ] && [ "${{ steps.udp.outcome }}" = "success" ]

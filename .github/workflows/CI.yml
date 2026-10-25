@@ -19,6 +19,9 @@ on:
       - 'docs/**'
       - 'images/**'
       - 'LICENSE'
+      # AnoWine: feasibility spikes have their own workflow (Spikes.yml).
+      - 'spikes/**'
+      - '.github/workflows/Spikes.yml'
   pull_request:
     branches: [main]
     paths-ignore: *docs-paths
