@@ -18,11 +18,13 @@ jobs:
   spikes:
     name: Feasibility probes
     runs-on: macos-15
-    env:
-      SPIKE_WORK: ${{ runner.temp }}/anowine-spike
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      # runner.temp is not available in job-level env, so export it here.
+      - name: Work directory
+        run: echo "SPIKE_WORK=$RUNNER_TEMP/anowine-spike" >> "$GITHUB_ENV"
 
       - name: Toolchain
         run: |
