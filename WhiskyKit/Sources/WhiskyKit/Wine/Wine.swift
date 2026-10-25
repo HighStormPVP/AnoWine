@@ -89,9 +89,9 @@ public class Wine {
     ///
     /// This is the main Wine binary used to execute Windows applications.
     /// The binary is located within the WhiskyWine installation directory.
-    public static let wineBinary: URL = WhiskyWineInstaller.binFolder.appending(path: "wine64")
+    public static let wineBinary: URL = AnoWineRuntime.loaderURL
     /// URL to the `wineserver` binary for Wine server management.
-    private static let wineserverBinary: URL = WhiskyWineInstaller.binFolder.appending(path: "wineserver")
+    private static let wineserverBinary: URL = AnoWineRuntime.serverURL
 
     /// Run a process on a executable file given by the `executableURL`
     private static func runProcess(
@@ -672,17 +672,17 @@ public class Wine {
     static func generateTerminalEnvironmentCommand(binFolder: URL, environment: [String: String]) -> String {
         var cmd = """
         export PATH=\(ShellQuoting.quoted(binFolder.path)):\"$PATH\"
-        export WINE=\"wine64\"
-        alias wine=\"wine64\"
-        alias winecfg=\"wine64 winecfg\"
-        alias msiexec=\"wine64 msiexec\"
-        alias regedit=\"wine64 regedit\"
-        alias regsvr32=\"wine64 regsvr32\"
-        alias wineboot=\"wine64 wineboot\"
-        alias wineconsole=\"wine64 wineconsole\"
-        alias winedbg=\"wine64 winedbg\"
-        alias winefile=\"wine64 winefile\"
-        alias winepath=\"wine64 winepath\"
+        export WINE=\"anowine\"
+        alias wine=\"anowine\"
+        alias winecfg=\"anowine winecfg\"
+        alias msiexec=\"anowine msiexec\"
+        alias regedit=\"anowine regedit\"
+        alias regsvr32=\"anowine regsvr32\"
+        alias wineboot=\"anowine wineboot\"
+        alias wineconsole=\"anowine wineconsole\"
+        alias winedbg=\"anowine winedbg\"
+        alias winefile=\"anowine winefile\"
+        alias winepath=\"anowine winepath\"
         """
 
         for (key, value) in environment.sorted(by: { $0.key < $1.key }) {

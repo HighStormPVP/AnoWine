@@ -30,7 +30,7 @@ public struct ProcessRunningCheck: TroubleshootingCheck {
     public init() {}
 
     public func run(params: [String: String], context: CheckContext) async -> CheckResult {
-        let processName = params["process"] ?? "wineserver"
+        let processName = params["process"] ?? AnoWineRuntime.serverName
         let count = ProcessRegistry.shared.getProcessCount(for: context.bottleURL)
 
         let evidence = [

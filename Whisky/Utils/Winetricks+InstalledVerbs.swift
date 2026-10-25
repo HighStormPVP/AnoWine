@@ -48,7 +48,8 @@ extension Winetricks {
         process.arguments = ["bash", winetricksPath, "list-installed"]
         process.environment = [
             "WINEPREFIX": bottleURL.path(percentEncoded: false),
-            "WINE": "wine64",
+            "WINE": AnoWineRuntime.loaderName,
+            "WINESERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
             "PATH": [
                 WhiskyWineInstaller.binFolder.path(percentEncoded: false),
                 resourcesURL.path(percentEncoded: false),

@@ -126,7 +126,8 @@ public class WhiskyWineInstaller {
 
         // Mirrors `Wine.wineBinary` (binFolder/wine64), the executable used to
         // launch every program — if it's missing the runtime isn't usable.
-        let wineBinary = folder.appending(path: "Wine").appending(path: "bin").appending(path: "wine64")
+        let wineBinary = folder.appending(path: "Wine").appending(path: "bin")
+            .appending(path: AnoWineRuntime.loaderName)
         return FileManager.default.fileExists(atPath: wineBinary.path(percentEncoded: false))
     }
 

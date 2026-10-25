@@ -128,7 +128,8 @@ class Winetricks {
         let scriptContent = [
             "#!/bin/bash",
             "export PATH=\(ShellQuoting.quoted(pathValue)):\"$PATH\"",
-            "export WINE=wine64",
+            "export WINE=\(AnoWineRuntime.loaderName)",
+            "export " + ShellQuoting.assignment("WINESERVER", AnoWineRuntime.serverURL.path(percentEncoded: false)),
             "export " + ShellQuoting.assignment("WINEPREFIX", bottle.url.path(percentEncoded: false)),
             ShellQuoting.commandLine(["bash", winetricksPath, command]),
             ""
