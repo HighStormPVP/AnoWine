@@ -1,0 +1,13 @@
+;; AnoWine spike: network lockdown for a proxied bottle. Throwaway.
+;; Everything is allowed except outbound network; outbound is allowed only to
+;; Unix sockets (wineserver, Discord IPC) and to localhost:ALLOW_PORT.
+;; Pass the port with: sandbox-exec -D ALLOW_PORT=7001 -f net-lockdown.sb ...
+(version 1)
+(allow default)
+(deny network-outbound)
+(allow network-outbound (remote unix-socket))
+(allow network-outbound (remote ip (string-append "localhost:" (param "ALLOW_PORT"))))
+;; getaddrinfo() asks mDNSResponder over this Unix socket; leaving it open
+;; would let DNS leak around the proxy.
+(deny network-outbound (remote unix-socket (path-literal "/private/var/run/mDNSResponder")))
+(deny mach-lookup (global-name "com.apple.dnssd.service"))
