@@ -23,8 +23,9 @@ exit 0
 EOF
 chmod +x "$T/bin/anowine" "$T/bin/anowine-server"
 
-# Per round: Enter, then y (window), y (store), n (game).
-OUT="$(printf '\ny\ny\nn\n\ny\ny\nn\n' | env PATH="$T/bin:$PATH" WINEPREFIX="$T/prefix" \
+# Per round: Enter, then y (window), y (store), n (game). Paced like a person:
+# the launch gets a few seconds to start before "Enter" arrives.
+OUT="$( { sleep 3; printf '\ny\ny\nn\n'; sleep 3; printf '\ny\ny\nn\n'; } | env PATH="$T/bin:$PATH" WINEPREFIX="$T/prefix" \
   WINESERVER="$T/bin/anowine-server" bash "$HERE/m2-sandbox-check.sh" 2>&1)"
 rc=$?
 echo "$OUT"
