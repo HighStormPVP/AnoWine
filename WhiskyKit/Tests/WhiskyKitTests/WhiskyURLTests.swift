@@ -90,6 +90,8 @@ struct WhiskyURLTests {
     @Test("Another scheme or another host is not ours")
     func wrongSchemeOrHost() {
         #expect(parse("steam://launch?steam=1086940") == nil)
+        // Whisky's own scheme belongs to Whisky; AnoWine must not answer it.
+        #expect(parse("whisky://launch?steam=1086940") == nil)
         #expect(parse("https://example.com/launch?steam=1086940") == nil)
         #expect(parse("anowine://install?steam=1086940") == nil)
         #expect(parse("anowine://launch/extra?steam=1086940") != nil)
@@ -97,7 +99,7 @@ struct WhiskyURLTests {
 
     @Test("Scheme and host are matched case-insensitively, as the loader hands them over")
     func caseInsensitiveSchemeAndHost() {
-        #expect(parse("WHISKY://LAUNCH?steam=1086940") == .steam(appId: 1_086_940, bottle: nil))
+        #expect(parse("ANOWINE://LAUNCH?steam=1086940") == .steam(appId: 1_086_940, bottle: nil))
     }
 
     @Test("An empty bottle name is the same as not naming one")
