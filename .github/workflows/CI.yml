@@ -190,6 +190,16 @@ jobs:
           # Translations" build phase does the filling; this asserts it ran.
           python3 scripts/fill-missing-translations.py --check "$app/Contents/Resources"
 
+      # AnoWine: the built app must never share Whisky's identity, data folder,
+      # update feed or analytics project.
+      - name: Verify AnoWine identity
+        run: |
+          app=$(xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Debug             -showBuildSettings 2>/dev/null             | awk -F' = ' '
+                /^ *BUILT_PRODUCTS_DIR = /  { dir = $2 }
+                /^ *FULL_PRODUCT_NAME = /   { name = $2 }
+                END { if (dir != "" && name != "") print dir "/" name }')
+          bash "$GITHUB_WORKSPACE/scripts/anowine/check-identity.sh" "$app"
+
   # XCUITest job - runs WhiskyUITests against the Whisky app target.
   # Tests that need bottle fixtures call `try requireBottleFixture()` which
   # XCTSkips them when the user container is empty (always true on a fresh
