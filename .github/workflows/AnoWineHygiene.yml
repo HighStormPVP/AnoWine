@@ -1,0 +1,25 @@
+name: AnoWine Hygiene
+
+# This fork is edited from Windows. Guard against CRLF scripts and lost
+# executable bits, which break silently on macOS.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    name: Line endings and exec bits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check hygiene
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-hygiene.sh" "$GITHUB_WORKSPACE"
