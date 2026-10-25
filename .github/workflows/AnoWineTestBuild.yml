@@ -62,6 +62,7 @@ jobs:
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-cli-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
 
       - name: Test the M2 sandbox check script (stubbed Wine)
+        if: always()
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-m2-sandbox-check.sh"
 
       - name: Package
