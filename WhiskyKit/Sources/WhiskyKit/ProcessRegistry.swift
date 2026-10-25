@@ -336,7 +336,7 @@ public final class ProcessRegistry: @unchecked Sendable {
     private func ensureDisplayWakeAssertionLocked() {
         guard displayWakeAssertion == 0, totalProcessCountLocked() > 0 else { return }
         var assertionID = IOPMAssertionID(0)
-        let reason = "Whisky game running" as CFString
+        let reason = "AnoWine game running" as CFString
         let result = IOPMAssertionCreateWithName(
             kIOPMAssertionTypeNoDisplaySleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),

@@ -23,3 +23,11 @@ jobs:
 
       - name: Check hygiene
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-hygiene.sh" "$GITHUB_WORKSPACE"
+
+      - name: Rebrand script tests
+        run: python3 -m unittest discover -s "$GITHUB_WORKSPACE/scripts/anowine" -p 'test_*.py' -v
+
+      # Fails after an upstream merge brings new "Whisky" strings; fix by running
+      # python3 scripts/anowine/rebrand_strings.py Whisky/Localizable.xcstrings
+      - name: UI strings are rebranded
+        run: python3 "$GITHUB_WORKSPACE/scripts/anowine/rebrand_strings.py" --check "$GITHUB_WORKSPACE/Whisky/Localizable.xcstrings"

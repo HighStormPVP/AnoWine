@@ -158,7 +158,7 @@ public extension ShortcutCreator {
             WHISKY_CMD="$WHISKY_APP/Contents/Resources/WhiskyCmd"
         fi
         if [ ! -x "$WHISKY_CMD" ]; then
-            osascript -e 'display alert "Whisky not found" message "Install Whisky to use this shortcut."'
+            osascript -e 'display alert "AnoWine not found" message "Install AnoWine to use this shortcut."'
             exit 1
         fi
         exec "$WHISKY_CMD" \(invocation)
