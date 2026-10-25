@@ -29,22 +29,26 @@ spike_boot_prefix "$WINE" "$PREFIX"
 spike_start_echo
 : > "$LOG"
 export WINEPREFIX="$PREFIX" WINEDEBUG=-all ANOWINE_SPIKE_LOG="$LOG"
-export DYLD_INSERT_LIBRARIES="$SPIKE_BIN/liblogshim.dylib"
+# Inject only into Wine, via the shim. Exporting DYLD_INSERT_LIBRARIES in this
+# shell would also push the x86_64-only dylib into arm64 helpers (sleep, grep),
+# which abort - see spikes/REPORT.md.
+injected() {
+  ANOWINE_INSERT="$SPIKE_BIN/liblogshim.dylib" spike_timeout 120     "$SPIKE_BIN/shim" "$WINE" "$SPIKE_BIN/netprobe.exe" "$@"
+}
 
 echo "== 2. TCP under injection"
-expect_exit 0 "netprobe tcp 127.0.0.1 7001 with logshim" -- spike_timeout 120 "$WINE" "$SPIKE_BIN/netprobe.exe" tcp 127.0.0.1 7001
+expect_exit 0 "netprobe tcp 127.0.0.1 7001 with logshim" -- injected tcp 127.0.0.1 7001
 
 echo "== 3. connect logged"
 if grep -q ' connect .*127\.0\.0\.1:7001' "$LOG"; then pass "connect to 127.0.0.1:7001 logged"; else fail "no connect line for 127.0.0.1:7001"; fi
 
 echo "== 4. DNS under injection"
-expect_exit 0 "netprobe dns example.com" -- spike_timeout 120 "$WINE" "$SPIKE_BIN/netprobe.exe" dns example.com
+expect_exit 0 "netprobe dns example.com" -- injected dns example.com
 if grep -q ' getaddrinfo .*example\.com' "$LOG"; then pass "getaddrinfo example.com logged"; else fail "no getaddrinfo line for example.com"; fi
 
 echo "== 5. UDP under injection"
-expect_exit 0 "netprobe udp two destinations" -- spike_timeout 120 "$WINE" "$SPIKE_BIN/netprobe.exe" udp 127.0.0.1 7002 127.0.0.2 7003
+expect_exit 0 "netprobe udp two destinations" -- injected udp 127.0.0.1 7002 127.0.0.2 7003
 
-unset DYLD_INSERT_LIBRARIES
 spike_kill_server "$WINE" "$PREFIX"
 spike_stop_echo
 
