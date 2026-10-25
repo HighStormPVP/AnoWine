@@ -1,0 +1,75 @@
+name: AnoWine Test Build
+
+# An installable, ad-hoc signed AnoWine.app for testing on a real Mac.
+# Not notarized: first launch needs System Settings > Privacy & Security >
+# "Open Anyway" (see docs/anowine/TESTING-ON-M2.md).
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'spikes/**'
+      - 'images/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: anowine-test-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build AnoWine-test.zip
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Build Release
+        run: |
+          xcodebuild -project Whisky.xcodeproj -scheme Whisky -configuration Release \
+            -derivedDataPath "$RUNNER_TEMP/dd" build \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            | tail -20
+          test -d "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+
+      # Ad-hoc sign inside-out: everything nested, then the Quick Look extension
+      # with its sandbox entitlements, then the app's seal again.
+      - name: Ad-hoc sign
+        run: |
+          APP="$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+          codesign --force --deep --sign - "$APP"
+          for appex in "$APP"/Contents/PlugIns/*.appex; do
+            [ -d "$appex" ] || continue
+            codesign --force --sign - --entitlements "$GITHUB_WORKSPACE/WhiskyThumbnail/WhiskyThumbnail.entitlements" "$appex"
+          done
+          codesign --force --sign - --entitlements "$GITHUB_WORKSPACE/Whisky/Whisky.entitlements" "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Verify AnoWine identity
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+
+      - name: Package
+        run: |
+          cd "$RUNNER_TEMP/dd/Build/Products/Release"
+          ditto -c -k --sequesterRsrc --keepParent AnoWine.app "$RUNNER_TEMP/AnoWine-test.zip"
+          cp "$GITHUB_WORKSPACE/scripts/anowine/m2-sandbox-check.sh" "$RUNNER_TEMP/"
+          ls -la "$RUNNER_TEMP/AnoWine-test.zip"
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: AnoWine-test
+          path: |
+            ${{ runner.temp }}/AnoWine-test.zip
+            ${{ runner.temp }}/m2-sandbox-check.sh
+          if-no-files-found: error

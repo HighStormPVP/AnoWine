@@ -1,21 +1,27 @@
 <div align="center">
 
-  # Whisky 🥃
-  *Wine but a bit stronger*
+  # AnoWine
+  *Windows games on Apple Silicon Macs, with a built-in proxy*
 
-  > **Active community fork.** The original [whisky-app/whisky](https://github.com/whisky-app/whisky)
-  > was archived on April 9, 2025 with a final maintenance notice. This fork, maintained by
-  > [@frankea](https://github.com/frankea), continues development — addressing the backlog of
-  > upstream issues and adding new functionality. Not affiliated with the original project or
-  > getwhisky.app.
-
-  ![](https://img.shields.io/github/actions/workflow/status/frankea/Whisky/CI.yml?style=for-the-badge&label=CI)
-  [![](https://img.shields.io/codecov/c/github/frankea/Whisky?style=for-the-badge&logo=codecov&label=Coverage&flag=whiskykit)](https://codecov.io/gh/frankea/Whisky)
-  [![](https://img.shields.io/github/downloads/frankea/Whisky/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/frankea/Whisky/releases)
-  [![](https://img.shields.io/github/downloads/frankea/Whisky/latest/total?style=for-the-badge&label=Latest)](https://github.com/frankea/Whisky/releases/latest)
-  [![](https://img.shields.io/github/issues/frankea/Whisky?style=for-the-badge)](https://github.com/frankea/Whisky/issues)
-  [![Documentation](https://img.shields.io/badge/Documentation-DocC-blue?style=for-the-badge)](https://frankea.github.io/Whisky/documentation/whiskykit/)
+  ![](https://img.shields.io/github/actions/workflow/status/HighStormPVP/AnoWine/CI.yml?style=for-the-badge&label=CI)
 </div>
+
+AnoWine is a Mac app for playing Windows games, built on
+[frankea/Whisky](https://github.com/frankea/Whisky) (itself a community fork of the archived
+Whisky), and licensed under the GPL-3 like it. It adds a per-bottle proxy with DNS-leak
+protection and a kill switch (in progress; see
+[the design](docs/superpowers/specs/2026-10-25-anowine-design.md)). AnoWine is not affiliated
+with Whisky, frankea/Whisky or getwhisky.app.
+
+**Status:** early test builds. Requires an Apple Silicon Mac on macOS 15 or later.
+
+**First launch:** AnoWine isn't notarized yet. After the first attempt to open it, go to
+**System Settings → Privacy & Security** and click **Open Anyway**.
+Testing guide: [docs/anowine/TESTING-ON-M2.md](docs/anowine/TESTING-ON-M2.md).
+
+---
+
+*The rest of this README is upstream's and describes Whisky, which AnoWine is based on.*
 
 ## Overview
 
