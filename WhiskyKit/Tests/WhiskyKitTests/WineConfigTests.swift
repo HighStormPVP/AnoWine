@@ -258,9 +258,9 @@ final class WhiskyWineInstallerPathTests: XCTestCase {
 // MARK: - Wine Binary Path Tests
 
 final class WineBinaryPathTests: XCTestCase {
-    func testWineBinaryPathContainsWine64() {
+    func testWineBinaryPathContainsAnowine() {
         let path = Wine.wineBinary.path
-        XCTAssertTrue(path.contains("wine64"))
+        XCTAssertTrue(path.contains("anowine"))
     }
 
     func testLogsFolderPathContainsLogs() {
