@@ -1,27 +1,27 @@
 <div align="center">
 
-  # AnoWine
+  # Ano
   *Windows games on Apple Silicon Macs, with a built-in proxy*
 
   ![](https://img.shields.io/github/actions/workflow/status/HighStormPVP/AnoWine/CI.yml?style=for-the-badge&label=CI)
 </div>
 
-AnoWine is a Mac app for playing Windows games, built on
+Ano is a Mac app for playing Windows games, built on
 [frankea/Whisky](https://github.com/frankea/Whisky) (itself a community fork of the archived
 Whisky), and licensed under the GPL-3 like it. It adds a per-bottle proxy with DNS-leak
 protection and a kill switch (in progress; see
-[the design](docs/superpowers/specs/2026-10-25-anowine-design.md)). AnoWine is not affiliated
+[the design](docs/superpowers/specs/2026-10-25-anowine-design.md)). Ano is not affiliated
 with Whisky, frankea/Whisky or getwhisky.app.
 
 **Status:** early test builds. Requires an Apple Silicon Mac on macOS 15 or later.
 
-**First launch:** AnoWine isn't notarized yet. After the first attempt to open it, go to
+**First launch:** Ano isn't notarized yet. After the first attempt to open it, go to
 **System Settings → Privacy & Security** and click **Open Anyway**.
 Testing guide: [docs/anowine/TESTING-ON-M2.md](docs/anowine/TESTING-ON-M2.md).
 
 ---
 
-*The rest of this README is upstream's and describes Whisky, which AnoWine is based on.*
+*The rest of this README is upstream's and describes Whisky, which Ano is based on.*
 
 ## Overview
 

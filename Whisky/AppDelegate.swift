@@ -156,7 +156,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Bundle.main.resourceURL?.deletingLastPathComponent().deletingLastPathComponent()
     }
 
-    private static let expectedUrl = URL(fileURLWithPath: "/Applications/AnoWine.app")
+    private static let expectedUrl = URL(fileURLWithPath: "/Applications/Ano.app")
 
     private static var insideAppsFolder: Bool {
         if let url = appUrl {

@@ -47,7 +47,7 @@ public enum WhiskyURL {
         case pin(name: String, bottle: String?)
     }
 
-    public static let scheme = "anowine"
+    public static let scheme = "ano"
 
     /// Parses a URL, or returns `nil` for anything that is not one of the two
     /// forms, including a different scheme, a different host, a missing or

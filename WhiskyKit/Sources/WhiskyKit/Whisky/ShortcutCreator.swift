@@ -151,14 +151,14 @@ public extension ShortcutCreator {
         }
 
         return """
-        WHISKY_CMD="/Applications/AnoWine.app/Contents/Resources/WhiskyCmd"
+        WHISKY_CMD="/Applications/Ano.app/Contents/Resources/WhiskyCmd"
         if [ ! -x "$WHISKY_CMD" ]; then
             WHISKY_APP="$(mdfind "kMDItemCFBundleIdentifier == '\(Bundle
             .whiskyBundleIdentifier)'" 2>/dev/null | head -n 1)"
             WHISKY_CMD="$WHISKY_APP/Contents/Resources/WhiskyCmd"
         fi
         if [ ! -x "$WHISKY_CMD" ]; then
-            osascript -e 'display alert "AnoWine not found" message "Install AnoWine to use this shortcut."'
+            osascript -e 'display alert "Ano not found" message "Install Ano to use this shortcut."'
             exit 1
         fi
         exec "$WHISKY_CMD" \(invocation)

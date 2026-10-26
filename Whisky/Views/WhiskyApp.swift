@@ -60,7 +60,7 @@ struct WhiskyApp: App {
 
     init() {
         updaterController = SPUStandardUpdaterController(
-            // AnoWine has no update signing key yet; Sparkle can't start
+            // Ano has no update signing key yet; Sparkle can't start
             // without one, so only start it once Info.plist carries SUPublicEDKey.
             startingUpdater: Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") != nil,
             updaterDelegate: nil,
@@ -240,7 +240,7 @@ struct WhiskyApp: App {
         Settings {
             SettingsView()
         }
-        MenuBarExtra("AnoWine", systemImage: "wineglass", isInserted: $showMenuBarExtra) {
+        MenuBarExtra("Ano", systemImage: "wineglass", isInserted: $showMenuBarExtra) {
             WhiskyMenuBarView()
                 .environmentObject(BottleVM.shared)
         }

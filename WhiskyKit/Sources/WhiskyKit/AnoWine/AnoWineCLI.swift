@@ -20,8 +20,8 @@ import Foundation
 
 /// Where "Install CLI" links the bundled WhiskyCmd.
 ///
-/// Whisky uses `/usr/local/bin/whisky`; AnoWine must not overwrite that, and
-/// `anowine` is already the Wine loader's name on the Open Terminal PATH.
+/// Whisky uses `/usr/local/bin/whisky`; Ano must not overwrite that, and must
+/// not reuse `anowine`, the Wine loader's name on the Open Terminal PATH.
 public enum AnoWineCLI {
-    public static let linkPath = "/usr/local/bin/anowine-cli"
+    public static let linkPath = "/usr/local/bin/ano"
 }

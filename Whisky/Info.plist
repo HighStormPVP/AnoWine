@@ -57,21 +57,21 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>io.github.highstormpvp.AnoWine</string>
+			<string>io.github.highstormpvp.Ano</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>anowine</string>
+				<string>ano</string>
 			</array>
 		</dict>
 	</array>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>AnoWine needs access to Desktop to create shortcuts for Windows programs.</string>
+	<string>Ano needs access to Desktop to create shortcuts for Windows programs.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>AnoWine needs access to this folder to manage Wine bottles and install Windows dependencies.</string>
+	<string>Ano needs access to this folder to manage Wine bottles and install Windows dependencies.</string>
 	<key>NSNetworkVolumesUsageDescription</key>
-	<string>AnoWine needs access to network volumes when bottles are stored on network drives.</string>
+	<string>Ano needs access to network volumes when bottles are stored on network drives.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
-	<string>AnoWine needs access to removable volumes when bottles are stored on external drives.</string>
+	<string>Ano needs access to removable volumes when bottles are stored on external drives.</string>
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
 	<key>SUFeedURL</key>

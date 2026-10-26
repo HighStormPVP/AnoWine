@@ -27,7 +27,7 @@ public extension Bundle {
     /// sees the app's bottles: map both a missing identifier and the CLI
     /// target's own identifier to the app's.
     static func resolveWhiskyBundleIdentifier(_ identifier: String?) -> String {
-        let app = "io.github.highstormpvp.AnoWine"
+        let app = "io.github.highstormpvp.Ano"
         guard let identifier, identifier != app + "Cmd" else { return app }
         return identifier
     }

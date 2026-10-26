@@ -64,7 +64,7 @@ extension Wine {
 
         // Layer 1: Base -- WINEPREFIX, default WINEDEBUG, GST_DEBUG
         builder.set("WINEPREFIX", bottle.url.path, layer: .base)
-        // AnoWine renames wineserver; this is how the loader finds it.
+        // Ano's runtime renames wineserver; this is how the loader finds it.
         builder.set("WINESERVER", AnoWineRuntime.serverURL.path(percentEncoded: false), layer: .base)
         builder.set("WINEDEBUG", "fixme-all", layer: .base)
         builder.set("GST_DEBUG", "1", layer: .base)

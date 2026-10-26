@@ -309,7 +309,7 @@ struct DiscordActivity: Encodable {
 
     let details: String
     let timestamps: Timestamps
-    let assets = Assets(largeImage: "whisky", largeText: "AnoWine")
+    let assets = Assets(largeImage: "whisky", largeText: "Ano")
 }
 
 struct DiscordActivityArguments: Encodable {

@@ -1,11 +1,11 @@
-"""Rebrand user-visible strings in an Xcode string catalog from Whisky to AnoWine.
+"""Rebrand user-visible strings in an Xcode string catalog from Whisky to Ano.
 
 Rewrites localized VALUES only, never keys, so Swift code (which uses the keys)
 stays identical to upstream and merges stay clean. Re-run after every upstream
 merge; it is idempotent.
 
   WhiskyWine -> "Wine runtime" (English) / "Wine" (other languages)
-  Whisky     -> AnoWine
+  Whisky     -> Ano  (and the earlier name AnoWine -> Ano)
 
 A key whose text mentions Whisky but has no English localization gets one,
 because Xcode would otherwise show the key itself.
@@ -37,7 +37,8 @@ def _rewrite(text, english):
     # "The Wine runtime (WhiskyWine)" already says it; drop the old brand name.
     text = re.sub(r" ?\(WhiskyWine\)", "", text)
     text = text.replace("WhiskyWine", "Wine runtime" if english else "Wine")
-    text = text.replace("Whisky", "AnoWine")
+    text = text.replace("AnoWine", "Ano")
+    text = text.replace("Whisky", "Ano")
     for i, ref in enumerate(refs):
         text = text.replace(_PLACEHOLDER % i, ref)
     return text

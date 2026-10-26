@@ -1,6 +1,6 @@
 name: AnoWine Test Build
 
-# An installable, ad-hoc signed AnoWine.app for testing on a real Mac.
+# An installable, ad-hoc signed Ano.app for testing on a real Mac.
 # Not notarized: first launch needs System Settings > Privacy & Security >
 # "Open Anyway" (see docs/anowine/TESTING-ON-M2.md).
 
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build AnoWine-test.zip
+    name: Build Ano-test.zip
     runs-on: macos-15
     steps:
       - name: Checkout
@@ -40,13 +40,13 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/dd" build \
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
             | tail -20
-          test -d "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+          test -d "$RUNNER_TEMP/dd/Build/Products/Release/Ano.app"
 
       # Ad-hoc sign inside-out: everything nested, then the Quick Look extension
       # with its sandbox entitlements, then the app's seal again.
       - name: Ad-hoc sign
         run: |
-          APP="$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+          APP="$RUNNER_TEMP/dd/Build/Products/Release/Ano.app"
           codesign --force --deep --sign - "$APP"
           for appex in "$APP"/Contents/PlugIns/*.appex; do
             [ -d "$appex" ] || continue
@@ -55,11 +55,11 @@ jobs:
           codesign --force --sign - --entitlements "$GITHUB_WORKSPACE/Whisky/Whisky.entitlements" "$APP"
           codesign --verify --deep --strict --verbose=2 "$APP"
 
-      - name: Verify AnoWine identity
-        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+      - name: Verify Ano identity
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/Ano.app"
 
-      - name: Verify the bundled CLI uses AnoWine's data folder
-        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-cli-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/AnoWine.app"
+      - name: Verify the bundled CLI uses Ano's data folder
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-cli-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/Ano.app"
 
       - name: Test the M2 sandbox check script (stubbed Wine)
         if: always()
@@ -68,15 +68,15 @@ jobs:
       - name: Package
         run: |
           cd "$RUNNER_TEMP/dd/Build/Products/Release"
-          ditto -c -k --sequesterRsrc --keepParent AnoWine.app "$RUNNER_TEMP/AnoWine-test.zip"
+          ditto -c -k --sequesterRsrc --keepParent Ano.app "$RUNNER_TEMP/Ano-test.zip"
           cp "$GITHUB_WORKSPACE/scripts/anowine/m2-sandbox-check.sh" "$RUNNER_TEMP/"
-          ls -la "$RUNNER_TEMP/AnoWine-test.zip"
+          ls -la "$RUNNER_TEMP/Ano-test.zip"
 
       - name: Upload
         uses: actions/upload-artifact@v7
         with:
-          name: AnoWine-test
+          name: Ano-test
           path: |
-            ${{ runner.temp }}/AnoWine-test.zip
+            ${{ runner.temp }}/Ano-test.zip
             ${{ runner.temp }}/m2-sandbox-check.sh
           if-no-files-found: error

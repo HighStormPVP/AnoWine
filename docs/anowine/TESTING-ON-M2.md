@@ -1,26 +1,26 @@
-# Testing AnoWine on your Mac
+# Testing Ano on your Mac
 
-This is the first test build of AnoWine. It doesn't have the proxy yet. It checks two things:
+This is the first test build of Ano. It doesn't have the proxy yet. It checks two things:
 
 1. The app installs and runs Steam and games like Whisky does.
 2. The macOS sandbox that the proxy's kill switch will use doesn't break graphics. GitHub's machines can't test that.
 
-It takes about 30–45 minutes, most of it waiting for downloads. Your Whisky install isn't touched: AnoWine is a separate app with its own bottles.
+It takes about 30–45 minutes, most of it waiting for downloads. Your Whisky install isn't touched: Ano is a separate app with its own bottles.
 
 ## 1. Download
 
-1. Open the latest **AnoWine Test Build** run: <https://github.com/HighStormPVP/AnoWine/actions/workflows/AnoWineTestBuild.yml>.
-2. At the bottom, under **Artifacts**, download **AnoWine-test**. You need to be signed in to GitHub.
-3. Unzip it. You get `AnoWine-test.zip` and `m2-sandbox-check.sh`. Unzip `AnoWine-test.zip` too, to get **AnoWine.app**.
-4. Drag **AnoWine.app** into your **Applications** folder.
+1. Open the latest **Ano Test Build** run: <https://github.com/HighStormPVP/AnoWine/actions/workflows/AnoWineTestBuild.yml>.
+2. At the bottom, under **Artifacts**, download **Ano-test**. You need to be signed in to GitHub.
+3. Unzip it. You get `Ano-test.zip` and `m2-sandbox-check.sh`. Unzip `Ano-test.zip` too, to get **Ano.app**.
+4. Drag **Ano.app** into your **Applications** folder.
 
 ## 2. First launch
 
-AnoWine isn't notarized by Apple yet, so macOS blocks it the first time.
+Ano isn't notarized by Apple yet, so macOS blocks it the first time.
 
-1. Double-click AnoWine. macOS says it can't be opened. Click **Done**.
-2. Open **System Settings → Privacy & Security** and scroll down. Next to the message about AnoWine, click **Open Anyway** and confirm with your password or Touch ID.
-3. AnoWine opens and offers to install Rosetta (if needed) and the **Wine runtime** (about 330 MB). Let it.
+1. Double-click Ano. macOS says it can't be opened. Click **Done**.
+2. Open **System Settings → Privacy & Security** and scroll down. Next to the message about Ano, click **Open Anyway** and confirm with your password or Touch ID.
+3. Ano opens and offers to install Rosetta (if needed) and the **Wine runtime** (about 330 MB). Let it.
 
 ## 3. Steam
 
@@ -34,11 +34,11 @@ Things to note: anything that looks different from Whisky, and anything that sti
 ## 4. Sandbox check
 
 1. Quit Steam.
-2. In AnoWine, select the Steam bottle and click **Open Terminal**.
+2. In Ano, select the Steam bottle and click **Open Terminal**.
 3. In that Terminal window, type the following (adjust the path if you unzipped elsewhere) and press Return:
 
    ```
-   bash ~/Downloads/AnoWine-test/m2-sandbox-check.sh
+   bash ~/Downloads/Ano-test/m2-sandbox-check.sh
    ```
 
 4. It starts Steam twice: once normally and once inside the sandbox. Each time, wait for Steam to load, open the Store page, and launch your game if you can. Then come back to Terminal, press Return, and answer the three questions.

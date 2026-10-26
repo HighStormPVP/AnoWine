@@ -41,7 +41,7 @@ struct DomainError: LocalizedError {
 @main
 struct Whisky: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        abstract: "A CLI interface for AnoWine.",
+        abstract: "A CLI interface for Ano.",
         discussion: """
         Exit codes: 64 for a malformed invocation (unknown flags, missing or \
         empty arguments; printed with usage), 1 for a well-formed command \
@@ -179,7 +179,7 @@ extension Whisky {
 
     struct Remove: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Remove an existing bottle from AnoWine.",
+            abstract: "Remove an existing bottle from Ano.",
             discussion: "This will not remove the bottle from disk."
         )
 
@@ -202,7 +202,7 @@ extension Whisky {
 
     struct Run: AsyncParsableCommand {
         static let configuration = CommandConfiguration(
-            abstract: "Run a program with AnoWine.",
+            abstract: "Run a program with Ano.",
             discussion: """
             Runs a Windows program directly using Wine, with the same settings \
             and preparation as a launch from Whisky. Use --command to print the \

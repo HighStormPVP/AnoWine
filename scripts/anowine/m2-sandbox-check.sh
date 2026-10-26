@@ -1,9 +1,9 @@
 #!/bin/bash
-# AnoWine hardware check: does the macOS sandbox used for the proxy kill switch
+# Ano hardware check: does the macOS sandbox used for the proxy kill switch
 # change how Steam and games render? Run it on a real Apple Silicon Mac.
 #
 # How to run (see docs/anowine/TESTING-ON-M2.md):
-#   1. In AnoWine, select the bottle with Steam and click "Open Terminal".
+#   1. In Ano, select the bottle with Steam and click "Open Terminal".
 #   2. In that Terminal window: bash ~/Downloads/m2-sandbox-check.sh
 #
 # It launches Steam twice with the same environment: once normally, once inside
@@ -14,7 +14,7 @@
 set -uo pipefail
 
 if [ -z "${WINEPREFIX:-}" ] || ! command -v anowine >/dev/null 2>&1; then
-  echo "Please run this from AnoWine's \"Open Terminal\" window for your Steam bottle."
+  echo "Please run this from Ano's \"Open Terminal\" window for your Steam bottle."
   exit 1
 fi
 STEAM="${1:-$WINEPREFIX/drive_c/Program Files (x86)/Steam/steam.exe}"
