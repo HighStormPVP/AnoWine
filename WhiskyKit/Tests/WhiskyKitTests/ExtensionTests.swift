@@ -162,6 +162,14 @@ final class URLPrettyPathTests: XCTestCase {
 
         XCTAssertEqual(pretty, "/var/log/system.log")
     }
+
+    /// The app's data folder is shown by the app's name, never as Whisky's.
+    func testPrettyPathShowsTheAppsFolderAsAno() {
+        let url = URL(filePath: "/Users/\(NSUserName())/Library/Containers/\(Bundle.whiskyBundleIdentifier)/Bottles")
+        let pretty = url.prettyPath()
+
+        XCTAssertEqual(pretty, "~/Library/Containers/Ano/Bottles")
+    }
 }
 
 // MARK: - URL.prettyPath(bottle:) Tests
