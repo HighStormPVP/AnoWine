@@ -22,8 +22,11 @@ public enum DistributionConfig {
     /// Base URL for GitHub Pages distribution
     public static let baseURL = "https://highstormpvp.github.io/AnoWine"
 
-    /// URL for the WhiskyWine version plist file
-    public static let versionPlistURL = "\(baseURL)/WhiskyWineVersion.plist"
+    /// URL for the runtime version plist. Served from raw.githubusercontent.com
+    /// rather than GitHub Pages: some school and work networks block github.io
+    /// while allowing GitHub itself. Same file as dist/pages/WhiskyWineVersion.plist.
+    public static let versionPlistURL =
+        "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion.plist"
 
     /// Base URL for GitHub Releases downloads
     public static let releasesBaseURL = "https://github.com/HighStormPVP/AnoWine/releases/download"

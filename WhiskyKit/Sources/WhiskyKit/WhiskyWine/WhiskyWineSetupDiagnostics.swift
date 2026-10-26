@@ -135,7 +135,7 @@ public struct WhiskyWineSetupDiagnostics: Codable, Sendable {
     }
 
     private func appendHeaderLines(into lines: inout [String], stage: String, error: String?) {
-        lines.append("WhiskyWine Setup Diagnostics (\(Self.issueURL))")
+        lines.append("Ano Setup Diagnostics (\(Self.issueURL))")
         lines.append("Session: \(sessionID.uuidString)")
         lines.append("Stage: \(stage)")
         lines.append("Generated: \(Date().formatted(Self.eventTimestampFormatter))")
