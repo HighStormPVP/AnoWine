@@ -24,15 +24,15 @@ final class AnoWineIdentityTests: XCTestCase {
     /// would point the CLI, Open Terminal and desktop shortcuts at the user's
     /// Whisky bottles.
     func testFallbackBundleIdentifierIsAnoWine() {
-        XCTAssertEqual(Bundle.resolveWhiskyBundleIdentifier(nil), "io.github.highstormpvp.AnoWine")
+        XCTAssertEqual(Bundle.resolveWhiskyBundleIdentifier(nil), "io.github.highstormpvp.Ano")
     }
 
     /// If the CLI does carry an identifier, it is its own target's. It still
     /// has to use the app's folders, or it never sees the app's bottles.
     func testCLIIdentifierResolvesToTheApp() {
         XCTAssertEqual(
-            Bundle.resolveWhiskyBundleIdentifier("io.github.highstormpvp.AnoWineCmd"),
-            "io.github.highstormpvp.AnoWine"
+            Bundle.resolveWhiskyBundleIdentifier("io.github.highstormpvp.AnoCmd"),
+            "io.github.highstormpvp.Ano"
         )
     }
 
@@ -43,6 +43,6 @@ final class AnoWineIdentityTests: XCTestCase {
     /// Whisky installs its CLI as /usr/local/bin/whisky; AnoWine must not
     /// overwrite it, and must not shadow the `anowine` Wine loader either.
     func testCLILinkDoesNotCollide() {
-        XCTAssertEqual(AnoWineCLI.linkPath, "/usr/local/bin/anowine-cli")
+        XCTAssertEqual(AnoWineCLI.linkPath, "/usr/local/bin/ano")
     }
 }

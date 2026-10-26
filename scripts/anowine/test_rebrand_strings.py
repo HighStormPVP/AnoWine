@@ -51,11 +51,11 @@ class RebrandStringsTests(unittest.TestCase):
 
     def test_english_value_is_rebranded(self):
         data, _ = self.rebrand(FIXTURE)
-        self.assertEqual(self.value(data, "Welcome to Whisky", "en"), "Welcome to AnoWine")
+        self.assertEqual(self.value(data, "Welcome to Whisky", "en"), "Welcome to Ano")
 
     def test_other_language_value_is_rebranded(self):
         data, _ = self.rebrand(FIXTURE)
-        self.assertEqual(self.value(data, "Welcome to Whisky", "fr"), "Bienvenue dans AnoWine")
+        self.assertEqual(self.value(data, "Welcome to Whisky", "fr"), "Bienvenue dans Ano")
 
     def test_missing_english_is_added_from_the_key(self):
         data, _ = self.rebrand(FIXTURE)
@@ -73,8 +73,13 @@ class RebrandStringsTests(unittest.TestCase):
         data, _ = self.rebrand(FIXTURE)
         self.assertEqual(
             self.value(data, "Launcher fixes (frankea/Whisky#41)", "en"),
-            "Launcher fixes for AnoWine (frankea/Whisky#41)",
+            "Launcher fixes for Ano (frankea/Whisky#41)",
         )
+
+    def test_earlier_anowine_branding_becomes_ano(self):
+        rewrite = rebrand_strings._rewrite
+        self.assertEqual(rewrite("Quit AnoWine", True), "Quit Ano")
+        self.assertEqual(rewrite("Quitter AnoWine", False), "Quitter Ano")
 
     def test_parenthetical_whiskywine_is_dropped(self):
         rewrite = rebrand_strings._rewrite

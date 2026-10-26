@@ -31,23 +31,23 @@ struct WhiskyURLTests {
 
     @Test("A steam app id parses, with and without a bottle")
     func steamForm() {
-        #expect(parse("anowine://launch?steam=1086940") == .steam(appId: 1_086_940, bottle: nil))
+        #expect(parse("ano://launch?steam=1086940") == .steam(appId: 1_086_940, bottle: nil))
         #expect(
-            parse("anowine://launch?steam=1086940&bottle=Steam") == .steam(appId: 1_086_940, bottle: "Steam")
+            parse("ano://launch?steam=1086940&bottle=Steam") == .steam(appId: 1_086_940, bottle: "Steam")
         )
     }
 
     @Test("A pin name parses, with and without a bottle")
     func pinForm() {
-        #expect(parse("anowine://launch?pin=ULTRAKILL") == .pin(name: "ULTRAKILL", bottle: nil))
+        #expect(parse("ano://launch?pin=ULTRAKILL") == .pin(name: "ULTRAKILL", bottle: nil))
         #expect(
-            parse("anowine://launch?pin=ULTRAKILL&bottle=Games") == .pin(name: "ULTRAKILL", bottle: "Games")
+            parse("ano://launch?pin=ULTRAKILL&bottle=Games") == .pin(name: "ULTRAKILL", bottle: "Games")
         )
     }
 
     @Test("A percent-encoded pin name survives parsing")
     func pinNameIsDecoded() {
-        #expect(parse("anowine://launch?pin=Deep%20Rock%20Galactic")
+        #expect(parse("ano://launch?pin=Deep%20Rock%20Galactic")
             == .pin(name: "Deep Rock Galactic", bottle: nil))
     }
 
@@ -55,55 +55,55 @@ struct WhiskyURLTests {
 
     @Test("There is no path form, which is what makes this safe")
     func noPathForm() {
-        #expect(parse("anowine://launch?path=/Users/me/evil.exe") == nil)
-        #expect(parse("anowine://launch?exe=C:%5CWindows%5Csystem32%5Ccmd.exe") == nil)
-        #expect(parse("anowine://launch?program=cmd.exe") == nil)
+        #expect(parse("ano://launch?path=/Users/me/evil.exe") == nil)
+        #expect(parse("ano://launch?exe=C:%5CWindows%5Csystem32%5Ccmd.exe") == nil)
+        #expect(parse("ano://launch?program=cmd.exe") == nil)
     }
 
     @Test("An unknown parameter rejects the whole url rather than the half it knows")
     func unknownParameterIsFatal() {
         // a future form must not degrade into this one on an older build
-        #expect(parse("anowine://launch?steam=1086940&path=/evil.exe") == nil)
-        #expect(parse("anowine://launch?pin=Game&elevate=1") == nil)
+        #expect(parse("ano://launch?steam=1086940&path=/evil.exe") == nil)
+        #expect(parse("ano://launch?pin=Game&elevate=1") == nil)
     }
 
     @Test("Naming both a steam id and a pin is ambiguous, so neither runs")
     func bothFormsAtOnce() {
-        #expect(parse("anowine://launch?steam=1086940&pin=Game") == nil)
+        #expect(parse("ano://launch?steam=1086940&pin=Game") == nil)
     }
 
     @Test("A url that says nothing to launch parses to nothing")
     func emptyRequest() {
-        #expect(parse("anowine://launch") == nil)
-        #expect(parse("anowine://launch?bottle=Steam") == nil)
-        #expect(parse("anowine://launch?pin=") == nil)
+        #expect(parse("ano://launch") == nil)
+        #expect(parse("ano://launch?bottle=Steam") == nil)
+        #expect(parse("ano://launch?pin=") == nil)
     }
 
     @Test("An app id that is not a positive number is refused")
     func malformedAppID() {
-        #expect(parse("anowine://launch?steam=notanumber") == nil)
-        #expect(parse("anowine://launch?steam=") == nil)
-        #expect(parse("anowine://launch?steam=0") == nil)
-        #expect(parse("anowine://launch?steam=-1") == nil)
+        #expect(parse("ano://launch?steam=notanumber") == nil)
+        #expect(parse("ano://launch?steam=") == nil)
+        #expect(parse("ano://launch?steam=0") == nil)
+        #expect(parse("ano://launch?steam=-1") == nil)
     }
 
     @Test("Another scheme or another host is not ours")
     func wrongSchemeOrHost() {
         #expect(parse("steam://launch?steam=1086940") == nil)
-        // Whisky's own scheme belongs to Whisky; AnoWine must not answer it.
+        // Whisky's own scheme belongs to Whisky; Ano must not answer it.
         #expect(parse("whisky://launch?steam=1086940") == nil)
         #expect(parse("https://example.com/launch?steam=1086940") == nil)
-        #expect(parse("anowine://install?steam=1086940") == nil)
-        #expect(parse("anowine://launch/extra?steam=1086940") != nil)
+        #expect(parse("ano://install?steam=1086940") == nil)
+        #expect(parse("ano://launch/extra?steam=1086940") != nil)
     }
 
     @Test("Scheme and host are matched case-insensitively, as the loader hands them over")
     func caseInsensitiveSchemeAndHost() {
-        #expect(parse("ANOWINE://LAUNCH?steam=1086940") == .steam(appId: 1_086_940, bottle: nil))
+        #expect(parse("ANO://LAUNCH?steam=1086940") == .steam(appId: 1_086_940, bottle: nil))
     }
 
     @Test("An empty bottle name is the same as not naming one")
     func emptyBottleIsNoBottle() {
-        #expect(parse("anowine://launch?steam=1086940&bottle=") == .steam(appId: 1_086_940, bottle: nil))
+        #expect(parse("ano://launch?steam=1086940&bottle=") == .steam(appId: 1_086_940, bottle: nil))
     }
 }
