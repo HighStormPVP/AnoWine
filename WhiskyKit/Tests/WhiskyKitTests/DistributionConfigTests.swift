@@ -34,7 +34,9 @@ final class DistributionConfigTests: XCTestCase {
     // MARK: - Version Plist URL Tests
 
     func testVersionPlistURL() {
-        let expectedURL = "https://highstormpvp.github.io/AnoWine/WhiskyWineVersion.plist"
+        // raw.githubusercontent.com, not github.io: some school and work networks block
+        // github.io but allow GitHub itself, and setup must work there.
+        let expectedURL = "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion.plist"
         XCTAssertEqual(DistributionConfig.versionPlistURL, expectedURL)
     }
 
@@ -365,7 +367,7 @@ final class DistributionConfigTests: XCTestCase {
         let versionURL = URL(string: DistributionConfig.versionPlistURL)
         XCTAssertNotNil(versionURL, "Version plist URL should be valid")
         XCTAssertEqual(versionURL?.scheme, "https")
-        XCTAssertEqual(versionURL?.host, "highstormpvp.github.io")
+        XCTAssertEqual(versionURL?.host, "raw.githubusercontent.com")
 
         // Libraries download URL
         let librariesURL = URL(string: DistributionConfig.librariesURL(version: "2.5.0"))
