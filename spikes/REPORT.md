@@ -32,6 +32,8 @@ This confirms the spec's guess (§6.2): DNS and connects happen in **different p
 
 ## 2. Renamed programs — GO
 
+> **2026-11-04:** the programs are now named `ano-loader` and `ano-server` (runtime v3.1.3). The spike below ran with the earlier names `anowine` / `anowine-server`; the recipe is unchanged.
+
 Recipe (used by Task 11):
 - `Wine/bin/wine64` is a **symlink to `wine`**. Rename the real file `wine` → `anowine` and remove `wine64`.
 - `Wine/bin/wineserver` is a real file → rename to `anowine-server`.

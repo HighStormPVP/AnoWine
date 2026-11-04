@@ -21,14 +21,14 @@ import Foundation
 /// Names of the Wine programs in AnoWine's runtime.
 ///
 /// AnoWine's runtime is upstream's with two programs renamed: the loader
-/// (`wine64`, a symlink to `wine` upstream) is `anowine`, and `wineserver` is
-/// `anowine-server`. Wine finds the renamed server through `WINESERVER`, which
+/// (`wine64`, a symlink to `wine` upstream) is `ano-loader`, and `wineserver` is
+/// `ano-server`. Wine finds the renamed server through `WINESERVER`, which
 /// every launch environment sets. See `spikes/REPORT.md`.
 public enum AnoWineRuntime {
     /// The Wine loader every program is launched through.
-    public static let loaderName = "anowine"
+    public static let loaderName = "ano-loader"
     /// The Wine server.
-    public static let serverName = "anowine-server"
+    public static let serverName = "ano-server"
 
     /// The loader inside the installed runtime.
     public static var loaderURL: URL {

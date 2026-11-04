@@ -13,7 +13,7 @@
 # so a launch failure is never mistaken for a rendering problem.
 set -uo pipefail
 
-if [ -z "${WINEPREFIX:-}" ] || ! command -v anowine >/dev/null 2>&1; then
+if [ -z "${WINEPREFIX:-}" ] || ! command -v ano-loader >/dev/null 2>&1; then
   echo "Please run this from Ano's \"Open Terminal\" window for your Steam bottle."
   exit 1
 fi
@@ -23,8 +23,8 @@ if [ ! -f "$STEAM" ]; then
   echo "Pass the path to steam.exe as the first argument."
   exit 1
 fi
-LOADER="$(command -v anowine)"
-SERVER="${WINESERVER:-$(dirname "$LOADER")/anowine-server}"
+LOADER="$(command -v ano-loader)"
+SERVER="${WINESERVER:-$(dirname "$LOADER")/ano-server}"
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/anowine-m2-XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
