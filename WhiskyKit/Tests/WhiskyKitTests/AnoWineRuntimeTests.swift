@@ -59,6 +59,8 @@ final class AnoWineRuntimeTests: XCTestCase {
         try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
             .write(to: tempDir.appending(path: "WhiskyWineVersion").appendingPathExtension("plist"))
         try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "wine64"))
+        // Runtime v3.1.2 named the loader `anowine`; it must be replaced, not reused.
+        try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "anowine"))
 
         XCTAssertFalse(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
 
