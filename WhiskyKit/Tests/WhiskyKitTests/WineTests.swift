@@ -135,7 +135,7 @@ final class WineTests: XCTestCase {
     func testWineStaticPropertiesExist() {
         // Verify static paths exist and are valid URLs
         XCTAssertNotNil(Wine.wineBinary)
-        XCTAssertTrue(Wine.wineBinary.path.contains("anowine"))
+        XCTAssertTrue(Wine.wineBinary.path.contains("ano-loader"))
 
         XCTAssertNotNil(Wine.logsFolder)
         XCTAssertTrue(Wine.logsFolder.path.contains("Logs"))

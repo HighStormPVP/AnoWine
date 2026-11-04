@@ -41,7 +41,7 @@ final class AnoWineIdentityTests: XCTestCase {
     }
 
     /// Whisky installs its CLI as /usr/local/bin/whisky; AnoWine must not
-    /// overwrite it, and must not shadow the `anowine` Wine loader either.
+    /// overwrite it, and must not shadow the `ano-loader` Wine loader either.
     func testCLILinkDoesNotCollide() {
         XCTAssertEqual(AnoWineCLI.linkPath, "/usr/local/bin/ano")
     }

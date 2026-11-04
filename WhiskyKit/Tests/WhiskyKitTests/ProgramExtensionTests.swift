@@ -65,7 +65,7 @@ final class ProgramGenerateTerminalCommandTests: XCTestCase {
         let command = program.generateTerminalCommand()
 
         // Command should contain the renamed loader
-        XCTAssertTrue(command.contains("anowine"), "Command should contain the anowine binary")
+        XCTAssertTrue(command.contains("ano-loader"), "Command should contain the ano-loader binary")
     }
 
     @MainActor
@@ -100,7 +100,7 @@ final class ProgramGenerateTerminalCommandTests: XCTestCase {
         let command = program.generateTerminalCommand(args: "")
 
         // Command should still be valid with empty args
-        XCTAssertTrue(command.contains("anowine"), "Command should still contain anowine")
+        XCTAssertTrue(command.contains("ano-loader"), "Command should still contain ano-loader")
         XCTAssertTrue(command.contains("test_program.exe"), "Command should still contain program")
     }
 
@@ -154,7 +154,7 @@ final class ProgramGenerateTerminalCommandTests: XCTestCase {
         let command = program.generateTerminalCommand(args: [])
 
         // Command should still be valid with empty args array
-        XCTAssertTrue(command.contains("anowine"), "Command should still contain anowine")
+        XCTAssertTrue(command.contains("ano-loader"), "Command should still contain ano-loader")
         XCTAssertTrue(command.contains("test_program.exe"), "Command should still contain program")
     }
 

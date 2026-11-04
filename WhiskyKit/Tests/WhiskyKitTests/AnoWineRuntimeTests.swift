@@ -21,17 +21,17 @@ import XCTest
 
 final class AnoWineRuntimeTests: XCTestCase {
     func testNames() {
-        XCTAssertEqual(AnoWineRuntime.loaderName, "anowine")
-        XCTAssertEqual(AnoWineRuntime.serverName, "anowine-server")
+        XCTAssertEqual(AnoWineRuntime.loaderName, "ano-loader")
+        XCTAssertEqual(AnoWineRuntime.serverName, "ano-server")
     }
 
     func testURLsLiveInTheRuntimeBinFolder() {
-        XCTAssertEqual(AnoWineRuntime.loaderURL, WhiskyWineInstaller.binFolder.appending(path: "anowine"))
-        XCTAssertEqual(AnoWineRuntime.serverURL, WhiskyWineInstaller.binFolder.appending(path: "anowine-server"))
+        XCTAssertEqual(AnoWineRuntime.loaderURL, WhiskyWineInstaller.binFolder.appending(path: "ano-loader"))
+        XCTAssertEqual(AnoWineRuntime.serverURL, WhiskyWineInstaller.binFolder.appending(path: "ano-server"))
     }
 
     func testWineBinaryUsesLoaderName() {
-        XCTAssertEqual(Wine.wineBinary.lastPathComponent, "anowine")
+        XCTAssertEqual(Wine.wineBinary.lastPathComponent, "ano-loader")
     }
 
     @MainActor
@@ -44,7 +44,7 @@ final class AnoWineRuntimeTests: XCTestCase {
         let env = Wine.constructWineEnvironment(for: bottle)
 
         let server = try XCTUnwrap(env["WINESERVER"])
-        XCTAssertTrue(server.hasSuffix("/Libraries/Wine/bin/anowine-server"), server)
+        XCTAssertTrue(server.hasSuffix("/Libraries/Wine/bin/ano-server"), server)
     }
 
     /// A runtime downloaded before the rename (or a partial install) only has
@@ -62,7 +62,7 @@ final class AnoWineRuntimeTests: XCTestCase {
 
         XCTAssertFalse(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
 
-        try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "anowine"))
+        try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "ano-loader"))
         XCTAssertTrue(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
     }
 }
