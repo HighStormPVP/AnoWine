@@ -117,7 +117,7 @@ final class ProxyUpstreamTests: XCTestCase {
         let sock = try upstream.open(to: .domain("steam.example", port: 443))
         defer { close(sock) }
 
-        let request = try String(decoding: XCTUnwrap(server.requests.first), as: UTF8.self)
+        let request = try XCTUnwrap(String(bytes: XCTUnwrap(server.requests.first), encoding: .utf8))
         XCTAssertTrue(request.hasPrefix("CONNECT steam.example:443 HTTP/1.1\r\n"), request)
         XCTAssertTrue(request.contains("Proxy-Authorization: Basic YWxpY2U6c2VjcmV0\r\n"), request)
         ProxyTestServer.write(sock, Array("PING\n".utf8))
