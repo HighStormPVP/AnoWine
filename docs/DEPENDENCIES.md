@@ -9,20 +9,21 @@ See [`ReleaseWorkflow.md`](ReleaseWorkflow.md) for the assembly + publish proced
 [`.github/workflows/RuntimeTrack.yml`](../.github/workflows/RuntimeTrack.yml) for the automation that
 flags when a bundled component falls behind upstream.
 
-## AnoWine runtime `v3.1.4`
+## AnoWine runtime `v3.1.5`
 
 AnoWine publishes its own runtime at
-[HighStormPVP/AnoWine `v3.1.4`](https://github.com/HighStormPVP/AnoWine/releases/tag/v3.1.4):
+[HighStormPVP/AnoWine `v3.1.5`](https://github.com/HighStormPVP/AnoWine/releases/tag/v3.1.5):
 upstream's `v3.1.1` below, unchanged except that `Wine/bin/wine` is renamed `ano-loader`,
 `wineserver` is renamed `ano-server`, and the tool symlinks to `wine` (`wine64`, `winecfg`,
 `regedit`, ...) are removed. The Wine loader `lib/wine/x86_64-unix/wine` is renamed `ano-core`,
-and `ntdll.so` (which starts it by name) is rebuilt from Wine 11.0 with
-`scripts/anowine/patches/ntdll-ano-core.patch` by `scripts/anowine/build-ntdll.sh`. Built by `scripts/anowine/repack-runtime.sh` via
+`wineboot.exe` `ano-boot.exe` and `winedevice.exe` `ano-device.exe`; the modules that start them
+by name (ntdll.so, user32, services, winedbg) and wine.inf are rebuilt from Wine 11.0 with
+`scripts/anowine/patches/*.patch` by `scripts/anowine/build-modules.sh`. Built by `scripts/anowine/repack-runtime.sh` via
 `.github/workflows/AnoWineRuntime.yml`.
 
 | Artifact | SHA-256 |
 |----------|---------|
-| `Libraries.tar.gz` (AnoWine `v3.1.4`) | `2f3f3637e994357610733505ef9180d15993b5d81ef647200c46751112b5fc73` |
+| `Libraries.tar.gz` (AnoWine `v3.1.5`) | `4ce4a504fd368c8ac88fe5cacd64bd1a05bdc40c88dd222469fae35140117f5b` |
 
 ## Bundled in runtime `v3.1.1`
 
