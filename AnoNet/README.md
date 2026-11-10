@@ -10,7 +10,7 @@ Every hook passes straight through when `ANO_PROXY_PORT` is not set.
 
 | Hook | When proxied |
 |---|---|
-| `getaddrinfo`, `gethostbyname`, `gethostbyname2` | Numeric hosts, `localhost` and `*.localhost` go to the real call. Any other name is sent to the helper (`R` frame), which answers with a placeholder in `198.18.0.0/15`. If the helper fails, the lookup fails. The system resolver is never asked. |
+| `getaddrinfo`, `gethostbyname`, `gethostbyname2` | Numeric hosts, `localhost`, `*.localhost`, the Mac's own hostname and `*.local` (Bonjour) names go to the real call. Any other name is sent to the helper (`R` frame), which answers with a placeholder in `198.18.0.0/15`. If the helper fails, the lookup fails. The system resolver is never asked. |
 | `getnameinfo` | Always numeric, so placeholders are never looked up. |
 | `connect` | TCP to a non-loopback address goes to the helper on `127.0.0.1` / `::1`, followed by a `C` frame with the real destination. UDP to a non-loopback address fails with `EACCES`. |
 | `sendto`, `sendmsg` | UDP to a non-loopback address fails with `EACCES`. |

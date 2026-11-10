@@ -6,7 +6,8 @@
  *
  * Every hook passes straight through unless ANO_PROXY_PORT is set. When it is:
  *  - DNS is answered by the helper with placeholder addresses; the system
- *    resolver is never asked for a non-numeric name (fail closed).
+ *    resolver is never asked for an internet name (fail closed). Only the
+ *    Mac's own name, localhost and .local names are resolved locally.
  *  - TCP connects to anything but loopback go to the helper, which tunnels them
  *    through the owner's proxy client.
  *  - UDP to anything but loopback is refused with EACCES.
@@ -198,11 +199,25 @@ static int is_localhost(const char *node)
     return len > 10 && strncasecmp(node + len - 10, ".localhost", 10) == 0;
 }
 
+/* The Mac's own name and other .local (Bonjour) names are answered on this
+ * machine or the local network, never by an internet DNS server, and Wine
+ * needs real answers for them (computer and domain names). */
+static int is_local_name(const char *node)
+{
+    size_t len = strlen(node);
+    if (len && node[len - 1] == '.') len--;
+    if (len > 6 && strncasecmp(node + len - 6, ".local", 6) == 0) return 1;
+    char self[256];
+    if (gethostname(self, sizeof(self)) != 0) return 0;
+    self[sizeof(self) - 1] = 0;
+    return len == strlen(self) && strncasecmp(node, self, len) == 0;
+}
+
 static int ano_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints,
                            struct addrinfo **res)
 {
     int port = proxy_port();
-    if (port < 0 || !node || is_numeric_host(node) || is_localhost(node) ||
+    if (port < 0 || !node || is_numeric_host(node) || is_localhost(node) || is_local_name(node) ||
         (hints && (hints->ai_flags & AI_NUMERICHOST)))
         return getaddrinfo(node, service, hints, res);
     if (hints && hints->ai_family == AF_INET6) return EAI_NONAME;
@@ -220,7 +235,11 @@ static int ano_getaddrinfo(const char *node, const char *service, const struct a
     numeric.ai_addr = NULL;
     numeric.ai_canonname = NULL;
     numeric.ai_next = NULL;
-    return getaddrinfo(text, service, &numeric, res);
+    int result = getaddrinfo(text, service, &numeric, res);
+    /* The proxy resolves the name; as far as the program knows it is canonical. */
+    if (result == 0 && hints && (hints->ai_flags & AI_CANONNAME) && *res && !(*res)->ai_canonname)
+        (*res)->ai_canonname = strdup(node);
+    return result;
 }
 DYLD_INTERPOSE(ano_getaddrinfo, getaddrinfo)
 
@@ -257,7 +276,8 @@ static struct hostent *fake_hostent(int port, const char *name, int af)
 static struct hostent *ano_gethostbyname(const char *name)
 {
     int port = proxy_port();
-    if (port < 0 || !name || is_numeric_host(name) || is_localhost(name)) return gethostbyname(name);
+    if (port < 0 || !name || is_numeric_host(name) || is_localhost(name) || is_local_name(name))
+        return gethostbyname(name);
     return fake_hostent(port, name, AF_INET);
 }
 DYLD_INTERPOSE(ano_gethostbyname, gethostbyname)
@@ -265,7 +285,8 @@ DYLD_INTERPOSE(ano_gethostbyname, gethostbyname)
 static struct hostent *ano_gethostbyname2(const char *name, int af)
 {
     int port = proxy_port();
-    if (port < 0 || !name || is_numeric_host(name) || is_localhost(name)) return gethostbyname2(name, af);
+    if (port < 0 || !name || is_numeric_host(name) || is_localhost(name) || is_local_name(name))
+        return gethostbyname2(name, af);
     return fake_hostent(port, name, af);
 }
 DYLD_INTERPOSE(ano_gethostbyname2, gethostbyname2)
