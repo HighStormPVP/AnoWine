@@ -69,9 +69,6 @@ changed="$(diff "$LIB/Wine/share/wine/wine.inf" "$MODULES/share/wine/wine.inf" |
   install -m 644 "$MODULES/$f" "$LIB/Wine/$f"
 done
 chmod 755 "$UNIX/ntdll.so"
-# Winetricks creates bottles with "${WINE}" wineboot.
-sed -i '' 's/"${WINE}" wineboot$/"${WINE}" ano-boot/' "$LIB/winetricks"
-grep -q '"${WINE}" ano-boot$' "$LIB/winetricks" || { echo "error: winetricks not updated" >&2; exit 1; }
 
 echo "== set runtime version $VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 PLIST="$LIB/WhiskyWineVersion.plist"
