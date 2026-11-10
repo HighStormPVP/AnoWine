@@ -119,6 +119,38 @@ rm -f  ~/Library/Preferences/com.franke.Whisky.plist
 
 If you also installed bottles in a **custom location**, delete those folders too. Migrated bottles that still belong to the original app live under `~/Library/Containers/com.isaacmarovitz.Whisky` and are left untouched by the steps above.
 
+## Proxy (per bottle)
+
+Ano can send a bottle's traffic through a proxy client you already run on your Mac,
+such as Hiddify, v2rayN or plain Xray. Ano doesn't include a proxy server. It connects
+to your client's local SOCKS5 or HTTP port.
+
+1. Find your client's local port. In Hiddify it is in the app's settings
+   (SOCKS5, `127.0.0.1`, port `1080` unless you changed it). In an Xray config it is the
+   `port` of the `socks` or `http` inbound.
+2. In Ano, open **Settings → Proxies**, click **Add Proxy…**, enter the host and port,
+   and click **Test**. It shows the exit IP address.
+3. Select a bottle, open **Network**, and choose the proxy. Ano closes the bottle's
+   running programs so that nothing keeps the old setting.
+
+What a proxied bottle does:
+
+- TCP connections and name lookups from the bottle's Windows programs go through the
+  proxy. Names are resolved by the proxy, not by your Mac's DNS.
+- If the proxy client or Ano's helper isn't running, the bottle has no internet. It
+  never falls back to a direct connection.
+
+What it doesn't do yet:
+
+- **UDP is blocked.** Voice chat and some multiplayer games won't work.
+- **There's no kill switch.** A program that bypasses Ano's interceptor could connect
+  directly.
+- **Winetricks downloads its files without the proxy.**
+- Programs started with the `ano` command-line tool have network only while that
+  command is running.
+
+How it works is described in [AnoNet/README.md](AnoNet/README.md).
+
 ## Telemetry (opt-in)
 
 Whisky sends **no data by default**. During first-run setup you can opt in to

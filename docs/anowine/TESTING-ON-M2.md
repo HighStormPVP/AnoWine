@@ -1,9 +1,10 @@
 # Testing Ano on your Mac
 
-This is the first test build of Ano. It doesn't have the proxy yet. It checks two things:
+This test build of Ano has the first part of the proxy: TCP and name lookups go through your proxy client. UDP is blocked and there's no kill switch yet. The test checks three things:
 
 1. The app installs and runs Steam and games like Whisky does.
-2. The macOS sandbox that the proxy's kill switch will use doesn't break graphics. GitHub's machines can't test that.
+2. Steam works through your proxy client.
+3. The macOS sandbox that the proxy's kill switch will use doesn't break graphics. GitHub's machines can't test that.
 
 It takes about 30–45 minutes, most of it waiting for downloads. Your Whisky install isn't touched: Ano is a separate app with its own bottles.
 
@@ -31,7 +32,19 @@ Ano isn't notarized by Apple yet, so macOS blocks it the first time.
 
 Things to note: anything that looks different from Whisky, and anything that still says "Whisky" in the interface.
 
-## 4. Sandbox check
+## 4. Proxy
+
+1. Make sure your proxy client (Hiddify) is running.
+2. In Ano, open **Settings → Proxies** and click **Add Proxy…**. The form is already filled in for Hiddify: SOCKS5, `127.0.0.1`, port `1080`. Save it.
+3. Click **Test**. It should show an exit IP address that isn't your own.
+4. Quit Steam. Select the Steam bottle, open **Network**, and choose the proxy.
+5. Start Steam again. Log in, open the Store page, and start a download.
+
+Things to note: whether Steam logs in and downloads, anything that doesn't load, and what the **Network** section shows (port, open connections, last error). Voice chat and some multiplayer games won't work yet, because UDP is blocked.
+
+To check that nothing leaks, quit your proxy client while Steam is open. Steam should lose its connection, not carry on.
+
+## 5. Sandbox check
 
 1. Quit Steam.
 2. In Ano, select the Steam bottle and click **Open Terminal**.
@@ -44,9 +57,10 @@ Things to note: anything that looks different from Whisky, and anything that sti
 4. It starts Steam twice: once normally and once inside the sandbox. Each time, wait for Steam to load, open the Store page, and launch your game if you can. Then come back to Terminal, press Return, and answer the three questions.
 5. At the end it prints a short block between two lines. Copy it and send it back.
 
-The sandbox round still allows internet access. The only difference between the two rounds is the sandbox itself, which is what we're testing.
+The sandbox round still allows internet access. The only difference between the two rounds is the sandbox itself, which is what we're testing. You can run this from a proxied bottle: both rounds then go through the proxy.
 
 ## What to send back
 
-- The block from step 4.
+- The block from step 5.
+- What happened in step 4 (proxy).
 - Anything odd from step 3, with screenshots if something looks wrong.
