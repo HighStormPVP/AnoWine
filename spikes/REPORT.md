@@ -34,6 +34,10 @@ This confirms the spec's guess (§6.2): DNS and connects happen in **different p
 
 > **2026-11-04:** the programs are now named `ano-loader` and `ano-server` (runtime v3.1.3). The spike below ran with the earlier names `anowine` / `anowine-server`; the recipe is unchanged.
 
+> **2026-11-10: loader renamed `ano-core` (runtime v3.1.4).** The process every Windows program runs in is `lib/wine/x86_64-unix/wine`, started by `bin/ano-loader` through ntdll.so. Wine 11.0's `loader/main.c` never names itself (it loads `ntdll.so` from its own folder); ntdll.so names it, in `dlls/ntdll/unix/loader.c` lines 466 and 497. So the rename is the file plus an ntdll.so rebuilt with `scripts/anowine/patches/ntdll-ano-core.patch` (`scripts/anowine/build-ntdll.sh`, x86_64 under Rosetta, like the whole runtime).
+> - Which source the shipped ntdll.so came from: plain Wine 11.0. Built side by side, Gcenx's later `llvm-mingw_fixes.patch` adds 36 syscall-wrapper stubs; the shipped ntdll.so has 0, as does the plain build. All builds export the same 287 symbols as the shipped one.
+> - Smoke test (`scripts/anowine/check-ano-core.sh --boot`): before, every Wine process had kernel name `wine`; after, every one (64-bit and syswow64) is `ano-core`, and wineboot succeeds.
+
 Recipe (used by Task 11):
 - `Wine/bin/wine64` is a **symlink to `wine`**. Rename the real file `wine` → `anowine` and remove `wine64`.
 - `Wine/bin/wineserver` is a real file → rename to `anowine-server`.
