@@ -54,14 +54,14 @@ final class ProxySettingsTests: XCTestCase {
         var settings = BottleSettings()
         settings.proxyEnabled = true
         settings.proxyProfileID = UUID()
-        settings.proxyLastPort = 51_234
+        settings.proxyLastPort = 51234
 
         let data = try PropertyListEncoder().encode(settings)
         let decoded = try PropertyListDecoder().decode(BottleSettings.self, from: data)
 
         XCTAssertEqual(decoded, settings)
         XCTAssertTrue(decoded.proxyEnabled)
-        XCTAssertEqual(decoded.proxyLastPort, 51_234)
+        XCTAssertEqual(decoded.proxyLastPort, 51234)
     }
 
     @MainActor
