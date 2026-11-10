@@ -19,7 +19,7 @@ permissions:
 env:
   SHIPPED_RUNTIME: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.3/Libraries.tar.gz
   GCENX_PATCH: https://raw.githubusercontent.com/Gcenx/macports-wine/e7dc06979bf216987f9e6e990fc3b21ee2f69db9/emulators/wine-stable/files/llvm-mingw_fixes.patch
-  GCENX_PATCH_SHA256: 8e31a093274ad71e1490c5a65cf18a6817f8bfb269c9218fb0659f13a4ccff3
+  GCENX_PATCH_SHA256: 8e31a093274ad71e1490c5a65cf18a6817f8bfb269c9218fb0659f13a4ccff34
 
 jobs:
   build:
@@ -50,7 +50,7 @@ jobs:
 
       - name: Build
         run: |
-          xargs bash "$GITHUB_WORKSPACE/scripts/anowine/build-ntdll.sh" "$RUNNER_TEMP/out" < "$RUNNER_TEMP/patches"
+          bash "$GITHUB_WORKSPACE/scripts/anowine/build-ntdll.sh" "$RUNNER_TEMP/out" $(cat "$RUNNER_TEMP/patches")
 
       - name: Compare with the shipped ntdll.so
         run: |
