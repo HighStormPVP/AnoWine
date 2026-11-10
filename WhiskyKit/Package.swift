@@ -28,6 +28,11 @@ let package = Package(
         .library(
             name: "WhiskyKit",
             targets: ["WhiskyKit"]
+        ),
+        // Ano: the proxy helper as a command-line tool, for CI.
+        .executable(
+            name: "ano-proxy",
+            targets: ["ano-proxy"]
         )
     ],
     dependencies: [
@@ -50,6 +55,10 @@ let package = Package(
                 // is gitignored, so a plain checkout copies an empty directory.
                 .copy("Discord/Local")
             ]
+        ),
+        .executableTarget(
+            name: "ano-proxy",
+            dependencies: ["WhiskyKit"]
         ),
         .testTarget(
             name: "WhiskyKitTests",

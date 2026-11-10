@@ -328,7 +328,7 @@ jobs:
         run: swift --version
       
       - name: Build WhiskyKit
-        run: swift build --package-path WhiskyKit
+        run: swift build --package-path WhiskyKit && swift build --package-path WhiskyKit --product ano-proxy
       
       - name: Run Tests with Code Coverage
         run: swift test --package-path WhiskyKit --enable-code-coverage
