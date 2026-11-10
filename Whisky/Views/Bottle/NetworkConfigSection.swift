@@ -62,8 +62,12 @@ struct NetworkConfigSection: View {
         }
         .alert("config.network.restart.title", isPresented: $confirmRestart) {
             Button("config.network.restart.confirm", role: .destructive) {
-                if let pending { service.apply(pending, to: bottle) }
-                pending = nil
+                // If the programs would not close, nothing changed: ask again.
+                if let pending, service.apply(pending, to: bottle) == .stillRunning {
+                    DispatchQueue.main.async { confirmRestart = true }
+                } else {
+                    pending = nil
+                }
             }
             Button("button.cancel", role: .cancel) { pending = nil }
         } message: {
@@ -93,7 +97,7 @@ struct NetworkConfigSection: View {
                 pending = .some(profileID)
                 confirmRestart = true
             } else {
-                service.apply(profileID, to: bottle) { _ in }
+                service.apply(profileID, to: bottle, stopBottle: { _ in }, isRunning: { _ in false })
             }
         }
     }

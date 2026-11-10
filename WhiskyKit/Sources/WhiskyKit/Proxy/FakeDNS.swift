@@ -23,7 +23,9 @@ import Foundation
 /// proxy by hostname, and the proxy resolves it on the far side.
 ///
 /// Addresses come from `198.18.0.0/15`, which is reserved for benchmarking and
-/// never routed on the internet.
+/// never routed on the internet. Each instance starts at a random place in the
+/// range: a program that still holds a placeholder from an earlier helper then
+/// gets a closed connection, not some other name's site.
 public final class FakeDNS: @unchecked Sendable {
     /// `198.18.0.0/15`.
     static let reservedRange: ClosedRange<UInt32> = 0xC612_0000 ... 0xC613_FFFF
@@ -35,9 +37,10 @@ public final class FakeDNS: @unchecked Sendable {
     private var addresses: [String: UInt32] = [:]
     private var names: [UInt32: String] = [:]
 
-    public init(range: ClosedRange<UInt32> = 0xC612_0001 ... 0xC613_FFFE) {
+    /// - Parameter start: The first placeholder to hand out; random when `nil`.
+    public init(range: ClosedRange<UInt32> = 0xC612_0001 ... 0xC613_FFFE, start: UInt32? = nil) {
         self.range = range
-        self.next = range.lowerBound
+        self.next = start.map { min(max($0, range.lowerBound), range.upperBound) } ?? UInt32.random(in: range)
     }
 
     /// The placeholder for `name`, the same one every time; `nil` if the name is
@@ -51,11 +54,8 @@ public final class FakeDNS: @unchecked Sendable {
             let address = next
             addresses[name] = address
             names[address] = name
-            if address == range.upperBound {
-                exhausted = true
-            } else {
-                next = address + 1
-            }
+            next = address == range.upperBound ? range.lowerBound : address + 1
+            exhausted = names[next] != nil
             return address
         }
     }

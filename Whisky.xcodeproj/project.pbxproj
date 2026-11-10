@@ -1003,7 +1003,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Ano: the proxy interceptor that proxied bottles load into Wine (x86_64,\n# like the runtime, which runs under Rosetta). See AnoNet/README.md.\nset -e\nOUT=\"${SCRIPT_OUTPUT_FILE_0}\"\nxcrun clang -arch x86_64 -dynamiclib -O2 -Wall -Werror -mmacosx-version-min=10.15 \\\n  -isysroot \"${SDKROOT}\" -o \"${OUT}\" \"${SCRIPT_INPUT_FILE_0}\"\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"${OUT}\"\n";
+			shellScript = "# Ano: the proxy interceptor that proxied bottles load into Wine (x86_64,\n# like the runtime, which runs under Rosetta). See AnoNet/README.md.\nset -e\nOUT=\"${SCRIPT_OUTPUT_FILE_0}\"\nxcrun clang -arch x86_64 -dynamiclib -O2 -Wall -Werror -mmacosx-version-min=10.15 \\\n  -isysroot \"${SDKROOT}\" -o \"${OUT}\" \"${SCRIPT_INPUT_FILE_0}\" -lresolv\ncodesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"${OUT}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

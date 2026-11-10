@@ -21,12 +21,18 @@ import os.log
 
 private let proxyLogger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "Proxy")
 
-/// Runs one helper (``ProxyListener``) per proxied bottle, inside the process
-/// that launches the bottle's programs. Programs lose their network when it
-/// stops; they never fall back to a direct connection.
+/// Runs one helper (``ProxyListener``) per proxied bottle, inside the Ano app.
+/// Programs lose their network when it stops; they never fall back to a direct
+/// connection.
+///
+/// Only the app hosts helpers. The command-line tool exits long before the
+/// programs it starts, so there the service only reports the port the app's
+/// helper last used: with the app closed, a proxied bottle has no network.
 @MainActor
 public final class ProxyService: ObservableObject {
-    public static let shared = ProxyService(profileStore: .shared)
+    public static let shared = ProxyService(
+        profileStore: .shared, hosting: Bundle.main.bundleURL.pathExtension == "app"
+    )
 
     private struct Running {
         let profileID: UUID
@@ -34,10 +40,29 @@ public final class ProxyService: ObservableObject {
     }
 
     private let profileStore: ProxyProfileStore
+    private let hosting: Bool
     private var running: [URL: Running] = [:]
+    private var tables: [URL: FakeDNS] = [:]
 
-    public init(profileStore: ProxyProfileStore) {
+    /// - Parameter hosting: Whether this process runs helpers (the app) or only
+    ///   points at the app's (the command-line tool).
+    public init(profileStore: ProxyProfileStore, hosting: Bool = true) {
         self.profileStore = profileStore
+        self.hosting = hosting
+    }
+
+    /// The bottle's placeholder table. It outlives helper restarts, so a
+    /// placeholder a running program holds keeps meaning the same name.
+    func placeholders(for bottle: Bottle) -> FakeDNS {
+        if let table = tables[bottle.url] { return table }
+        let table = FakeDNS()
+        tables[bottle.url] = table
+        return table
+    }
+
+    /// Forgets the bottle's placeholders, for when its programs have been stopped.
+    func forgetPlaceholders(bottleURL: URL) {
+        tables[bottleURL] = nil
     }
 
     /// The helper port for a proxied bottle, starting the helper if needed.
@@ -46,6 +71,7 @@ public final class ProxyService: ObservableObject {
     /// - Returns: `nil` if the bottle's profile is missing or the helper cannot listen.
     public func port(for bottle: Bottle) -> UInt16? {
         guard let profileID = bottle.settings.proxyProfileID else { return nil }
+        guard hosting else { return bottle.settings.proxyLastPort }
         if let existing = running[bottle.url], existing.profileID == profileID {
             return existing.listener.status.port
         }
@@ -54,7 +80,7 @@ public final class ProxyService: ObservableObject {
             proxyLogger.error("Proxy profile for bottle '\(bottle.settings.name, privacy: .public)' is missing")
             return nil
         }
-        let listener = ProxyListener(upstream: upstream)
+        let listener = ProxyListener(upstream: upstream, dns: placeholders(for: bottle))
         do {
             let port = try listener.start(preferredPort: bottle.settings.proxyLastPort)
             running[bottle.url] = Running(profileID: profileID, listener: listener)

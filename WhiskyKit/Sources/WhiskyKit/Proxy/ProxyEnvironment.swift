@@ -108,7 +108,12 @@ public enum ProxyEnvironment {
     ) -> (variables: [String: String], pathPrefix: String?) {
         guard bottle.settings.proxyEnabled else { return ([:], nil) }
         _ = try? installWrapper()
-        return (variables(port: proxyPort(bottle)), wrapperFolder.path(percentEncoded: false))
+        var additions = variables(port: proxyPort(bottle))
+        // Winetricks reads the Wine binary to learn its architecture; the wrapper
+        // is a script, so point it at the real loader (it still runs `ano-loader`
+        // from PATH, which is the wrapper).
+        additions["WINE_BIN"] = AnoWineRuntime.loaderURL.path(percentEncoded: false)
+        return (additions, wrapperFolder.path(percentEncoded: false))
     }
 
     /// `environment` with ``shellAdditions(for:proxyPort:)`` applied.

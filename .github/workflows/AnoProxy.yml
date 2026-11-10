@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/bin"
           clang -arch x86_64 -dynamiclib -O2 -Wall -Werror -mmacosx-version-min=10.15 \
-            -o "$RUNNER_TEMP/bin/libano_net.dylib" "$GITHUB_WORKSPACE/AnoNet/ano_net.c"
+            -o "$RUNNER_TEMP/bin/libano_net.dylib" "$GITHUB_WORKSPACE/AnoNet/ano_net.c" -lresolv
           clang -arch x86_64 -O2 -Wall -mmacosx-version-min=10.15 \
             -o "$RUNNER_TEMP/bin/interposer_native" "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/interposer_native.c" -lresolv
           lipo -archs "$RUNNER_TEMP/bin/libano_net.dylib"

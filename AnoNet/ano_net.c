@@ -8,6 +8,8 @@
  *  - DNS is answered by the helper with placeholder addresses; the system
  *    resolver is never asked for an internet name (fail closed). Only the
  *    Mac's own name, localhost and .local names are resolved locally.
+ *  - Lookups that bypass getaddrinfo (gethostbyaddr, res_query and friends,
+ *    DNSServiceQueryRecord, DNSServiceGetAddrInfo) are refused.
  *  - TCP connects to anything but loopback go to the helper, which tunnels them
  *    through the owner's proxy client.
  *  - UDP to anything but loopback is refused with EACCES.
@@ -19,12 +21,17 @@
  */
 
 #include <arpa/inet.h>
+#include <arpa/nameser.h>
 #include <dlfcn.h>
+#include <dns_sd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <resolv.h>
 #include <spawn.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -303,6 +310,89 @@ static int ano_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *hos
 }
 DYLD_INTERPOSE(ano_getnameinfo, getnameinfo)
 
+/* Lookups that do not go through getaddrinfo would reach the Mac's DNS server
+ * (often from another process, mDNSResponder, where blocking UDP here cannot
+ * stop them). There is no proxied answer for them yet, so they fail. */
+
+static struct hostent *ano_gethostbyaddr(const void *addr, socklen_t len, int type)
+{
+    int loopback = addr && ((type == AF_INET && len >= 4 && *(const unsigned char *)addr == 127) ||
+                            (type == AF_INET6 && len >= 16 && IN6_IS_ADDR_LOOPBACK((const struct in6_addr *)addr)));
+    if (proxy_port() < 0 || loopback) return gethostbyaddr(addr, len, type);
+    h_errno = HOST_NOT_FOUND;
+    return NULL;
+}
+DYLD_INTERPOSE(ano_gethostbyaddr, gethostbyaddr)
+
+static int ano_res_query(const char *name, int class, int type, unsigned char *answer, int anslen)
+{
+    if (proxy_port() < 0) return res_query(name, class, type, answer, anslen);
+    h_errno = TRY_AGAIN;
+    return -1;
+}
+DYLD_INTERPOSE(ano_res_query, res_query)
+
+static int ano_res_search(const char *name, int class, int type, unsigned char *answer, int anslen)
+{
+    if (proxy_port() < 0) return res_search(name, class, type, answer, anslen);
+    h_errno = TRY_AGAIN;
+    return -1;
+}
+DYLD_INTERPOSE(ano_res_search, res_search)
+
+static int ano_res_send(const unsigned char *msg, int msglen, unsigned char *answer, int anslen)
+{
+    if (proxy_port() < 0) return res_send(msg, msglen, answer, anslen);
+    h_errno = TRY_AGAIN;
+    return -1;
+}
+DYLD_INTERPOSE(ano_res_send, res_send)
+
+static int ano_res_nquery(res_state state, const char *name, int class, int type, unsigned char *answer, int anslen)
+{
+    if (proxy_port() < 0) return res_nquery(state, name, class, type, answer, anslen);
+    h_errno = TRY_AGAIN;
+    return -1;
+}
+DYLD_INTERPOSE(ano_res_nquery, res_nquery)
+
+static int ano_res_nsearch(res_state state, const char *name, int class, int type, unsigned char *answer,
+                           int anslen)
+{
+    if (proxy_port() < 0) return res_nsearch(state, name, class, type, answer, anslen);
+    h_errno = TRY_AGAIN;
+    return -1;
+}
+DYLD_INTERPOSE(ano_res_nsearch, res_nsearch)
+
+static int ano_res_nsend(res_state state, const unsigned char *msg, int msglen, unsigned char *answer, int anslen)
+{
+    if (proxy_port() < 0) return res_nsend(state, msg, msglen, answer, anslen);
+    h_errno = TRY_AGAIN;
+    return -1;
+}
+DYLD_INTERPOSE(ano_res_nsend, res_nsend)
+
+static DNSServiceErrorType ano_DNSServiceQueryRecord(DNSServiceRef *ref, DNSServiceFlags flags, uint32_t interface,
+                                                     const char *fullname, uint16_t rrtype, uint16_t rrclass,
+                                                     DNSServiceQueryRecordReply callback, void *context)
+{
+    if (proxy_port() < 0 || (fullname && is_local_name(fullname)))
+        return DNSServiceQueryRecord(ref, flags, interface, fullname, rrtype, rrclass, callback, context);
+    return kDNSServiceErr_Refused;
+}
+DYLD_INTERPOSE(ano_DNSServiceQueryRecord, DNSServiceQueryRecord)
+
+static DNSServiceErrorType ano_DNSServiceGetAddrInfo(DNSServiceRef *ref, DNSServiceFlags flags, uint32_t interface,
+                                                     DNSServiceProtocol protocol, const char *hostname,
+                                                     DNSServiceGetAddrInfoReply callback, void *context)
+{
+    if (proxy_port() < 0 || (hostname && (is_local_name(hostname) || is_localhost(hostname))))
+        return DNSServiceGetAddrInfo(ref, flags, interface, protocol, hostname, callback, context);
+    return kDNSServiceErr_Refused;
+}
+DYLD_INTERPOSE(ano_DNSServiceGetAddrInfo, DNSServiceGetAddrInfo)
+
 /* ---- TCP and UDP ---------------------------------------------------------- */
 
 static int ano_connect(int fd, const struct sockaddr *addr, socklen_t len)
@@ -445,12 +535,40 @@ DYLD_INTERPOSE(ano_getpeername, getpeername)
 
 /* ---- starting programs ---------------------------------------------------- */
 
+static int path_under(const char *path, const char *dir)
+{
+    size_t len = strlen(dir);
+    return len && strncmp(path, dir, len) == 0 && path[len] == '/';
+}
+
+/* Whether `path` is inside the runtime's Wine folder, however either path is
+ * written: Wine re-executes itself by resolved path, and the folder may be
+ * reached through a symlink. */
 static int inside_wine(const char *path)
 {
     const char *dir = getenv("ANO_WINE_DIR");
     if (!path || !dir || !*dir) return 0;
-    size_t len = strlen(dir);
-    return strncmp(path, dir, len) == 0 && path[len] == '/';
+    if (path_under(path, dir)) return 1;
+    char real_dir[PATH_MAX], real_path[PATH_MAX];
+    if (!realpath(dir, real_dir)) return 0;
+    if (path_under(path, real_dir)) return 1;
+    return realpath(path, real_path) && path_under(real_path, real_dir);
+}
+
+/* The file posix_spawnp would run for a bare name; `file` itself otherwise. */
+static const char *search_path(const char *file, char *buf, size_t size)
+{
+    if (!file || strchr(file, '/')) return file;
+    const char *path = getenv("PATH");
+    if (!path) return file;
+    while (*path) {
+        size_t len = strcspn(path, ":");
+        if (len && snprintf(buf, size, "%.*s/%s", (int)len, path, file) < (int)size && access(buf, X_OK) == 0)
+            return buf;
+        path += len;
+        if (*path == ':') path++;
+    }
+    return file;
 }
 
 /* envp without DYLD_INSERT_LIBRARIES, or envp itself when `path` is Wine's.
@@ -485,6 +603,8 @@ DYLD_INTERPOSE(ano_posix_spawn, posix_spawn)
 static int ano_posix_spawnp(pid_t *pid, const char *file, const posix_spawn_file_actions_t *actions,
                             const posix_spawnattr_t *attr, char *const argv[], char *const envp[])
 {
-    return posix_spawnp(pid, file, actions, attr, argv, environment_for(file, envp));
+    char found[PATH_MAX];
+    return posix_spawnp(pid, file, actions, attr, argv,
+                        environment_for(search_path(file, found, sizeof(found)), envp));
 }
 DYLD_INTERPOSE(ano_posix_spawnp, posix_spawnp)
