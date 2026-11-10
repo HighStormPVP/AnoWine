@@ -111,7 +111,8 @@ extension Winetricks {
     private static func configureInstallProcess(
         verb: String,
         bottleURL: URL,
-        resourcesURL: URL
+        resourcesURL: URL,
+        proxy: (variables: [String: String], pathPrefix: String?)
     ) -> Process {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -123,7 +124,7 @@ extension Winetricks {
         }
         arguments.append(verb)
         process.arguments = arguments
-        process.environment = [
+        process.environment = ProxyEnvironment.applying(proxy, to: [
             "WINEPREFIX": bottleURL.path(percentEncoded: false),
             "WINE": AnoWineRuntime.loaderName,
             "WINESERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
@@ -134,7 +135,7 @@ extension Winetricks {
                 "/bin"
             ].joined(separator: ":"),
             "HOME": NSHomeDirectory()
-        ]
+        ])
         return process
     }
 
@@ -166,7 +167,7 @@ extension Winetricks {
     ) async {
         continuation.yield(.preparing)
 
-        let bottleURL = await MainActor.run { bottle.url }
+        let (bottleURL, proxy) = await MainActor.run { (bottle.url, ProxyEnvironment.shellAdditions(for: bottle)) }
 
         guard let resourcesURL = Bundle.main.url(
             forResource: "cabextract",
@@ -179,7 +180,9 @@ extension Winetricks {
             return
         }
 
-        let process = configureInstallProcess(verb: verb, bottleURL: bottleURL, resourcesURL: resourcesURL)
+        let process = configureInstallProcess(
+            verb: verb, bottleURL: bottleURL, resourcesURL: resourcesURL, proxy: proxy
+        )
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
         process.standardOutput = stdoutPipe

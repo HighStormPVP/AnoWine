@@ -19,15 +19,16 @@
 // The proxy helper as a command-line tool, for CI: the app runs the same
 // engine in-process. Usage:
 //   ano-proxy (--socks5|--http) HOST:PORT [--user U] [--password-env VAR] [--port N]
+//   ano-proxy --write-wrapper DIR   (writes DIR/ano-loader and prints its path)
 
 import Darwin
 import Foundation
 import WhiskyKit
 
 func usage() -> Never {
-    FileHandle.standardError.write(Data(
-        "usage: ano-proxy (--socks5|--http) HOST:PORT [--user U] [--password-env VAR] [--port N]\n".utf8
-    ))
+    let text = "usage: ano-proxy (--socks5|--http) HOST:PORT [--user U] [--password-env VAR] [--port N]\n"
+        + "       ano-proxy --write-wrapper DIR\n"
+    FileHandle.standardError.write(Data(text.utf8))
     exit(2)
 }
 
@@ -48,6 +49,16 @@ while let argument = arguments.next() {
         password = arguments.next().flatMap { ProcessInfo.processInfo.environment[$0] }
     case "--port":
         port = arguments.next().flatMap { UInt16($0) }
+    case "--write-wrapper":
+        guard let folder = arguments.next() else { usage() }
+        do {
+            let wrapper = try ProxyEnvironment.installWrapper(in: URL(filePath: folder))
+            print(wrapper.path(percentEncoded: false))
+            exit(0)
+        } catch {
+            FileHandle.standardError.write(Data("ano-proxy: cannot write wrapper: \(error)\n".utf8))
+            exit(1)
+        }
     default:
         usage()
     }

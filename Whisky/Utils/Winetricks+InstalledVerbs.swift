@@ -32,7 +32,7 @@ extension Winetricks {
     /// - Parameter bottle: The bottle whose prefix to query.
     /// - Returns: A set of installed verb names, or `nil` if the process fails or times out.
     static func listInstalledVerbs(for bottle: Bottle) async -> Set<String>? {
-        let bottleURL = await MainActor.run { bottle.url }
+        let (bottleURL, proxy) = await MainActor.run { (bottle.url, ProxyEnvironment.shellAdditions(for: bottle)) }
         logger.debug("Running winetricks list-installed for bottle at \(bottleURL.path)")
 
         guard let resourcesURL = Bundle.main.url(forResource: "cabextract", withExtension: nil)?
@@ -46,7 +46,7 @@ extension Winetricks {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
         process.arguments = ["bash", winetricksPath, "list-installed"]
-        process.environment = [
+        process.environment = ProxyEnvironment.applying(proxy, to: [
             "WINEPREFIX": bottleURL.path(percentEncoded: false),
             "WINE": AnoWineRuntime.loaderName,
             "WINESERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
@@ -57,7 +57,7 @@ extension Winetricks {
                 "/bin"
             ].joined(separator: ":"),
             "HOME": NSHomeDirectory()
-        ]
+        ])
 
         let stdout = Pipe()
         process.standardOutput = stdout

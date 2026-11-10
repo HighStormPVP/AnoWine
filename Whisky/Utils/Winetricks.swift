@@ -124,16 +124,23 @@ class Winetricks {
     @MainActor
     private static func writeTerminalScript(command: String, bottle: Bottle, resourcesURL: URL) throws -> URL {
         let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        let pathValue = "\(WhiskyWineInstaller.binFolder.path):\(resourcesURL.path(percentEncoded: false))"
-        let scriptContent = [
+        // A proxied bottle's winetricks reaches Wine through the proxy wrapper.
+        let proxy = ProxyEnvironment.shellAdditions(for: bottle)
+        let pathValue = ([proxy.pathPrefix].compactMap { $0 } + [
+            WhiskyWineInstaller.binFolder.path, resourcesURL.path(percentEncoded: false)
+        ]).joined(separator: ":")
+        let proxyExports = proxy.variables.sorted { $0.key < $1.key }
+            .map { "export " + ShellQuoting.assignment($0.key, $0.value) }
+        let scriptContent = ([
             "#!/bin/bash",
             "export PATH=\(ShellQuoting.quoted(pathValue)):\"$PATH\"",
             "export WINE=\(AnoWineRuntime.loaderName)",
             "export " + ShellQuoting.assignment("WINESERVER", AnoWineRuntime.serverURL.path(percentEncoded: false)),
-            "export " + ShellQuoting.assignment("WINEPREFIX", bottle.url.path(percentEncoded: false)),
+            "export " + ShellQuoting.assignment("WINEPREFIX", bottle.url.path(percentEncoded: false))
+        ] + proxyExports + [
             ShellQuoting.commandLine(["bash", winetricksPath, command]),
             ""
-        ].joined(separator: "\n")
+        ]).joined(separator: "\n")
 
         let scriptURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("whisky-winetricks-\(UUID().uuidString).sh")

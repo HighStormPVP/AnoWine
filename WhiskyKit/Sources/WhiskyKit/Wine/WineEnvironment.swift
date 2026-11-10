@@ -57,7 +57,8 @@ extension Wine {
         programSettings: ProgramSettings? = nil,
         gameProfileEnvironment: [String: String] = [:],
         recommendedBackend: GraphicsBackend? = nil,
-        builtinD3D12IsD3DMetal: Bool = GPTKImporter.isDeployed()
+        builtinD3D12IsD3DMetal: Bool = GPTKImporter.isDeployed(),
+        proxyPort: @MainActor (Bottle) -> UInt16? = { ProxyService.shared.port(for: $0) }
     ) -> [String: String] {
         var builder = EnvironmentBuilder()
         var dllResolver = DLLOverrideResolver(managed: [], bottleCustom: [], programCustom: [])
@@ -160,6 +161,11 @@ extension Wine {
         // Layer 8: featureRuntime -- diagnostic WINEDEBUG preset override
         if let preset = programSettings?.activeWineDebugPreset, preset != .normal {
             builder.set("WINEDEBUG", preset.winedebugValue, layer: .featureRuntime)
+        }
+        // Ano proxy: where the interceptor finds the helper. DYLD_INSERT_LIBRARIES
+        // is added later, only for the process that runs Wine itself.
+        if bottle.settings.proxyEnabled {
+            builder.setAll(ProxyEnvironment.variables(port: proxyPort(bottle)), layer: .featureRuntime)
         }
 
         // Layer 9: callsiteOverride is left empty (populated by direct callers)

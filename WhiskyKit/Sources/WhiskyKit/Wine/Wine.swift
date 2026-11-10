@@ -102,7 +102,7 @@ public class Wine {
         process.executableURL = executableURL
         process.arguments = args
         process.currentDirectoryURL = directory ?? executableURL.deletingLastPathComponent()
-        process.environment = environment
+        process.environment = ProxyEnvironment.launchEnvironment(environment, executable: executableURL)
         process.qualityOfService = .userInitiated
 
         return try process.runStream(
@@ -587,8 +587,17 @@ public class Wine {
         WineUserProfile.reconcile(bottleURL: bottle.url)
         let wineEnv = constructWineEnvironment(for: bottle, environment: environment)
         return shellCommand(
-            "\(wineBinary.esc) start /unix \(url.esc) \(escapedArgs)", environment: wineEnv
+            "\(loader(for: wineEnv, default: wineBinary).esc) start /unix \(url.esc) \(escapedArgs)",
+            environment: wineEnv
         )
+    }
+
+    /// The loader a shell command runs: the proxy wrapper for a proxied
+    /// environment (a shell must not carry the interceptor itself), else `binary`.
+    static func loader(for environment: [String: String], default binary: URL) -> URL {
+        guard environment[ProxyEnvironment.portKey] != nil else { return binary }
+        return (try? ProxyEnvironment.installWrapper())
+            ?? ProxyEnvironment.wrapperFolder.appending(path: AnoWineRuntime.loaderName)
     }
 
     /// Generates the shell command for a launch that has already been prepared.
@@ -608,7 +617,8 @@ public class Wine {
     ///   - wineBinary: The `wine64` the command runs. Tests substitute a stub.
     /// - Returns: A shell-safe command string ready for execution.
     static func generateRunCommand(for launch: PreparedLaunch, wineBinary: URL = Wine.wineBinary) -> String {
-        var words = [wineBinary.path(percentEncoded: false)] + launch.arguments
+        var words = [loader(for: launch.environment, default: wineBinary).path(percentEncoded: false)]
+            + launch.arguments
         if launch.environment["WINEDLLOVERRIDES"] == nil {
             words = ["env", "-u", "WINEDLLOVERRIDES"] + words
         }
@@ -670,8 +680,17 @@ public class Wine {
     /// Split out of ``generateTerminalEnvironmentCommand(bottle:)`` so tests can point the
     /// bin folder at a path the installer never uses.
     static func generateTerminalEnvironmentCommand(binFolder: URL, environment: [String: String]) -> String {
+        // A proxied bottle's shell finds the wrapper before the real ano-loader,
+        // and never exports the interceptor itself (native tools abort with it).
+        var path = ShellQuoting.quoted(binFolder.path)
+        var environment = environment
+        environment["DYLD_INSERT_LIBRARIES"] = nil
+        if environment[ProxyEnvironment.portKey] != nil {
+            let wrapper = loader(for: environment, default: Wine.wineBinary).deletingLastPathComponent()
+            path = ShellQuoting.quoted(wrapper.path(percentEncoded: false)) + ":" + path
+        }
         var cmd = """
-        export PATH=\(ShellQuoting.quoted(binFolder.path)):\"$PATH\"
+        export PATH=\(path):\"$PATH\"
         export WINE=\"ano-loader\"
         alias wine=\"ano-loader\"
         alias winecfg=\"ano-loader winecfg\"
