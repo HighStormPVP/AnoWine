@@ -1,0 +1,20 @@
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -463,7 +463,7 @@
+         if (!(dll_dir = remove_tail( ntdll_dir, get_so_dir(current_machine) ))) dll_dir = ntdll_dir;
+         bin_dir = build_relative_path( dll_dir, LIBDIR "/wine", BINDIR );
+         data_dir = build_relative_path( dll_dir, LIBDIR "/wine", DATADIR "/wine" );
+-        wineloader = build_path( ntdll_dir, "wine" );
++        wineloader = build_path( ntdll_dir, "ano-core" );
+     }
+ 
+     set_dll_path();
+@@ -494,7 +494,7 @@
+     }
+ 
+     if (!build_dir)
+-        asprintf( &ret, "%s%s/wine", dll_dir, get_so_dir( machine ));
++        asprintf( &ret, "%s%s/ano-core", dll_dir, get_so_dir( machine ));
+     else if (alt_build_dir)
+         asprintf( &ret, "%s/loader/wine", alt_build_dir );
+ 

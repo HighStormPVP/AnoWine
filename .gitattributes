@@ -10,3 +10,4 @@
 *.plist    text eol=lf
 *.xcstrings text eol=lf
 *.json     text eol=lf
+*.patch    text eol=lf
