@@ -1,7 +1,8 @@
 name: AnoWine Runtime
 
-# Builds AnoWine's Wine runtime (upstream's with renamed programs), smoke-tests
-# it, optionally publishes it as release v3.1.3, and checks that the Pages
+# Builds AnoWine's Wine runtime (upstream's with renamed programs and the
+# Wine loader renamed ano-core, which needs a rebuilt ntdll.so), smoke-tests
+# it, optionally publishes it as release v3.1.4, and checks that the Pages
 # plist advertises the published asset's exact digest.
 
 on:
@@ -11,12 +12,14 @@ on:
       - 'scripts/anowine/repack-runtime.sh'
       - 'scripts/anowine/check-runtime-digest.sh'
       - 'scripts/anowine/check-ano-core.sh'
+      - 'scripts/anowine/build-ntdll.sh'
+      - 'scripts/anowine/patches/**'
       - 'dist/pages/WhiskyWineVersion.plist'
       - '.github/workflows/AnoWineRuntime.yml'
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish the built runtime as release v3.1.3'
+        description: 'Publish the built runtime as release v3.1.4'
         type: boolean
         default: false
 
@@ -24,8 +27,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build and smoke-test runtime
+  ntdll:
+    name: Build ntdll.so that starts ano-core
     runs-on: macos-15
     steps:
       - name: Checkout
@@ -34,8 +37,36 @@ jobs:
       - name: Rosetta
         run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
 
+      - name: Build
+        run: |
+          bash "$GITHUB_WORKSPACE/scripts/anowine/build-ntdll.sh" "$RUNNER_TEMP/ntdll"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ntdll-ano-core.patch"
+
+      - name: Upload ntdll.so
+        uses: actions/upload-artifact@v7
+        with:
+          name: ntdll-ano-core
+          path: ${{ runner.temp }}/ntdll/ntdll.so
+          if-no-files-found: error
+
+  build:
+    name: Build and smoke-test runtime
+    needs: ntdll
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      - name: Download ntdll.so
+        uses: actions/download-artifact@v8
+        with:
+          name: ntdll-ano-core
+          path: ${{ runner.temp }}/ntdll
+
       - name: Repack
-        run: bash "$GITHUB_WORKSPACE/scripts/anowine/repack-runtime.sh" "$RUNNER_TEMP/out"
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/repack-runtime.sh" "$RUNNER_TEMP/out" "$RUNNER_TEMP/ntdll/ntdll.so"
 
       - name: Smoke test - boot a prefix with the renamed programs
         run: |
@@ -51,7 +82,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish release v3.1.3
+    name: Publish release v3.1.4
     needs: build
     if: github.event_name == 'workflow_dispatch' && inputs.publish
     runs-on: ubuntu-latest
@@ -69,9 +100,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sha256sum out/Libraries.tar.gz
-          gh release create v3.1.3 --repo "$GITHUB_REPOSITORY" \
-            --title "AnoWine Wine runtime v3.1.3" \
-            --notes "Upstream frankea/Whisky runtime v3.1.1 (Wine 11.0) with wine64/wine renamed to ano-loader and wineserver to ano-server. SHA-256: $(sha256sum out/Libraries.tar.gz | cut -d' ' -f1)" \
+          gh release create v3.1.4 --repo "$GITHUB_REPOSITORY" \
+            --title "AnoWine Wine runtime v3.1.4" \
+            --notes "Upstream frankea/Whisky runtime v3.1.1 (Wine 11.0) with wine64/wine renamed to ano-loader, wineserver to ano-server, and the loader lib/wine/x86_64-unix/wine to ano-core (ntdll.so rebuilt from Wine 11.0 with scripts/anowine/patches/ntdll-ano-core.patch). SHA-256: $(sha256sum out/Libraries.tar.gz | cut -d' ' -f1)" \
             out/Libraries.tar.gz
 
   digest:

@@ -1,21 +1,26 @@
 #!/bin/bash
 # Builds AnoWine's Wine runtime: upstream's published Libraries.tar.gz with the
-# two Wine programs renamed (wine64/wine -> ano-loader, wineserver -> ano-server).
-# Recipe and evidence: spikes/REPORT.md section 2.
+# two Wine programs renamed (wine64/wine -> ano-loader, wineserver -> ano-server)
+# and the Wine loader lib/wine/x86_64-unix/wine renamed ano-core. ntdll.so starts
+# that loader by name, so it is replaced with one built by build-ntdll.sh with
+# patches/ntdll-ano-core.patch. Recipe and evidence: spikes/REPORT.md section 2.
 #
-# Usage: scripts/anowine/repack-runtime.sh <out-dir>
+# Usage: scripts/anowine/repack-runtime.sh <out-dir> <ano-core ntdll.so>
 # Produces <out-dir>/Libraries.tar.gz and prints its SHA-256. macOS only
 # (PlistBuddy, BSD tar). Fails closed on any unexpected layout.
 set -euo pipefail
 
-OUT="$(mkdir -p "${1:?usage: repack-runtime.sh <out-dir>}" && cd "$1" && pwd)"
+OUT="$(mkdir -p "${1:?usage: repack-runtime.sh <out-dir> <ntdll.so>}" && cd "$1" && pwd)"
+NTDLL="$(cd "$(dirname "${2:?usage: repack-runtime.sh <out-dir> <ntdll.so>}")" && pwd)/$(basename "$2")"
+grep -aq "%s%s/ano-core" "$NTDLL" || { echo "error: $NTDLL does not start ano-core" >&2; exit 1; }
 
 # ---- pinned inputs ----------------------------------------------------------
 BASE_URL="https://github.com/frankea/Whisky/releases/download/v3.1.1/Libraries.tar.gz"
 BASE_SHA256="01f3a1b43b98065fe20c529c1023b61dd79a6d2ad93bba6040865f646481ccf3"
-VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=3
+VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=4
 LOADER=ano-loader
 SERVER=ano-server
+CORE=ano-core
 # -----------------------------------------------------------------------------
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/anowine-runtime-XXXXXX")"
@@ -39,6 +44,13 @@ find "$BIN" -type l -exec sh -c '[ "$(readlink "$1")" = wine ] && rm "$1" && ech
 mv "$BIN/wine" "$BIN/$LOADER"
 mv "$BIN/wineserver" "$BIN/$SERVER"
 
+echo "== rename the Wine loader to $CORE and install its ntdll.so"
+UNIX="$LIB/Wine/lib/wine/x86_64-unix"
+[ -f "$UNIX/wine" ] && [ ! -L "$UNIX/wine" ] || { echo "error: expected real file lib/wine/x86_64-unix/wine" >&2; exit 1; }
+mv "$UNIX/wine" "$UNIX/$CORE"
+cp "$NTDLL" "$UNIX/ntdll.so"
+chmod 755 "$UNIX/ntdll.so"
+
 echo "== set runtime version $VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 PLIST="$LIB/WhiskyWineVersion.plist"
 PB=/usr/libexec/PlistBuddy
@@ -57,6 +69,7 @@ done
 dangling="$(find "$LIB" -type l ! -exec test -e {} \; -print)"
 [ -z "$dangling" ] || { echo "error: dangling symlinks:" >&2; echo "$dangling" >&2; fail=1; }
 [ "$fail" -eq 0 ] || exit 1
+bash "$(dirname "$0")/check-ano-core.sh" "$LIB"
 ls -la "$BIN"
 
 echo "== repack"
