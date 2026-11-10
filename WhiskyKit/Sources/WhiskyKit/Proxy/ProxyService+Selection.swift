@@ -64,6 +64,14 @@ public extension ProxyService {
         return .applied
     }
 
+    /// Starts the helper of every proxied bottle, so it is there before the
+    /// first launch from inside the app.
+    func startHelpers(for bottles: [Bottle]) {
+        for bottle in bottles where bottle.isAvailable && bottle.settings.proxyEnabled {
+            _ = port(for: bottle)
+        }
+    }
+
     /// Whether the bottle's Wine server is alive, asked the way Wine does
     /// (`ano-server -k0` succeeds only if there is one). Waits up to a second
     /// for a server that is on its way out.

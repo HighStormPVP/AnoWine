@@ -102,16 +102,6 @@ final class BottleVM: ObservableObject {
         let inFlight = Dictionary(bottles.filter(\.inFlight).map { ($0.url, $0) }) { first, _ in first }
         bottles = bottlesList.loadBottles().map { inFlight[$0.url] ?? $0 }
         migrateLauncherBackends()
-        startProxyHelpers()
-    }
-
-    /// Starts the helper of every proxied bottle. Terminal sessions, shortcuts
-    /// and the command-line tool rely on the app's helper, so it has to be
-    /// there before the first launch from inside the app.
-    func startProxyHelpers() {
-        for bottle in bottles where bottle.isAvailable && bottle.settings.proxyEnabled {
-            _ = ProxyService.shared.port(for: bottle)
-        }
     }
 
     /// Runs ``LauncherBackendMigration`` on every bottle, here and not in WhiskyKit's

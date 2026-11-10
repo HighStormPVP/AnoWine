@@ -193,6 +193,8 @@ struct ContentView: View {
         .task {
             bottleVM.loadBottles()
             bottlesLoaded = true
+            // Terminal sessions, shortcuts and the command-line tool use the app's proxy helpers.
+            ProxyService.shared.startHelpers(for: bottleVM.bottles)
 
             // Surface a registry that couldn't be read and was moved aside at
             // startup, so the reset bottle list doesn't pass silently (#61).
