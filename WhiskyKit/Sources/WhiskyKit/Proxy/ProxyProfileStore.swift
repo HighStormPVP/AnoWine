@@ -73,6 +73,19 @@ public final class ProxyProfileStore: ObservableObject {
         secrets.password(for: id)
     }
 
+    /// The upstream a helper connects through for this profile, with its secret.
+    public func upstream(for id: UUID) -> ProxyUpstream? {
+        guard let profile = profile(id: id) else { return nil }
+        let username = profile.username.isEmpty ? nil : profile.username
+        let password = username == nil ? nil : secrets.password(for: id)
+        switch profile.kind {
+        case .socks5:
+            return .socks5(host: profile.host, port: profile.port, username: username, password: password)
+        case .httpConnect:
+            return .httpConnect(host: profile.host, port: profile.port, username: username, password: password)
+        }
+    }
+
     private func write(_ profiles: [ProxyProfile]) throws {
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true
