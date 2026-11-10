@@ -54,14 +54,14 @@ final class ProxySettingsTests: XCTestCase {
         var settings = BottleSettings()
         settings.proxyEnabled = true
         settings.proxyProfileID = UUID()
-        settings.proxyLastPort = 51234
+        settings.proxyLastPort = 51_234
 
         let data = try PropertyListEncoder().encode(settings)
         let decoded = try PropertyListDecoder().decode(BottleSettings.self, from: data)
 
         XCTAssertEqual(decoded, settings)
         XCTAssertTrue(decoded.proxyEnabled)
-        XCTAssertEqual(decoded.proxyLastPort, 51234)
+        XCTAssertEqual(decoded.proxyLastPort, 51_234)
     }
 
     @MainActor
@@ -103,7 +103,7 @@ final class ProxySettingsTests: XCTestCase {
         let profile = ProxyProfile.newDefault()
         XCTAssertEqual(profile.kind, .socks5)
         XCTAssertEqual(profile.host, "127.0.0.1")
-        XCTAssertEqual(profile.port, 1080)
+        XCTAssertEqual(profile.port, 1_080)
         XCTAssertEqual(profile.name, "Hiddify")
         XCTAssertEqual(profile.username, "")
     }
