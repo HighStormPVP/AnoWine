@@ -61,6 +61,15 @@ jobs:
       - name: Verify the bundled CLI uses Ano's data folder
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-cli-identity.sh" "$RUNNER_TEMP/dd/Build/Products/Release/Ano.app"
 
+      - name: Verify the proxy interceptor is bundled (x86_64)
+        run: |
+          LIB="$RUNNER_TEMP/dd/Build/Products/Release/Ano.app/Contents/Resources/libano_net.dylib"
+          test -f "$LIB" || { echo "::error::libano_net.dylib is not in Ano.app/Contents/Resources"; exit 1; }
+          archs="$(lipo -archs "$LIB")"
+          echo "libano_net.dylib: $archs"
+          [ "$archs" = "x86_64" ] || { echo "::error::libano_net.dylib must be x86_64 only, got $archs"; exit 1; }
+          codesign --verify --strict "$LIB"
+
       - name: Test the M2 sandbox check script (stubbed Wine)
         if: always()
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-m2-sandbox-check.sh"
