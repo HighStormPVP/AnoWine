@@ -146,8 +146,10 @@ What it doesn't do yet:
 - **There's no kill switch.** A program that bypasses Ano's interceptor could connect
   directly.
 - **Winetricks downloads its files without the proxy.**
-- Programs started with the `ano` command-line tool have network only while that
-  command is running.
+- **Ano has to be open.** Terminal sessions, shortcuts and the `ano` command-line tool
+  use the helper that the Ano app runs. With Ano closed, a proxied bottle has no internet.
+- Windows `DnsQuery` calls and reverse lookups (address to name) fail in a proxied
+  bottle. Ordinary name lookups work.
 
 How it works is described in [AnoNet/README.md](AnoNet/README.md).
 

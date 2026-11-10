@@ -57,7 +57,7 @@ To check that nothing leaks, quit your proxy client while Steam is open. Steam s
 4. It starts Steam twice: once normally and once inside the sandbox. Each time, wait for Steam to load, open the Store page, and launch your game if you can. Then come back to Terminal, press Return, and answer the three questions.
 5. At the end it prints a short block between two lines. Copy it and send it back.
 
-The sandbox round still allows internet access. The only difference between the two rounds is the sandbox itself, which is what we're testing. You can run this from a proxied bottle: both rounds then go through the proxy.
+The sandbox round still allows internet access. The only difference between the two rounds is the sandbox itself, which is what we're testing. You can run this from a proxied bottle: both rounds then go through the proxy. Keep Ano open while you do: the Terminal window uses the app's proxy helper.
 
 ## What to send back
 

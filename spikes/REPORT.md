@@ -91,5 +91,10 @@ Found by `scripts/anowine/check-proxy.sh` (workflow `Ano Proxy`), fixed in `AnoN
   server), and a lookup with `AI_CANONNAME` gets the name back. Green in run 42901992812.
 - Wine connects TCP sockets inside `ano-server`, so the server needs the interposer
   too, not only the loader. Both get it.
+- **A reverse lookup leaked** (final review; run 42919774948 captured
+  `PTR? 9.2.0.192.in-addr.arpa` going to the runner's DNS server). `gethostbyaddr`
+  does not go through `getaddrinfo`. It is now refused, with `res_query` and friends
+  and the `DNSService` lookups. Those two did not leak in the capture (the UDP block
+  already stopped them), but they are refused as well.
 - Windows programs see blocked UDP as `WSAEACCES` (10013) and a missing helper as
   `WSAECONNREFUSED` (10061) or a failed lookup (11003).
