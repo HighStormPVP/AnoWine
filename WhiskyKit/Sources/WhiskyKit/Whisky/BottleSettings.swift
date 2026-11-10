@@ -166,6 +166,8 @@ public struct BottleSettings: Codable, Equatable {
     private var audioConfig: BottleAudioConfig
     /// Discord presence and rich presence bridging.
     private var discordConfig: BottleDiscordConfig
+    /// Ano: whether the bottle's network goes through a proxy profile.
+    private var proxyConfig: BottleProxyConfig
     /// User-defined DLL overrides at the bottle level.
     private var customDLLOverrides: [DLLOverrideEntry] = []
 
@@ -183,6 +185,7 @@ public struct BottleSettings: Codable, Equatable {
         self.displayConfig = BottleDisplayConfig()
         self.audioConfig = BottleAudioConfig()
         self.discordConfig = BottleDiscordConfig()
+        self.proxyConfig = BottleProxyConfig()
         self.customDLLOverrides = []
     }
 
@@ -234,6 +237,10 @@ public struct BottleSettings: Codable, Equatable {
             BottleDiscordConfig.self,
             forKey: .discordConfig
         ) ?? BottleDiscordConfig()
+        self.proxyConfig = try container.decodeIfPresent(
+            BottleProxyConfig.self,
+            forKey: .proxyConfig
+        ) ?? BottleProxyConfig()
         self.customDLLOverrides = try container.decodeIfPresent(
             [DLLOverrideEntry].self,
             forKey: .customDLLOverrides
@@ -387,6 +394,24 @@ public struct BottleSettings: Codable, Equatable {
     public var discordBridge: Bool {
         get { discordConfig.bridge }
         set { discordConfig.bridge = newValue }
+    }
+
+    /// Whether the bottle's TCP connections and DNS lookups go through ``proxyProfileID``.
+    public var proxyEnabled: Bool {
+        get { proxyConfig.enabled }
+        set { proxyConfig.enabled = newValue }
+    }
+
+    /// The ``ProxyProfile`` the bottle uses when ``proxyEnabled`` is on.
+    public var proxyProfileID: UUID? {
+        get { proxyConfig.profileID }
+        set { proxyConfig.profileID = newValue }
+    }
+
+    /// The proxy helper port the bottle last used.
+    public var proxyLastPort: UInt16? {
+        get { proxyConfig.lastPort }
+        set { proxyConfig.lastPort = newValue }
     }
 
     /// Whether games in this bottle may turn on DLSS frame generation.
