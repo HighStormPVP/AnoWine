@@ -29,6 +29,11 @@ public enum AnoWineRuntime {
     public static let loaderName = "ano-loader"
     /// The Wine server.
     public static let serverName = "ano-server"
+    /// The Windows program that creates, updates and shuts down a bottle
+    /// (upstream's `wineboot.exe`), run as `ano-loader ano-boot`.
+    public static let bootProgramName = "ano-boot"
+    /// The Windows program that hosts drivers (upstream's `winedevice.exe`).
+    public static let deviceHostImageName = "ano-device.exe"
 
     /// The loader inside the installed runtime.
     public static var loaderURL: URL {

@@ -1,23 +1,25 @@
 #!/bin/bash
 # Builds AnoWine's Wine runtime: upstream's published Libraries.tar.gz with the
 # two Wine programs renamed (wine64/wine -> ano-loader, wineserver -> ano-server)
-# and the Wine loader lib/wine/x86_64-unix/wine renamed ano-core. ntdll.so starts
-# that loader by name, so it is replaced with one built by build-ntdll.sh with
-# patches/ntdll-ano-core.patch. Recipe and evidence: spikes/REPORT.md section 2.
+# and three Windows-side names changed: the Wine loader lib/wine/x86_64-unix/wine
+# is ano-core, wineboot.exe is ano-boot.exe and winedevice.exe is ano-device.exe.
+# The modules that start those by name are replaced with ones built by
+# build-modules.sh with scripts/anowine/patches/*.patch.
+# Recipe and evidence: spikes/REPORT.md section 2.
 #
-# Usage: scripts/anowine/repack-runtime.sh <out-dir> <ano-core ntdll.so>
+# Usage: scripts/anowine/repack-runtime.sh <out-dir> <build-modules out-dir>
 # Produces <out-dir>/Libraries.tar.gz and prints its SHA-256. macOS only
 # (PlistBuddy, BSD tar). Fails closed on any unexpected layout.
 set -euo pipefail
 
-OUT="$(mkdir -p "${1:?usage: repack-runtime.sh <out-dir> <ntdll.so>}" && cd "$1" && pwd)"
-NTDLL="$(cd "$(dirname "${2:?usage: repack-runtime.sh <out-dir> <ntdll.so>}")" && pwd)/$(basename "$2")"
-grep -aq "%s%s/ano-core" "$NTDLL" || { echo "error: $NTDLL does not start ano-core" >&2; exit 1; }
+OUT="$(mkdir -p "${1:?usage: repack-runtime.sh <out-dir> <modules-dir>}" && cd "$1" && pwd)"
+MODULES="$(cd "${2:?usage: repack-runtime.sh <out-dir> <modules-dir>}/Wine" && pwd)"
+grep -aq "%s%s/ano-core" "$MODULES/lib/wine/x86_64-unix/ntdll.so" || { echo "error: built ntdll.so does not start ano-core" >&2; exit 1; }
 
 # ---- pinned inputs ----------------------------------------------------------
 BASE_URL="https://github.com/frankea/Whisky/releases/download/v3.1.1/Libraries.tar.gz"
 BASE_SHA256="01f3a1b43b98065fe20c529c1023b61dd79a6d2ad93bba6040865f646481ccf3"
-VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=4
+VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=5
 LOADER=ano-loader
 SERVER=ano-server
 CORE=ano-core
@@ -44,12 +46,32 @@ find "$BIN" -type l -exec sh -c '[ "$(readlink "$1")" = wine ] && rm "$1" && ech
 mv "$BIN/wine" "$BIN/$LOADER"
 mv "$BIN/wineserver" "$BIN/$SERVER"
 
-echo "== rename the Wine loader to $CORE and install its ntdll.so"
+echo "== rename the Wine loader to $CORE"
 UNIX="$LIB/Wine/lib/wine/x86_64-unix"
 [ -f "$UNIX/wine" ] && [ ! -L "$UNIX/wine" ] || { echo "error: expected real file lib/wine/x86_64-unix/wine" >&2; exit 1; }
 mv "$UNIX/wine" "$UNIX/$CORE"
-cp "$NTDLL" "$UNIX/ntdll.so"
+
+echo "== replace wineboot.exe and winedevice.exe with ano-boot.exe and ano-device.exe"
+WINDOWS="$LIB/Wine/lib/wine"
+for f in x86_64-windows/wineboot.exe x86_64-windows/winedevice.exe i386-windows/winedevice.exe; do
+  [ -f "$WINDOWS/$f" ] || { echo "error: expected lib/wine/$f" >&2; exit 1; }
+  rm "$WINDOWS/$f"
+done
+# The built wine.inf must be upstream's with only the two install lines changed.
+changed="$(diff "$LIB/Wine/share/wine/wine.inf" "$MODULES/share/wine/wine.inf" | grep -c '^[<>]' || true)"
+[ "$changed" = 4 ] || { echo "error: built wine.inf differs from upstream in $changed lines, expected 4" >&2;
+  diff "$LIB/Wine/share/wine/wine.inf" "$MODULES/share/wine/wine.inf" | head -20 >&2; exit 1; }
+# Every replacement must take the place of a file upstream ships, or be a renamed program.
+( cd "$MODULES" && find . -type f ) | while read -r f; do
+  case "$f" in */ano-boot.exe|*/ano-device.exe) ;; *)
+    [ -f "$LIB/Wine/$f" ] || { echo "error: built $f replaces nothing upstream ships" >&2; exit 1; } ;;
+  esac
+  install -m 644 "$MODULES/$f" "$LIB/Wine/$f"
+done
 chmod 755 "$UNIX/ntdll.so"
+# Winetricks creates bottles with "${WINE}" wineboot.
+sed -i '' 's/"${WINE}" wineboot$/"${WINE}" ano-boot/' "$LIB/winetricks"
+grep -q '"${WINE}" ano-boot$' "$LIB/winetricks" || { echo "error: winetricks not updated" >&2; exit 1; }
 
 echo "== set runtime version $VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
 PLIST="$LIB/WhiskyWineVersion.plist"
@@ -70,6 +92,7 @@ dangling="$(find "$LIB" -type l ! -exec test -e {} \; -print)"
 [ -z "$dangling" ] || { echo "error: dangling symlinks:" >&2; echo "$dangling" >&2; fail=1; }
 [ "$fail" -eq 0 ] || exit 1
 bash "$(dirname "$0")/check-ano-core.sh" "$LIB"
+bash "$(dirname "$0")/check-ano-programs.sh" "$LIB"
 ls -la "$BIN"
 
 echo "== repack"

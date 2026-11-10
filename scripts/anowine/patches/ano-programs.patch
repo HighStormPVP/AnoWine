@@ -1,0 +1,138 @@
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -1541,9 +1541,9 @@
+     static const WCHAR eventW[] = {'\\','K','e','r','n','e','l','O','b','j','e','c','t','s',
+         '\\','_','_','w','i','n','e','b','o','o','t','_','e','v','e','n','t',0};
+     static const WCHAR appnameW[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s',
+-        '\\','s','y','s','t','e','m','3','2','\\','w','i','n','e','b','o','o','t','.','e','x','e',0};
++        '\\','s','y','s','t','e','m','3','2','\\','a','n','o','-','b','o','o','t','.','e','x','e',0};
+     static const WCHAR cmdlineW[] = {'"','C',':','\\','w','i','n','d','o','w','s','\\',
+-        's','y','s','t','e','m','3','2','\\','w','i','n','e','b','o','o','t','.','e','x','e','"',
++        's','y','s','t','e','m','3','2','\\','a','n','o','-','b','o','o','t','.','e','x','e','"',
+         ' ','-','-','i','n','i','t',0};
+     RTL_USER_PROCESS_PARAMETERS params = { sizeof(params), sizeof(params) };
+     PS_ATTRIBUTE_LIST ps_attr;
+--- a/dlls/user32/user_main.c
++++ b/dlls/user32/user_main.c
+@@ -268,8 +268,8 @@
+     STARTUPINFOW si;
+     void *redir;
+ 
+-    GetSystemDirectoryW( app, MAX_PATH - ARRAY_SIZE( L"\\wineboot.exe" ));
+-    lstrcatW( app, L"\\wineboot.exe" );
++    GetSystemDirectoryW( app, MAX_PATH - ARRAY_SIZE( L"\\ano-boot.exe" ));
++    lstrcatW( app, L"\\ano-boot.exe" );
+     lstrcpyW( cmdline, app );
+ 
+     if (flags & EWX_FORCE) lstrcatW( cmdline, L" --kill" );
+--- a/programs/services/services.c
++++ b/programs/services/services.c
+@@ -831,11 +831,11 @@
+ 
+     GetSystemDirectoryW(system_dir, MAX_PATH);
+     free(*path);
+-    if (!(*path = malloc(wcslen(system_dir) * sizeof(WCHAR) + sizeof(L"\\winedevice.exe"))))
++    if (!(*path = malloc(wcslen(system_dir) * sizeof(WCHAR) + sizeof(L"\\ano-device.exe"))))
+        return ERROR_NOT_ENOUGH_SERVER_MEMORY;
+ 
+     lstrcpyW(*path, system_dir);
+-    lstrcatW(*path, L"\\winedevice.exe");
++    lstrcatW(*path, L"\\ano-device.exe");
+     return ERROR_SUCCESS;
+ }
+ 
+@@ -868,14 +868,14 @@
+ static DWORD add_winedevice_service(const struct service_entry *service, WCHAR *path, BOOL is_wow64,
+                                     struct service_entry **entry)
+ {
+-    static WCHAR name[ARRAY_SIZE(L"Winedevice") + 10]; /* lstrlenW("4294967295") */
++    static WCHAR name[ARRAY_SIZE(L"AnoDevice") + 10]; /* lstrlenW("4294967295") */
+     static DWORD current = 0;
+     struct scmdatabase *db = service->db;
+     DWORD err;
+ 
+     for (;;)
+     {
+-        swprintf(name, ARRAY_SIZE(name), L"Winedevice%u", ++current);
++        swprintf(name, ARRAY_SIZE(name), L"AnoDevice%u", ++current);
+         if (!scmdatabase_find_service(db, name)) break;
+     }
+ 
+--- a/programs/winedevice/device.c
++++ b/programs/winedevice/device.c
+@@ -36,7 +36,7 @@
+ extern NTSTATUS CDECL wine_ntoskrnl_main_loop( HANDLE stop_event );
+ extern void CDECL wine_enumerate_root_devices( const WCHAR *driver_name );
+ 
+-static WCHAR winedeviceW[] = L"winedevice";
++static WCHAR winedeviceW[] = L"ano-device";
+ static SERVICE_STATUS_HANDLE service_handle;
+ static SC_HANDLE manager_handle;
+ static HANDLE stop_event;
+--- a/programs/winedevice/Makefile.in
++++ b/programs/winedevice/Makefile.in
+@@ -1,4 +1,4 @@
+-MODULE    = winedevice.exe
++MODULE    = ano-device.exe
+ IMPORTS   = advapi32 ntoskrnl
+ 
+ EXTRADLLFLAGS = -mwindows -municode
+--- a/programs/wineboot/Makefile.in
++++ b/programs/wineboot/Makefile.in
+@@ -1,4 +1,4 @@
+-MODULE    = wineboot.exe
++MODULE    = ano-boot.exe
+ IMPORTS   = uuid advapi32 ws2_32 kernelbase
+ DELAYIMPORTS = shell32 shlwapi version user32 gdi32 setupapi newdev wininet
+ 
+--- a/programs/wineboot/wineboot.c
++++ b/programs/wineboot/wineboot.c
+@@ -1776,7 +1776,7 @@
+ 
+ static void usage( int status )
+ {
+-    WINE_MESSAGE( "Usage: wineboot [options]\n" );
++    WINE_MESSAGE( "Usage: ano-boot [options]\n" );
+     WINE_MESSAGE( "Options;\n" );
+     WINE_MESSAGE( "    -h,--help         Display this help message\n" );
+     WINE_MESSAGE( "    -e,--end-session  End the current session cleanly\n" );
+@@ -1816,7 +1816,7 @@
+         memset( &si, 0, sizeof(si) );
+         si.cb = sizeof(si);
+         GetSystemDirectoryW( filename, MAX_PATH );
+-        wcscat( filename, L"\\wineboot.exe" );
++        wcscat( filename, L"\\ano-boot.exe" );
+ 
+         Wow64DisableWow64FsRedirection( &redir );
+         if (CreateProcessW( filename, GetCommandLineW(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi ))
+--- a/programs/winedbg/crashdlg.c
++++ b/programs/winedbg/crashdlg.c
+@@ -369,7 +369,7 @@
+     hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dbg_curr_pid);
+     g_ProgramName = get_program_name(hProcess);
+     CloseHandle(hProcess);
+-    if (!wcscmp( g_ProgramName, L"winedevice.exe" )) return TRUE;
++    if (!wcscmp( g_ProgramName, L"ano-device.exe" )) return TRUE;
+     InitCommonControlsEx( &init );
+     return DialogBoxW(GetModuleHandleW(NULL), MAKEINTRESOURCEW(IDD_CRASH_DLG), NULL, crash_dlg_proc);
+ }
+--- a/loader/wine.inf.in
++++ b/loader/wine.inf.in
+@@ -47,7 +47,7 @@
+ AddService=MountMgr,0x800,MountMgrService
+ 
+ [FakeDllsPreInstall]
+-11,,winedevice.exe
++11,,ano-device.exe
+ 12,,mountmgr.sys
+ 
+ [BaseInstall]
+@@ -770,7 +770,7 @@
+ 11,,services.exe,-
+ 11,,spoolsv.exe,-
+ 11,,termsv.exe,-
+-11,,wineboot.exe,-
++11,,ano-boot.exe,-
+ 11,,winemenubuilder.exe,-
+ 11,,wuauserv.exe,-
+ ; registration order matters for these

@@ -678,7 +678,8 @@ public class Wine {
         alias msiexec=\"ano-loader msiexec\"
         alias regedit=\"ano-loader regedit\"
         alias regsvr32=\"ano-loader regsvr32\"
-        alias wineboot=\"ano-loader wineboot\"
+        alias wineboot=\"ano-loader ano-boot\"
+        alias ano-boot=\"ano-loader ano-boot\"
         alias wineconsole=\"ano-loader wineconsole\"
         alias winedbg=\"ano-loader winedbg\"
         alias winefile=\"ano-loader winefile\"
@@ -1309,7 +1310,7 @@ public class Wine {
 extension Wine {
     /// Reinitializes a Wine prefix to repair missing user directories.
     ///
-    /// This method runs `wineboot --init` to reinitialize the Wine prefix,
+    /// This method runs `ano-boot --init` (upstream's `wineboot`) to reinitialize the Wine prefix,
     /// which creates any missing user profile directories that may have been
     /// deleted or never properly created during initial bottle setup.
     ///
@@ -1317,7 +1318,7 @@ extension Wine {
     /// due to missing `%AppData%` or user profile directories.
     ///
     /// - Parameter bottle: The ``Bottle`` whose prefix should be repaired.
-    /// - Throws: An error if wineboot fails to initialize the prefix.
+    /// - Throws: An error if ano-boot fails to initialize the prefix.
     ///
     /// - Note: This operation may take several seconds as Wine reinitializes
     ///   the prefix and creates missing directories.
@@ -1325,7 +1326,7 @@ extension Wine {
     @MainActor
     public static func repairPrefix(bottle: Bottle) async throws -> String {
         logger.info("Repairing Wine prefix for bottle '\(bottle.settings.name)'")
-        return try await runWine(["wineboot", "--init"], bottle: bottle)
+        return try await runWine([AnoWineRuntime.bootProgramName, "--init"], bottle: bottle)
     }
 
     /// Checks if an environment variable key is a valid POSIX shell identifier.

@@ -4546,7 +4546,7 @@ winetricks_set_wineprefix()
 
     if [ ! -d "${WINEPREFIX}" ] && [ -n "${WINEARCH}" ]; then
         w_info "Creating WINEPREFIX \"${WINEPREFIX}\" with WINEARCH=${WINEARCH}"
-        "${WINE}" wineboot
+        "${WINE}" ano-boot
         # apparently wineboot doesn't wait for the prefix to be ready
         # (to reproduce, run 'wine wineboot ; ls ~/.wine' it will often return before the .reg files are present
         "${WINESERVER}" -w

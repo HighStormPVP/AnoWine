@@ -34,7 +34,7 @@ public enum ProcessKind: String, CaseIterable, Codable, Sendable {
     /// Known Wine service process image names (lowercase).
     public static let knownServiceProcesses: Set<String> = [
         "services.exe",
-        "winedevice.exe",
+        AnoWineRuntime.deviceHostImageName,
         "plugplay.exe",
         "svchost.exe",
         "rpcss.exe",

@@ -84,7 +84,7 @@ if [ "$BOOT" -eq 1 ]; then
     '[ -z "$(find "$P/drive_c/windows" -maxdepth 2 \( -iname wineboot.exe -o -iname winedevice.exe \))" ]'
   L2="$WORK/sc.ps"; : > "$L2"
   in_bottle "$BIN" "$P" "$L2" sc query MountMgr
-  check "a driver runs in ano-device.exe (MountMgr RUNNING)" 'grep -q "RUNNING" "$WORK/out.txt"'
+  check "a driver is running (MountMgr RUNNING)" 'grep -q "RUNNING" "$WORK/out.txt"'
   grep -i "STATE" "$WORK/out.txt" | sed 's/^/     /'
 fi
 
