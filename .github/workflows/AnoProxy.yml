@@ -22,6 +22,8 @@ permissions:
 env:
   XRAY_URL: https://github.com/XTLS/Xray-core/releases/download/v26.10.21/Xray-macos-arm64-v8a.zip
   XRAY_SHA256: 926cc55fda2a8757dabe4f22dc98772f218ace025f101bd0b68aee232e59d5dc
+  RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.5/Libraries.tar.gz
+  RUNTIME_SHA256: 4ce4a504fd368c8ac88fe5cacd64bd1a05bdc40c88dd222469fae35140117f5b
 
 jobs:
   proxy:
@@ -58,6 +60,26 @@ jobs:
             -o "$RUNNER_TEMP/bin/interposer_native" "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/interposer_native.c"
           lipo -archs "$RUNNER_TEMP/bin/libano_net.dylib"
 
+      - name: Build netprobe.exe
+        run: |
+          brew install mingw-w64
+          x86_64-w64-mingw32-gcc -O2 -o "$RUNNER_TEMP/bin/netprobe.exe"             "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/netprobe.c" -lws2_32
+
+      - name: Cache runtime
+        id: runtime-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/runtime.tar.gz
+          key: ano-runtime-${{ env.RUNTIME_SHA256 }}
+
+      - name: Runtime v3.1.5
+        run: |
+          [ -f "$RUNNER_TEMP/runtime.tar.gz" ] || curl -fsSL -o "$RUNNER_TEMP/runtime.tar.gz" "$RUNTIME_URL"
+          echo "$RUNTIME_SHA256  $RUNNER_TEMP/runtime.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/runtime"
+          tar -xzf "$RUNNER_TEMP/runtime.tar.gz" -C "$RUNNER_TEMP/runtime"
+          ls "$RUNNER_TEMP/runtime/Libraries/Wine/bin"
+
       - name: Build ano-proxy
         run: |
           swift build -c release --package-path "$GITHUB_WORKSPACE/WhiskyKit" --product ano-proxy
@@ -67,4 +89,4 @@ jobs:
         run: |
           bash "$GITHUB_WORKSPACE/scripts/anowine/check-proxy.sh" \
             --xray "$RUNNER_TEMP/xray/xray" --helper "$RUNNER_TEMP/bin/ano-proxy" \
-            --lib "$RUNNER_TEMP/bin/libano_net.dylib" --native "$RUNNER_TEMP/bin/interposer_native"
+            --lib "$RUNNER_TEMP/bin/libano_net.dylib" --native "$RUNNER_TEMP/bin/interposer_native"             --runtime "$RUNNER_TEMP/runtime/Libraries" --netprobe "$RUNNER_TEMP/bin/netprobe.exe"
