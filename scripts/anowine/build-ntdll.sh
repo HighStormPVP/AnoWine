@@ -62,6 +62,12 @@ arch -x86_64 /usr/bin/env PATH="$WORK/mingw/bin:$BISON_BIN:$PATH" \
 ' _ "$SRC"
 
 cp "$SRC/dlls/ntdll/ntdll.so" "$OUT/ntdll.so"
+
+# Test programs for scripts/anowine/check-*.sh (not shipped).
+mkdir -p "$OUT/tests"
+for c in "$(dirname "$0")"/tests/*.c; do
+  "$WORK/mingw/bin/x86_64-w64-mingw32-clang" -O2 -o "$OUT/tests/$(basename "${c%.c}").exe" "$c"
+done
 codesign --force --sign - "$OUT/ntdll.so"
 lipo -archs "$OUT/ntdll.so"
 echo "SHA-256: $(shasum -a 256 "$OUT/ntdll.so" | awk '{print $1}')"

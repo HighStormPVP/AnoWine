@@ -67,4 +67,24 @@ final class AnoWineRuntimeTests: XCTestCase {
         try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "ano-loader"))
         XCTAssertTrue(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
     }
+
+    /// Runtime v3.1.5 renames wineboot.exe and winedevice.exe.
+    func testWindowsProgramNames() {
+        XCTAssertEqual(AnoWineRuntime.bootProgramName, "ano-boot")
+        XCTAssertEqual(AnoWineRuntime.deviceHostImageName, "ano-device.exe")
+    }
+
+    func testDeviceHostIsAServiceProcess() {
+        XCTAssertEqual(ProcessKind.classify("ano-device.exe"), .service)
+        XCTAssertEqual(ProcessKind.classify("ANO-DEVICE.EXE"), .service)
+    }
+
+    func testTerminalAliasesRunAnoBoot() {
+        let command = Wine.generateTerminalEnvironmentCommand(
+            binFolder: URL(filePath: "/tmp/ano-bin"), environment: [:]
+        )
+        XCTAssertTrue(command.contains(#"alias ano-boot="ano-loader ano-boot""#), command)
+        XCTAssertTrue(command.contains(#"alias wineboot="ano-loader ano-boot""#), command)
+        XCTAssertFalse(command.contains("ano-loader wineboot"), command)
+    }
 }

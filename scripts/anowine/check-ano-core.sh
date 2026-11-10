@@ -21,13 +21,13 @@ check "ntdll.so no longer starts wine" '! grep -aq "%s%s/wine" "$UNIX/ntdll.so"'
 if [ "${2:-}" = --boot ]; then
   PREFIX="$(mktemp -d "${TMPDIR:-/tmp}/anowine-anocore-XXXXXX")"
   export WINEPREFIX="$PREFIX/prefix" WINESERVER="$BIN/ano-server" WINEDEBUG=-all
-  WINEDLLOVERRIDES="mscoree,mshtml=" "$BIN/ano-loader" wineboot -i &
+  WINEDLLOVERRIDES="mscoree,mshtml=" "$BIN/ano-loader" cmd /c echo ready &
   boot=$!
   : > "$PREFIX/ps.txt"
   while kill -0 "$boot" 2>/dev/null; do ps -axo ucomm=,command= >> "$PREFIX/ps.txt"; sleep 0.5; done
   wait "$boot"; status=$?
   "$WINESERVER" -w
-  check "wineboot succeeded" '[ "$status" -eq 0 ] && [ -f "$WINEPREFIX/system.reg" ]'
+  check "bottle booted" '[ "$status" -eq 0 ] && [ -f "$WINEPREFIX/system.reg" ]'
   awk '{print $1}' "$PREFIX/ps.txt" | sort -u > "$PREFIX/names.txt"
   check "Windows processes ran as ano-core" 'grep -qx "ano-core" "$PREFIX/names.txt"'
   check "nothing ran as wine, wine64 or wineserver" '! grep -qxE "wine|wine64|wineserver" "$PREFIX/names.txt"'

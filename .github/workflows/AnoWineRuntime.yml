@@ -12,6 +12,8 @@ on:
       - 'scripts/anowine/repack-runtime.sh'
       - 'scripts/anowine/check-runtime-digest.sh'
       - 'scripts/anowine/check-ano-core.sh'
+      - 'scripts/anowine/check-ano-programs.sh'
+      - 'scripts/anowine/tests/**'
       - 'scripts/anowine/build-ntdll.sh'
       - 'scripts/anowine/patches/**'
       - 'dist/pages/WhiskyWineVersion.plist'
@@ -45,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ntdll-ano-core
-          path: ${{ runner.temp }}/ntdll/ntdll.so
+          path: ${{ runner.temp }}/ntdll
           if-no-files-found: error
 
   build:
@@ -73,6 +75,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/smoke"
           tar -xzf "$RUNNER_TEMP/out/Libraries.tar.gz" -C "$RUNNER_TEMP/smoke"
           bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-core.sh" "$RUNNER_TEMP/smoke/Libraries" --boot
+
+      - name: Smoke test - ano-boot and ano-device work, from new and older bottles
+        run: |
+          mkdir -p "$RUNNER_TEMP/old"
+          curl -fsSL https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.4/Libraries.tar.gz             | tar -xzf - -C "$RUNNER_TEMP/old"
+          bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-programs.sh" "$RUNNER_TEMP/smoke/Libraries" --boot             --exitwindows "$RUNNER_TEMP/ntdll/tests/exitwindows.exe"             --upgrade-from "$RUNNER_TEMP/old/Libraries"             --winetricks "$GITHUB_WORKSPACE/Libraries/winetricks"
 
       - name: Upload runtime
         uses: actions/upload-artifact@v7
