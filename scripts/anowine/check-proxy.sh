@@ -101,6 +101,7 @@ if [ -n "$RUNTIME" ]; then
   P="$WORK/prefix-proxied"
   in_bottle "$P" 1 cmd /c echo ready; rc=$?
   check "proxied bottle boots" '[ "$rc" -eq 0 ]'
+  [ "$rc" -eq 0 ] || { echo "     boot output (rc $rc):"; tr -d '\r' < "$WORK/wine.out" | grep -v '^\s*VK_\|mvk-info\|Vulkan extensions' | tail -40 | sed 's/^/     boot: /'; }
   probe "$P" 1 "$NETPROBE" dns anotest.example.com
   check "wine 1 dns gives a placeholder in 198.18.0.0/15" 'grep -Eq "^198\.1[89]\.[0-9]+\.[0-9]+" "$WORK/wine.out"'
   before="$(xray_hits)"

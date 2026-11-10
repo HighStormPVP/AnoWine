@@ -4,7 +4,7 @@
  * ANO_WINE_DIR=/nonexistent, against ano-proxy, a real Xray SOCKS inbound and
  * the echo servers. Prints one "ok"/"FAIL" line per check; exits 1 on any FAIL.
  *
- *   interposer_native               checks 1-7 (helper running)
+ *   interposer_native               checks 1-7 and 9 (helper running)
  *   interposer_native --helper-down check 8 (ANO_PROXY_PORT points nowhere)
  *
  * This file is part of Ano, a modified version of Whisky (GPL-3.0-or-later).
@@ -153,6 +153,22 @@ static void helper_running(void)
 
     check("7 posix_spawn /usr/bin/true works", spawn_true());
     check("7 system(/usr/bin/true) works", system("/usr/bin/true") == 0);
+
+    /* Wine asks for the canonical name (computer and DNS domain names). */
+    struct addrinfo hints = { .ai_family = AF_INET, .ai_flags = AI_CANONNAME }, *res = NULL;
+    ok = getaddrinfo("anotest.example.com", NULL, &hints, &res) == 0 && res && res->ai_canonname &&
+         strcmp(res->ai_canonname, "anotest.example.com") == 0;
+    if (res) freeaddrinfo(res);
+    check("9 AI_CANONNAME gives the name asked for", ok);
+
+    /* The Mac's own name is local: never a placeholder. */
+    char self[256] = "";
+    uint32_t own = 0;
+    ok = gethostname(self, sizeof(self)) == 0 && self[0] && (!resolve(self, &own) || !in_fake_range(own));
+    check("9 own hostname is not given a placeholder", ok);
+    struct hostent *entry = gethostbyname(self);
+    ok = !entry || entry->h_length != 4 || !entry->h_addr_list[0] || !in_fake_range(*(uint32_t *)entry->h_addr_list[0]);
+    check("9 gethostbyname(own hostname) is not a placeholder", ok);
 }
 
 static void helper_down(void)
