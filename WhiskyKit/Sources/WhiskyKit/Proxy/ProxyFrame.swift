@@ -106,19 +106,25 @@ public enum ProxyFrame: Equatable, Sendable {
             let (address, used) = try decodeAddress(body)
             return (.connect(address), magic.count + 1 + used)
         case typeResolve:
-            guard let length = body.first else { throw ProxyFrameError.incomplete }
-            guard length > 0 else { throw ProxyFrameError.invalid }
-            guard body.count >= 1 + Int(length) else { throw ProxyFrameError.incomplete }
-            guard let name = String(bytes: body[1 ... Int(length)], encoding: .ascii) else {
-                throw ProxyFrameError.invalid
-            }
-            return (.resolve(name), magic.count + 2 + Int(length))
+            let (name, used) = try decodeName(body)
+            return (.resolve(name), magic.count + 1 + used)
         case typePeer:
             guard body.count >= 2 else { throw ProxyFrameError.incomplete }
             return (.peer(localPort: UInt16(body[0]) << 8 | UInt16(body[1])), magic.count + 3)
         default:
             throw ProxyFrameError.invalid
         }
+    }
+
+    /// A length byte (1–255) followed by an ASCII hostname.
+    static func decodeName(_ bytes: [UInt8]) throws -> (String, used: Int) {
+        guard let length = bytes.first else { throw ProxyFrameError.incomplete }
+        guard length > 0 else { throw ProxyFrameError.invalid }
+        guard bytes.count >= 1 + Int(length) else { throw ProxyFrameError.incomplete }
+        guard let name = String(bytes: bytes[1 ... Int(length)], encoding: .ascii) else {
+            throw ProxyFrameError.invalid
+        }
+        return (name, 1 + Int(length))
     }
 
     static func decodeAddress(_ bytes: [UInt8]) throws -> (ProxyAddress, used: Int) {
