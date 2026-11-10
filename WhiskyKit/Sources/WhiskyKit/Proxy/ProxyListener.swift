@@ -35,7 +35,7 @@ public final class ProxyListener: @unchecked Sendable {
     private let upstream: ProxyUpstream
     private let dns: FakeDNS
     private let lock = NSLock()
-    private var listenFDs: [Int32] = []
+    private var acceptor: ProxyAcceptor?
     private var peers: [UInt16: ProxyAddress] = [:]
     private var current = ProxyStatus(port: 0, activeConnections: 0, totalConnections: 0, lastError: nil)
 
@@ -47,7 +47,8 @@ public final class ProxyListener: @unchecked Sendable {
         self.dns = dns
     }
 
-    deinit { stop() }
+    /// Does not wait: the last reference can go away on one of the helper's own threads.
+    deinit { acceptor?.stop(wait: false) }
 
     public var status: ProxyStatus {
         lock.withLock { current }
@@ -59,36 +60,30 @@ public final class ProxyListener: @unchecked Sendable {
     /// start keep working.
     public func start(preferredPort: UInt16?) throws -> UInt16 {
         let (fds, port) = try Self.listen(preferredPort: preferredPort)
-        lock.withLock {
-            listenFDs = fds
-            current.port = port
-        }
-        for sock in fds {
-            Thread.detachNewThread { [self] in
-                while true {
-                    let client = accept(sock, nil, nil)
-                    if client < 0 {
-                        if errno == EINTR || errno == ECONNABORTED { continue }
-                        return
-                    }
-                    ProxySocket.prepare(client)
-                    Thread.detachNewThread { self.serve(client) }
-                }
+        let acceptor = ProxyAcceptor(sockets: fds) { [weak self] client in
+            guard let self else {
+                close(client)
+                return
             }
+            ProxySocket.prepare(client)
+            Thread.detachNewThread { self.serve(client) }
+        }
+        lock.withLock {
+            self.acceptor = acceptor
+            current.port = port
         }
         return port
     }
 
+    /// Stops listening; the port is free again when this returns. Connections
+    /// already open run on until they end.
     public func stop() {
-        let fds = lock.withLock {
-            let fds = listenFDs
-            listenFDs = []
-            return fds
+        let acceptor = lock.withLock {
+            let acceptor = self.acceptor
+            self.acceptor = nil
+            return acceptor
         }
-        for sock in fds {
-            shutdown(sock, SHUT_RDWR)
-            close(sock)
-        }
+        acceptor?.stop()
     }
 
     static func listen(preferredPort: UInt16?) throws -> ([Int32], UInt16) {

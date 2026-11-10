@@ -18,15 +18,15 @@
 
 import Darwin
 import Foundation
+@testable import WhiskyKit
 
 /// A one-thread-per-connection TCP server on `127.0.0.1` for proxy tests. Each
 /// accepted connection is handed to `handler` on its own thread and closed after.
 final class ProxyTestServer: @unchecked Sendable {
     let port: UInt16
-    private let listener: Int32
+    private var acceptor: ProxyAcceptor?
     private let lock = NSLock()
     private var recorded: [[UInt8]] = []
-    private var stopped = false
 
     init(handler: @escaping @Sendable (Int32, ProxyTestServer) -> Void) throws {
         let sock = socket(AF_INET, SOCK_STREAM, 0)
@@ -46,34 +46,26 @@ final class ProxyTestServer: @unchecked Sendable {
         withUnsafeMutablePointer(to: &address) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { _ = getsockname(sock, $0, &size) }
         }
-        self.listener = sock
         self.port = UInt16(bigEndian: address.sin_port)
-        Thread.detachNewThread { [self] in
-            while true {
-                let client = accept(sock, nil, nil)
-                guard client >= 0 else { return }
-                var noSigPipe: Int32 = 1
-                setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
-                Thread.detachNewThread {
-                    handler(client, self)
-                    close(client)
-                }
+        self.acceptor = ProxyAcceptor(sockets: [sock]) { [weak self] client in
+            guard let self else {
+                close(client)
+                return
+            }
+            var noSigPipe: Int32 = 1
+            setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
+            Thread.detachNewThread {
+                handler(client, self)
+                close(client)
             }
         }
     }
 
-    deinit { stop() }
+    deinit { acceptor?.stop(wait: false) }
 
-    /// Stops listening. Safe to call more than once: the descriptor is closed only
-    /// once, so a later socket that reuses its number is never closed by mistake.
+    /// Stops listening. Safe to call more than once.
     func stop() {
-        let open = lock.withLock {
-            defer { stopped = true }
-            return !stopped
-        }
-        guard open else { return }
-        shutdown(listener, SHUT_RDWR)
-        close(listener)
+        acceptor?.stop()
     }
 
     /// Bytes a handler chose to remember, in order.
