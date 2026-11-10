@@ -189,6 +189,8 @@ public struct BottleSettings: Codable, Equatable {
         self.customDLLOverrides = []
     }
 
+    // One decode per settings group; splitting it would only scatter the defaults.
+    // swiftlint:disable:next function_body_length
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.fileVersion = try container.decodeIfPresent(SemanticVersion.self, forKey: .fileVersion) ?? Self
