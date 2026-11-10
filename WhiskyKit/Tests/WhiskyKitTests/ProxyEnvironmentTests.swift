@@ -110,8 +110,9 @@ final class ProxyEnvironmentTests: XCTestCase {
             at: program, bottle: makeBottle(proxied: true), args: "", environment: [:]
         )
         let wrapper = ProxyEnvironment.wrapperFolder.appending(path: AnoWineRuntime.loaderName)
-        XCTAssertTrue(command.contains(wrapper.esc), command)
-        XCTAssertFalse(command.contains(Wine.wineBinary.esc), command)
+        // The real loader's path is still there as ANO_REAL_LOADER; what matters is what runs.
+        XCTAssertTrue(command.contains("\(wrapper.esc) start /unix"), command)
+        XCTAssertFalse(command.contains("\(Wine.wineBinary.esc) start"), command)
         XCTAssertFalse(command.contains("DYLD_"), command)
     }
 

@@ -26,6 +26,7 @@ final class ProxyTestServer: @unchecked Sendable {
     private let listener: Int32
     private let lock = NSLock()
     private var recorded: [[UInt8]] = []
+    private var stopped = false
 
     init(handler: @escaping @Sendable (Int32, ProxyTestServer) -> Void) throws {
         let sock = socket(AF_INET, SOCK_STREAM, 0)
@@ -63,7 +64,14 @@ final class ProxyTestServer: @unchecked Sendable {
 
     deinit { stop() }
 
+    /// Stops listening. Safe to call more than once: the descriptor is closed only
+    /// once, so a later socket that reuses its number is never closed by mistake.
     func stop() {
+        let open = lock.withLock {
+            defer { stopped = true }
+            return !stopped
+        }
+        guard open else { return }
         shutdown(listener, SHUT_RDWR)
         close(listener)
     }

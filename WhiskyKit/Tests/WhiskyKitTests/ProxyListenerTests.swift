@@ -156,14 +156,33 @@ final class ProxyListenerTests: XCTestCase {
         XCTAssertNotEqual(other, 0)
     }
 
+    /// A bound socket that never listens: connecting to its port is refused, and
+    /// holding it keeps the port from being handed to anyone else meanwhile.
+    private func refusingPort() throws -> (Int32, UInt16) {
+        let sock = socket(AF_INET, SOCK_STREAM, 0)
+        var address = sockaddr_in()
+        address.sin_family = sa_family_t(AF_INET)
+        address.sin_addr.s_addr = inet_addr("127.0.0.1")
+        let bound = withUnsafePointer(to: &address) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(sock, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+            }
+        }
+        guard bound == 0 else {
+            close(sock)
+            throw POSIXError(.EADDRINUSE)
+        }
+        return (sock, localPort(of: sock))
+    }
+
     func testUpstreamDownClosesClient() throws {
-        let gone = try ProxyTestServer { _, _ in }
-        let upstreamPort = gone.port
-        gone.stop()
+        let (holder, upstreamPort) = try refusingPort()
+        defer { close(holder) }
         let (listener, port) = try makeListener(upstreamPort: upstreamPort)
         defer { listener.stop() }
 
         let sock = ProxyTestServer.connect(port: port)
+        XCTAssertGreaterThanOrEqual(sock, 0)
         defer { close(sock) }
         ProxyTestServer.write(sock, ProxyFrame.connect(.ipv4(0xC000_0201, port: 7_000)).encoded())
 

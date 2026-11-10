@@ -107,8 +107,8 @@ public enum ProxyEnvironment {
         for bottle: Bottle, proxyPort: @MainActor (Bottle) -> UInt16? = { ProxyService.shared.port(for: $0) }
     ) -> (variables: [String: String], pathPrefix: String?) {
         guard bottle.settings.proxyEnabled else { return ([:], nil) }
-        let folder = (try? installWrapper())?.deletingLastPathComponent() ?? wrapperFolder
-        return (variables(port: proxyPort(bottle)), folder.path(percentEncoded: false))
+        _ = try? installWrapper()
+        return (variables(port: proxyPort(bottle)), wrapperFolder.path(percentEncoded: false))
     }
 
     /// `environment` with ``shellAdditions(for:proxyPort:)`` applied.
