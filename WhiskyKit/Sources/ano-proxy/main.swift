@@ -65,6 +65,7 @@ let listener = ProxyListener(upstream: upstream)
 listener.onRequest = { type in
     FileHandle.standardError.write(Data("accepted \(type)\n".utf8))
 }
+
 do {
     let listening = try listener.start(preferredPort: port)
     print("listening \(listening)")
@@ -73,6 +74,7 @@ do {
     FileHandle.standardError.write(Data("ano-proxy: cannot listen: \(error)\n".utf8))
     exit(1)
 }
+
 while true {
     pause()
 }
