@@ -7,7 +7,7 @@
 	<key>dxvkVersion</key>
 	<string>1.10.3</string>
 	<key>sha256</key>
-	<string>8ce0fb633e215a101e4cbbb5ba1b70a2cf6ed7eca66c55ca2d375766f3a348a6</string>
+	<string>2f3f3637e994357610733505ef9180d15993b5d81ef647200c46751112b5fc73</string>
 	<key>version</key>
 	<dict>
 		<key>major</key>
@@ -15,7 +15,7 @@
 		<key>minor</key>
 		<integer>1</integer>
 		<key>patch</key>
-		<integer>3</integer>
+		<integer>4</integer>
 	</dict>
 </dict>
 </plist>
