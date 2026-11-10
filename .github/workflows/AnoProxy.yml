@@ -31,6 +31,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # Same toolchain as CI.yml: WhiskyKit needs the latest SDK (Xcode 16.4's
+      # NSImage is not Sendable, which Swift 6 rejects).
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Rosetta
         run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
 
