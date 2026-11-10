@@ -92,6 +92,7 @@ struct ConfigView: View {
             GraphicsConfigSection(bottle: bottle)
             AudioConfigSection(bottle: bottle)
             DiscordConfigSection(bottle: bottle)
+            NetworkConfigSection(bottle: bottle)
             ResolutionConfigSection(bottle: bottle)
             PerformanceConfigSection(bottle: bottle, isExpanded: $performanceSectionExpanded)
             DLLOverrideConfigSection(bottle: bottle, isExpanded: $dllOverrideSectionExpanded)
