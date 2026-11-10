@@ -106,7 +106,8 @@ static void helper_running(void)
     check("1 getaddrinfo gives one placeholder in 198.18.0.0/15", ok && in_fake_range(fake));
 
     int fd = -1;
-    ok = tcp4(fake, 7000, &fd) && echo_over(fd);
+    /* Only a real placeholder counts: 0.0.0.0 would reach the local echo server. */
+    ok = in_fake_range(fake) && tcp4(fake, 7000, &fd) && echo_over(fd);
     struct sockaddr_in peer;
     socklen_t len = sizeof(peer);
     int peer_ok = ok && getpeername(fd, (struct sockaddr *)&peer, &len) == 0 && peer.sin_family == AF_INET &&
