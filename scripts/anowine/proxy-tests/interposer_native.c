@@ -1,0 +1,173 @@
+/*
+ * Native test for libano_net.dylib, run by scripts/anowine/check-proxy.sh under
+ * Rosetta (x86_64) with DYLD_INSERT_LIBRARIES, ANO_PROXY_PORT and
+ * ANO_WINE_DIR=/nonexistent, against ano-proxy, a real Xray SOCKS inbound and
+ * the echo servers. Prints one "ok"/"FAIL" line per check; exits 1 on any FAIL.
+ *
+ *   interposer_native               checks 1-7 (helper running)
+ *   interposer_native --helper-down check 8 (ANO_PROXY_PORT points nowhere)
+ *
+ * This file is part of Ano, a modified version of Whisky (GPL-3.0-or-later).
+ */
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <spawn.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+extern char **environ;
+static int failures;
+
+static void check(const char *name, int ok)
+{
+    printf("%s native: %s\n", ok ? "ok  " : "FAIL", name);
+    if (!ok) failures++;
+}
+
+static int echo_over(int fd)
+{
+    struct timeval tv = { 5, 0 };
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    if (write(fd, "PING\n", 5) != 5) return 0;
+    char buf[5];
+    size_t got = 0;
+    while (got < 5) {
+        ssize_t n = read(fd, buf + got, 5 - got);
+        if (n <= 0) return 0;
+        got += (size_t)n;
+    }
+    return memcmp(buf, "PING\n", 5) == 0;
+}
+
+static int tcp4(uint32_t addr_be, int port, int *out_fd)
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_in sin = { .sin_len = sizeof(sin), .sin_family = AF_INET, .sin_port = htons(port) };
+    sin.sin_addr.s_addr = addr_be;
+    if (connect(fd, (struct sockaddr *)&sin, sizeof(sin)) != 0) {
+        close(fd);
+        return 0;
+    }
+    if (out_fd) {
+        *out_fd = fd;
+        return 1;
+    }
+    int ok = echo_over(fd);
+    close(fd);
+    return ok;
+}
+
+static uint32_t ip(const char *text)
+{
+    struct in_addr a;
+    inet_pton(AF_INET, text, &a);
+    return a.s_addr;
+}
+
+static int in_fake_range(uint32_t addr_be)
+{
+    uint32_t a = ntohl(addr_be);
+    return (a & 0xFFFE0000u) == 0xC6120000u;
+}
+
+static int resolve(const char *name, uint32_t *out)
+{
+    struct addrinfo hints = { .ai_family = AF_INET, .ai_socktype = SOCK_STREAM }, *res = NULL;
+    if (getaddrinfo(name, "7000", &hints, &res) != 0 || !res) return 0;
+    int count = 0;
+    for (struct addrinfo *ai = res; ai; ai = ai->ai_next) count++;
+    *out = ((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr;
+    freeaddrinfo(res);
+    return count == 1;
+}
+
+static int spawn_true(void)
+{
+    pid_t pid;
+    char *argv[] = { "/usr/bin/true", NULL };
+    if (posix_spawn(&pid, "/usr/bin/true", NULL, NULL, argv, environ) != 0) return 0;
+    int status = 0;
+    if (waitpid(pid, &status, 0) != pid) return 0;
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+}
+
+static void helper_running(void)
+{
+    uint32_t fake = 0;
+    int ok = resolve("anotest.example.com", &fake);
+    check("1 getaddrinfo gives one placeholder in 198.18.0.0/15", ok && in_fake_range(fake));
+
+    int fd = -1;
+    ok = tcp4(fake, 7000, &fd) && echo_over(fd);
+    struct sockaddr_in peer;
+    socklen_t len = sizeof(peer);
+    int peer_ok = ok && getpeername(fd, (struct sockaddr *)&peer, &len) == 0 && peer.sin_family == AF_INET &&
+                  peer.sin_addr.s_addr == fake && ntohs(peer.sin_port) == 7000;
+    if (fd >= 0) close(fd);
+    check("2 TCP by hostname echoes through the proxy", ok);
+    check("2 getpeername reports the placeholder, not the helper", peer_ok);
+
+    check("3 TCP to 192.0.2.1:7000 echoes through the proxy", tcp4(ip("192.0.2.1"), 7000, NULL));
+
+    int s6 = socket(AF_INET6, SOCK_STREAM, 0);
+    int v6only = 1;
+    setsockopt(s6, IPPROTO_IPV6, IPV6_V6ONLY, &v6only, sizeof(v6only));
+    struct sockaddr_in6 sin6 = { .sin6_len = sizeof(sin6), .sin6_family = AF_INET6, .sin6_port = htons(7000) };
+    inet_pton(AF_INET6, "::ffff:192.0.2.1", &sin6.sin6_addr);
+    ok = connect(s6, (struct sockaddr *)&sin6, sizeof(sin6)) == 0 && echo_over(s6);
+    close(s6);
+    check("4 IPv6-only socket to ::ffff:192.0.2.1 is proxied", ok);
+
+    int u = socket(AF_INET, SOCK_DGRAM, 0);
+    struct sockaddr_in to = { .sin_len = sizeof(to), .sin_family = AF_INET, .sin_port = htons(7001) };
+    to.sin_addr.s_addr = ip("192.0.2.1");
+    errno = 0;
+    ok = sendto(u, "U1", 2, 0, (struct sockaddr *)&to, sizeof(to)) == -1 && errno == EACCES;
+    check("5 UDP sendto 192.0.2.1 is refused (EACCES)", ok);
+    struct sockaddr_in to2 = to;
+    to2.sin_addr.s_addr = ip("192.0.2.2");
+    to2.sin_port = htons(7002);
+    errno = 0;
+    ok = connect(u, (struct sockaddr *)&to2, sizeof(to2)) == -1 && errno == EACCES;
+    check("5 UDP connect to 192.0.2.2 is refused (EACCES)", ok);
+    close(u);
+    u = socket(AF_INET, SOCK_DGRAM, 0);
+    struct timeval tv = { 3, 0 };
+    setsockopt(u, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    to.sin_addr.s_addr = ip("127.0.0.1");
+    char buf[4];
+    ok = sendto(u, "U1", 2, 0, (struct sockaddr *)&to, sizeof(to)) == 2 && recv(u, buf, sizeof(buf), 0) == 2;
+    close(u);
+    check("5 UDP to 127.0.0.1 still works", ok);
+
+    check("6 TCP to 127.0.0.1:7000 goes direct and works", tcp4(ip("127.0.0.1"), 7000, NULL));
+
+    check("7 posix_spawn /usr/bin/true works", spawn_true());
+    check("7 system(/usr/bin/true) works", system("/usr/bin/true") == 0);
+}
+
+static void helper_down(void)
+{
+    uint32_t fake = 0;
+    check("8 helper down: getaddrinfo fails", !resolve("anotest.example.com", &fake));
+    check("8 helper down: TCP to 192.0.2.1 fails", !tcp4(ip("192.0.2.1"), 7000, NULL));
+    check("8 helper down: TCP to 127.0.0.1 still works", tcp4(ip("127.0.0.1"), 7000, NULL));
+}
+
+int main(int argc, char **argv)
+{
+    setvbuf(stdout, NULL, _IONBF, 0);
+    if (argc > 1 && strcmp(argv[1], "--helper-down") == 0)
+        helper_down();
+    else
+        helper_running();
+    return failures ? 1 : 0;
+}

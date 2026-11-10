@@ -1,0 +1,63 @@
+name: Ano Proxy
+
+# End-to-end test of the proxy (Plan 2a): builds the interposer, the native test
+# program and the ano-proxy helper, then runs scripts/anowine/check-proxy.sh
+# against a real Xray SOCKS inbound with packet capture.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'AnoNet/**'
+      - 'WhiskyKit/Sources/WhiskyKit/Proxy/**'
+      - 'WhiskyKit/Sources/ano-proxy/**'
+      - 'scripts/anowine/proxy-tests/**'
+      - 'scripts/anowine/check-proxy.sh'
+      - '.github/workflows/AnoProxy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  XRAY_URL: https://github.com/XTLS/Xray-core/releases/download/v26.10.21/Xray-macos-arm64-v8a.zip
+  XRAY_SHA256: 926cc55fda2a8757dabe4f22dc98772f218ace025f101bd0b68aee232e59d5dc
+
+jobs:
+  proxy:
+    name: Interposer, helper and Xray
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      - name: Xray
+        run: |
+          mkdir -p "$RUNNER_TEMP/xray"
+          curl -fsSL -o "$RUNNER_TEMP/xray.zip" "$XRAY_URL"
+          echo "$XRAY_SHA256  $RUNNER_TEMP/xray.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/xray.zip" -d "$RUNNER_TEMP/xray"
+          "$RUNNER_TEMP/xray/xray" version | head -1
+
+      - name: Build interposer and native test
+        run: |
+          mkdir -p "$RUNNER_TEMP/bin"
+          clang -arch x86_64 -dynamiclib -O2 -Wall -Werror -mmacosx-version-min=10.15 \
+            -o "$RUNNER_TEMP/bin/libano_net.dylib" "$GITHUB_WORKSPACE/AnoNet/ano_net.c"
+          clang -arch x86_64 -O2 -Wall -mmacosx-version-min=10.15 \
+            -o "$RUNNER_TEMP/bin/interposer_native" "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/interposer_native.c"
+          lipo -archs "$RUNNER_TEMP/bin/libano_net.dylib"
+
+      - name: Build ano-proxy
+        run: |
+          swift build -c release --package-path "$GITHUB_WORKSPACE/WhiskyKit" --product ano-proxy
+          cp "$GITHUB_WORKSPACE/WhiskyKit/.build/release/ano-proxy" "$RUNNER_TEMP/bin/"
+
+      - name: Check proxy
+        run: |
+          bash "$GITHUB_WORKSPACE/scripts/anowine/check-proxy.sh" \
+            --xray "$RUNNER_TEMP/xray/xray" --helper "$RUNNER_TEMP/bin/ano-proxy" \
+            --lib "$RUNNER_TEMP/bin/libano_net.dylib" --native "$RUNNER_TEMP/bin/interposer_native"
