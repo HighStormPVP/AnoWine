@@ -57,13 +57,13 @@ jobs:
           clang -arch x86_64 -dynamiclib -O2 -Wall -Werror -mmacosx-version-min=10.15 \
             -o "$RUNNER_TEMP/bin/libano_net.dylib" "$GITHUB_WORKSPACE/AnoNet/ano_net.c"
           clang -arch x86_64 -O2 -Wall -mmacosx-version-min=10.15 \
-            -o "$RUNNER_TEMP/bin/interposer_native" "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/interposer_native.c"
+            -o "$RUNNER_TEMP/bin/interposer_native" "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/interposer_native.c" -lresolv
           lipo -archs "$RUNNER_TEMP/bin/libano_net.dylib"
 
       - name: Build netprobe.exe
         run: |
           brew install mingw-w64
-          x86_64-w64-mingw32-gcc -O2 -o "$RUNNER_TEMP/bin/netprobe.exe"             "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/netprobe.c" -lws2_32
+          x86_64-w64-mingw32-gcc -O2 -o "$RUNNER_TEMP/bin/netprobe.exe"             "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/netprobe.c" -lws2_32 -ldnsapi
 
       - name: Cache runtime
         id: runtime-cache

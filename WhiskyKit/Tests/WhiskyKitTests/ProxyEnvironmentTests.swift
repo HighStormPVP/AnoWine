@@ -151,5 +151,7 @@ final class ProxyEnvironmentTests: XCTestCase {
         let additions = ProxyEnvironment.shellAdditions(for: makeBottle(proxied: true), proxyPort: { _ in 4_242 })
         XCTAssertEqual(additions.variables[ProxyEnvironment.portKey], "4242")
         XCTAssertEqual(additions.pathPrefix, ProxyEnvironment.wrapperFolder.path(percentEncoded: false))
+        // Winetricks inspects the Wine binary; the wrapper is a script, so it is told the real one.
+        XCTAssertEqual(additions.variables["WINE_BIN"], AnoWineRuntime.loaderURL.path(percentEncoded: false))
     }
 }

@@ -114,6 +114,11 @@ if [ -n "$RUNTIME" ]; then
   check "wine 4 getpeername reports 192.0.2.1:7000" 'grep -q "^192\.0\.2\.1:7000" "$WORK/wine.out"'
   probe "$P" 1 "$NETPROBE" udp 192.0.2.1 7001 192.0.2.2 7002; rc=$?
   check "wine 5 UDP to 192.0.2.1/192.0.2.2 gets no reply" '[ "$rc" -eq 1 ]'
+  # Lookups that bypass getaddrinfo; the packet capture below is the real check.
+  probe "$P" 1 "$NETPROBE" dnsquery anotest-dnsquery.example.com; rc=$?
+  check "wine 9 DnsQuery_A is refused" '[ "$rc" -eq 1 ]'
+  probe "$P" 1 "$NETPROBE" hostbyaddr 192.0.2.9; rc=$?
+  check "wine 9 gethostbyaddr(192.0.2.9) is refused" '[ "$rc" -eq 1 ]'
 
   echo "== Windows program under Wine, proxied (helper down)"
   kill "$HELPER_PID" 2>/dev/null; wait "$HELPER_PID" 2>/dev/null
@@ -147,6 +152,8 @@ for pcap in "$WORK"/*.pcap; do
   tcpdump -nn -A -r "$pcap" 2>/dev/null > "$WORK/$name.txt"
   check "$name: no packet to 192.0.2.0/24" '! grep -Eq "> 192\.0\.2\.[0-9]+\." "$WORK/$name.txt"'
   check "$name: no DNS query for anotest" '! grep -qi "anotest" "$WORK/$name.txt"'
+  check "$name: no reverse lookup of 192.0.2.x" '! grep -qi "2\.0\.192\.in-addr" "$WORK/$name.txt"'
+  grep -i "anotest\|2\.0\.192\.in-addr" "$WORK/$name.txt" | head -5 | sed 's/^/     leak: /'
 done
 
 exit "$fail"

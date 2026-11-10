@@ -4,16 +4,21 @@
  * ANO_WINE_DIR=/nonexistent, against ano-proxy, a real Xray SOCKS inbound and
  * the echo servers. Prints one "ok"/"FAIL" line per check; exits 1 on any FAIL.
  *
- *   interposer_native               checks 1-7 and 9 (helper running)
+ *   interposer_native               checks 1-7 and 9-11 (helper running)
+ *   interposer_native --print-dyld  exit 0 if DYLD_INSERT_LIBRARIES is set, else 3
  *   interposer_native --helper-down check 8 (ANO_PROXY_PORT points nowhere)
  *
  * This file is part of Ano, a modified version of Whisky (GPL-3.0-or-later).
  */
 
 #include <arpa/inet.h>
+#include <arpa/nameser.h>
 #include <errno.h>
+#include <libgen.h>
+#include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <resolv.h>
 #include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -169,6 +174,60 @@ static void helper_running(void)
     struct hostent *entry = gethostbyname(self);
     ok = !entry || entry->h_length != 4 || !entry->h_addr_list[0] || !in_fake_range(*(uint32_t *)entry->h_addr_list[0]);
     check("9 gethostbyname(own hostname) is not a placeholder", ok);
+
+    /* Lookups that bypass getaddrinfo. Their names would show in the packet
+     * capture ("anotest", "2.0.192.in-addr"), which is the real check. */
+    struct in_addr probe;
+    inet_pton(AF_INET, "192.0.2.9", &probe);
+    check("10 gethostbyaddr(192.0.2.9) is refused", gethostbyaddr(&probe, sizeof(probe), AF_INET) == NULL);
+    unsigned char answer[512];
+    check("10 res_query is refused",
+          res_query("anotest-query.example.com", ns_c_in, ns_t_a, answer, sizeof(answer)) < 0);
+    check("10 res_search is refused",
+          res_search("anotest-search.example.com", ns_c_in, ns_t_a, answer, sizeof(answer)) < 0);
+}
+
+/* Runs this program again with --print-dyld; returns its exit status, or -1. */
+static int spawn_self(const char *path, int by_name)
+{
+    pid_t pid;
+    char *argv[] = { (char *)path, "--print-dyld", NULL };
+    int rc = by_name ? posix_spawnp(&pid, path, NULL, NULL, argv, environ)
+                     : posix_spawn(&pid, path, NULL, NULL, argv, environ);
+    if (rc != 0) return -1;
+    int status = 0;
+    if (waitpid(pid, &status, 0) != pid || !WIFEXITED(status)) return -1;
+    return WEXITSTATUS(status);
+}
+
+/* Wine re-executes itself by resolved path and starts tools by bare name; both
+ * must keep the interposer when they are inside the Wine folder, whichever way
+ * that folder's path is written. */
+static void wine_folder(const char *self)
+{
+    char real[PATH_MAX], copy[PATH_MAX], link[PATH_MAX], path[PATH_MAX * 2];
+    if (!realpath(self, real)) {
+        check("11 own path resolves", 0);
+        return;
+    }
+    strlcpy(copy, real, sizeof(copy));
+    const char *dir = dirname(copy);
+    const char *tmp = getenv("TMPDIR") ? getenv("TMPDIR") : "/tmp";
+    snprintf(link, sizeof(link), "%s/ano-wine-link-%d", tmp, (int)getpid());
+    unlink(link);
+    if (symlink(dir, link) != 0) {
+        check("11 symlink to the Wine folder", 0);
+        return;
+    }
+
+    setenv("ANO_WINE_DIR", link, 1);
+    check("11 resolved path under a symlinked Wine folder keeps the interposer", spawn_self(real, 0) == 0);
+    snprintf(path, sizeof(path), "%s:%s", dir, getenv("PATH") ? getenv("PATH") : "/usr/bin:/bin");
+    setenv("PATH", path, 1);
+    check("11 bare name found in the Wine folder keeps the interposer", spawn_self(basename(real), 1) == 0);
+    setenv("ANO_WINE_DIR", "/nonexistent", 1);
+    check("11 program outside the Wine folder loses the interposer", spawn_self(real, 0) == 3);
+    unlink(link);
 }
 
 static void helper_down(void)
@@ -182,9 +241,13 @@ static void helper_down(void)
 int main(int argc, char **argv)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
-    if (argc > 1 && strcmp(argv[1], "--helper-down") == 0)
+    if (argc > 1 && strcmp(argv[1], "--print-dyld") == 0)
+        return getenv("DYLD_INSERT_LIBRARIES") ? 0 : 3;
+    if (argc > 1 && strcmp(argv[1], "--helper-down") == 0) {
         helper_down();
-    else
+    } else {
         helper_running();
+        wine_folder(argv[0]);
+    }
     return failures ? 1 : 0;
 }

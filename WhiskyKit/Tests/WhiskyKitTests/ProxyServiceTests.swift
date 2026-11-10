@@ -33,6 +33,8 @@ final class ProxyServiceTests: XCTestCase {
         try? FileManager.default.removeItem(at: tempDir)
     }
 
+    private let idle: @MainActor (Bottle) -> Bool = { _ in false }
+
     private func makeService() -> ProxyService {
         ProxyService(profileStore: ProxyProfileStore(
             fileURL: tempDir.appending(path: "profiles.json"), secrets: InMemoryProxySecretStore()
@@ -45,15 +47,17 @@ final class ProxyServiceTests: XCTestCase {
         var stopped = 0
         let profile = UUID()
 
-        XCTAssertTrue(service.apply(profile, to: bottle) { _ in stopped += 1 })
+        XCTAssertEqual(service.apply(profile, to: bottle, stopBottle: { _ in stopped += 1 }, isRunning: idle), .applied)
         XCTAssertEqual(stopped, 1)
         XCTAssertTrue(bottle.settings.proxyEnabled)
         XCTAssertEqual(bottle.settings.proxyProfileID, profile)
 
-        XCTAssertFalse(service.apply(profile, to: bottle) { _ in stopped += 1 })
+        XCTAssertEqual(
+            service.apply(profile, to: bottle, stopBottle: { _ in stopped += 1 }, isRunning: idle), .unchanged
+        )
         XCTAssertEqual(stopped, 1, "re-selecting the same profile changes nothing")
 
-        XCTAssertTrue(service.apply(nil, to: bottle) { _ in stopped += 1 })
+        XCTAssertEqual(service.apply(nil, to: bottle, stopBottle: { _ in stopped += 1 }, isRunning: idle), .applied)
         XCTAssertEqual(stopped, 2)
         XCTAssertFalse(bottle.settings.proxyEnabled)
         XCTAssertNil(ProxyService.selection(of: bottle))
@@ -66,14 +70,67 @@ final class ProxyServiceTests: XCTestCase {
         try store.save(profile, password: nil)
         let service = ProxyService(profileStore: store)
         let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
-        service.apply(profile.id, to: bottle) { _ in }
+        service.apply(profile.id, to: bottle, stopBottle: { _ in }, isRunning: idle)
 
         let port = try XCTUnwrap(service.port(for: bottle))
         XCTAssertEqual(service.status(for: bottle)?.port, port)
         XCTAssertEqual(bottle.settings.proxyLastPort, port)
 
-        service.apply(nil, to: bottle) { _ in }
+        service.apply(nil, to: bottle, stopBottle: { _ in }, isRunning: idle)
         XCTAssertNil(service.status(for: bottle))
+    }
+
+    /// In Wine the server makes the connections: one that survives the stop
+    /// would keep the old setting, so the change must not go through.
+    func testChangeIsRefusedWhileBottleStillRuns() {
+        let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
+        let service = makeService()
+
+        let result = service.apply(UUID(), to: bottle, stopBottle: { _ in }, isRunning: { _ in true })
+
+        XCTAssertEqual(result, .stillRunning)
+        XCTAssertFalse(bottle.settings.proxyEnabled)
+        XCTAssertNil(bottle.settings.proxyProfileID)
+    }
+
+    /// The command-line tool exits at once, so it must use the app's helper
+    /// and never start (or record) one of its own.
+    func testNonHostingServiceUsesRecordedPortWithoutListening() throws {
+        let store = ProxyProfileStore(
+            fileURL: tempDir.appending(path: "profiles.json"), secrets: InMemoryProxySecretStore()
+        )
+        let profile = ProxyProfile.newDefault()
+        try store.save(profile, password: nil)
+        let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
+        let client = ProxyService(profileStore: store, hosting: false)
+        client.apply(profile.id, to: bottle, stopBottle: { _ in }, isRunning: idle)
+
+        XCTAssertNil(client.port(for: bottle), "no helper has ever run for this bottle")
+
+        bottle.settings.proxyLastPort = 4_242
+        XCTAssertEqual(client.port(for: bottle), 4_242)
+        XCTAssertNil(client.status(for: bottle))
+        XCTAssertEqual(bottle.settings.proxyLastPort, 4_242)
+    }
+
+    /// Programs keep placeholder addresses across a helper restart (a profile
+    /// edit); the same placeholder must still mean the same name.
+    func testPlaceholdersSurviveRestart() throws {
+        let store = ProxyProfileStore(
+            fileURL: tempDir.appending(path: "profiles.json"), secrets: InMemoryProxySecretStore()
+        )
+        let profile = ProxyProfile.newDefault()
+        try store.save(profile, password: nil)
+        let service = ProxyService(profileStore: store)
+        let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
+        service.apply(profile.id, to: bottle, stopBottle: { _ in }, isRunning: idle)
+        _ = try XCTUnwrap(service.port(for: bottle))
+        let before = try XCTUnwrap(service.placeholders(for: bottle).address(for: "store.example"))
+
+        service.restart(for: bottle)
+
+        XCTAssertEqual(service.placeholders(for: bottle).name(for: before), "store.example")
+        XCTAssertEqual(service.placeholders(for: bottle).address(for: "store.example"), before)
     }
 
     nonisolated func testExitIPReadsTraceThroughTheProxy() throws {
@@ -102,7 +159,7 @@ final class ProxyServiceTests: XCTestCase {
     func testMissingProfileGivesNoPort() {
         let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
         let service = makeService()
-        service.apply(UUID(), to: bottle) { _ in }
+        service.apply(UUID(), to: bottle, stopBottle: { _ in }, isRunning: idle)
         XCTAssertNil(service.port(for: bottle))
     }
 }

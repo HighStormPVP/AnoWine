@@ -5,6 +5,8 @@
  *   netprobe dns <host>                        print resolved IPv4s
  *   netprobe tcp <host> <port>                 send "PING\n", expect it echoed
  *   netprobe connect <ip> <port>               TCP connect only
+ *   netprobe dnsquery <host>                   DnsQuery_A for an A record
+ *   netprobe hostbyaddr <ip>                   gethostbyaddr (reverse lookup)
  *   netprobe peer <ip> <port>                  TCP connect, print getpeername
  *                                              as ip:port
  *   netprobe udp <ip1> <port1> <ip2> <port2>   one socket, two destinations,
@@ -14,6 +16,7 @@
  */
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windns.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,6 +100,38 @@ static int do_connect(const char *ip, const char *port)
         printf("connect: ok\n");
     closesocket(s);
     return ok ? 0 : 1;
+}
+
+static int do_dnsquery(const char *host)
+{
+    PDNS_RECORDA records = NULL;
+    DNS_STATUS status = DnsQuery_A(host, DNS_TYPE_A, DNS_QUERY_STANDARD, NULL, (PDNS_RECORD *)&records, NULL);
+
+    if (status != 0) {
+        printf("dnsquery: failed: %ld\n", (long)status);
+        return 1;
+    }
+    printf("dnsquery: answered\n");
+    if (records) DnsRecordListFree((PDNS_RECORD)records, DnsFreeRecordList);
+    return 0;
+}
+
+static int do_hostbyaddr(const char *ip)
+{
+    struct in_addr addr;
+    struct hostent *entry;
+
+    if (inet_pton(AF_INET, ip, &addr) != 1) {
+        printf("hostbyaddr: bad address\n");
+        return 1;
+    }
+    entry = gethostbyaddr((const char *)&addr, sizeof(addr), AF_INET);
+    if (!entry) {
+        printf("hostbyaddr: failed: %d\n", WSAGetLastError());
+        return 1;
+    }
+    printf("hostbyaddr: %s\n", entry->h_name);
+    return 0;
 }
 
 static int do_peer(const char *ip, const char *port)
@@ -194,6 +229,10 @@ int main(int argc, char **argv)
         rc = do_tcp(argv[2], argv[3]);
     else if (argc == 4 && strcmp(argv[1], "connect") == 0)
         rc = do_connect(argv[2], argv[3]);
+    else if (argc == 3 && strcmp(argv[1], "dnsquery") == 0)
+        rc = do_dnsquery(argv[2]);
+    else if (argc == 3 && strcmp(argv[1], "hostbyaddr") == 0)
+        rc = do_hostbyaddr(argv[2]);
     else if (argc == 4 && strcmp(argv[1], "peer") == 0)
         rc = do_peer(argv[2], argv[3]);
     else if (argc == 6 && strcmp(argv[1], "udp") == 0)

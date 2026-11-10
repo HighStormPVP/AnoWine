@@ -85,7 +85,7 @@ final class ProxyFrameTests: XCTestCase {
     }
 
     func testFakeDNSIsStableAndNormalised() {
-        let dns = FakeDNS()
+        let dns = FakeDNS(start: 0xC612_0001)
         let first = dns.address(for: "A.Example.")
         XCTAssertEqual(first, 0xC612_0001)
         XCTAssertEqual(dns.address(for: "a.example"), first)
@@ -114,10 +114,26 @@ final class ProxyFrameTests: XCTestCase {
     }
 
     func testFakeDNSExhaustionReturnsNil() {
-        let dns = FakeDNS(range: 0xC612_0001 ... 0xC612_0002)
+        let dns = FakeDNS(range: 0xC612_0001 ... 0xC612_0002, start: 0xC612_0001)
         XCTAssertNotNil(dns.address(for: "one.example"))
         XCTAssertNotNil(dns.address(for: "two.example"))
         XCTAssertNil(dns.address(for: "three.example"))
         XCTAssertEqual(dns.address(for: "one.example"), 0xC612_0001)
+    }
+
+    /// A restarted helper must not hand a placeholder a program still holds to
+    /// another name, so each instance starts somewhere else and wraps around.
+    func testFakeDNSStartsWhereToldAndWraps() {
+        let dns = FakeDNS(range: 0xC612_0001 ... 0xC612_0003, start: 0xC612_0002)
+        XCTAssertEqual(dns.address(for: "one.example"), 0xC612_0002)
+        XCTAssertEqual(dns.address(for: "two.example"), 0xC612_0003)
+        XCTAssertEqual(dns.address(for: "three.example"), 0xC612_0001)
+        XCTAssertNil(dns.address(for: "four.example"))
+    }
+
+    func testFakeDNSDefaultStartVaries() {
+        let starts = Set((0 ..< 8).compactMap { _ in FakeDNS().address(for: "a.example") })
+        XCTAssertGreaterThan(starts.count, 1)
+        XCTAssertTrue(starts.allSatisfy { (0xC612_0001 ... 0xC613_FFFE).contains($0) })
     }
 }
