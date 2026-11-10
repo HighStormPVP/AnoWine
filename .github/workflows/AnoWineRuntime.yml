@@ -10,6 +10,7 @@ on:
     paths:
       - 'scripts/anowine/repack-runtime.sh'
       - 'scripts/anowine/check-runtime-digest.sh'
+      - 'scripts/anowine/check-ano-core.sh'
       - 'dist/pages/WhiskyWineVersion.plist'
       - '.github/workflows/AnoWineRuntime.yml'
   workflow_dispatch:
@@ -40,11 +41,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/smoke"
           tar -xzf "$RUNNER_TEMP/out/Libraries.tar.gz" -C "$RUNNER_TEMP/smoke"
-          BIN="$RUNNER_TEMP/smoke/Libraries/Wine/bin"
-          export WINEPREFIX="$RUNNER_TEMP/smoke/prefix" WINESERVER="$BIN/ano-server" WINEDEBUG=-all
-          WINEDLLOVERRIDES="mscoree,mshtml=" "$BIN/ano-loader" wineboot -i
-          "$WINESERVER" -w
-          test -f "$WINEPREFIX/system.reg" && echo "prefix created with ano-loader + ano-server"
+          bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-core.sh" "$RUNNER_TEMP/smoke/Libraries" --boot
 
       - name: Upload runtime
         uses: actions/upload-artifact@v7
