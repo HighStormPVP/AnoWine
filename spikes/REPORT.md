@@ -78,3 +78,18 @@ For Plan 2:
 
 - Run 1 (40175603353): the injection probe "failed" only because of the exported-variable problem above; fixed by injecting through the shim (run 2).
 - First push: the Spikes workflow failed to start because `runner.temp` isn't allowed in job-level `env`. Fixed.
+
+## Plan 2a: findings from the proxy test under Wine
+
+Found by `scripts/anowine/check-proxy.sh` (workflow `Ano Proxy`), fixed in `AnoNet/ano_net.c`.
+
+- **A new proxied bottle did not boot** (`Unhandled exception 0xc0000417`, then
+  `could not load kernel32.dll, status c0000135`; run 42894914225). While it creates a
+  bottle, Wine looks up the Mac's own hostname and asks for the canonical name. The
+  interposer answered with a placeholder address and no name. Fix: the Mac's own
+  hostname and `.local` names are resolved locally (they never go to an internet DNS
+  server), and a lookup with `AI_CANONNAME` gets the name back. Green in run 42901992812.
+- Wine connects TCP sockets inside `ano-server`, so the server needs the interposer
+  too, not only the loader. Both get it.
+- Windows programs see blocked UDP as `WSAEACCES` (10013) and a missing helper as
+  `WSAECONNREFUSED` (10061) or a failed lookup (11003).
