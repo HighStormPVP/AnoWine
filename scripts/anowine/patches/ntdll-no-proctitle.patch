@@ -1,0 +1,10 @@
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -484,6 +484,7 @@
+  */
+ static void set_process_name( const char *name )
+ {
++    return;  /* Ano: keep the name the process started with */
+     char *p;
+ 
+ #ifdef HAVE_SETPROCTITLE

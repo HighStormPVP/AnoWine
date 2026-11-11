@@ -19,7 +19,7 @@ grep -aq "%s%s/ano-core" "$MODULES/lib/wine/x86_64-unix/ntdll.so" || { echo "err
 # ---- pinned inputs ----------------------------------------------------------
 BASE_URL="https://github.com/frankea/Whisky/releases/download/v3.1.1/Libraries.tar.gz"
 BASE_SHA256="01f3a1b43b98065fe20c529c1023b61dd79a6d2ad93bba6040865f646481ccf3"
-VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=5
+VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=6
 LOADER=ano-loader
 SERVER=ano-server
 CORE=ano-core

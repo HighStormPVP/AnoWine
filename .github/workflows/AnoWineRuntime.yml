@@ -3,7 +3,7 @@ name: AnoWine Runtime
 # Builds AnoWine's Wine runtime (upstream's with renamed programs: the loader
 # runs as ano-core, wineboot.exe is ano-boot.exe and winedevice.exe is
 # ano-device.exe, which needs rebuilt modules), smoke-tests it, optionally
-# publishes it as release v3.1.5, and checks that the Pages
+# publishes it as release v3.1.6, and checks that the Pages
 # plist advertises the published asset's exact digest.
 
 on:
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish the built runtime as release v3.1.5'
+        description: 'Publish the built runtime as release v3.1.6'
         type: boolean
         default: false
 
@@ -42,7 +42,7 @@ jobs:
 
       - name: Build
         run: |
-          bash "$GITHUB_WORKSPACE/scripts/anowine/build-modules.sh" "$RUNNER_TEMP/modules"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ntdll-ano-core.patch"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ano-programs.patch"
+          bash "$GITHUB_WORKSPACE/scripts/anowine/build-modules.sh" "$RUNNER_TEMP/modules"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ntdll-ano-core.patch"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ano-programs.patch"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ntdll-no-proctitle.patch"
 
       - name: Upload modules
         uses: actions/upload-artifact@v7
@@ -91,7 +91,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish release v3.1.5
+    name: Publish release v3.1.6
     needs: build
     if: github.event_name == 'workflow_dispatch' && inputs.publish
     runs-on: ubuntu-latest
@@ -109,9 +109,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sha256sum out/Libraries.tar.gz
-          gh release create v3.1.5 --repo "$GITHUB_REPOSITORY" \
-            --title "AnoWine Wine runtime v3.1.5" \
-            --notes "Upstream frankea/Whisky runtime v3.1.1 (Wine 11.0) with wine64/wine renamed to ano-loader, wineserver to ano-server, the loader lib/wine/x86_64-unix/wine to ano-core, wineboot.exe to ano-boot.exe and winedevice.exe to ano-device.exe (the modules that start them rebuilt from Wine 11.0 with scripts/anowine/patches/*.patch). SHA-256: $(sha256sum out/Libraries.tar.gz | cut -d' ' -f1)" \
+          gh release create v3.1.6 --repo "$GITHUB_REPOSITORY" \
+            --title "AnoWine Wine runtime v3.1.6" \
+            --notes "Upstream frankea/Whisky runtime v3.1.1 (Wine 11.0) with wine64/wine renamed to ano-loader, wineserver to ano-server, the loader lib/wine/x86_64-unix/wine to ano-core, wineboot.exe to ano-boot.exe and winedevice.exe to ano-device.exe (the modules that start them rebuilt from Wine 11.0 with scripts/anowine/patches/*.patch); ntdll.so no longer sets the program name. SHA-256: $(sha256sum out/Libraries.tar.gz | cut -d' ' -f1)" \
             out/Libraries.tar.gz
 
   digest:
