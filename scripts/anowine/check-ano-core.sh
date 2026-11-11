@@ -33,7 +33,9 @@ if [ "${2:-}" = --boot ]; then
   awk '{print $1}' "$PREFIX/ps.txt" | sort -u > "$PREFIX/names.txt"
   check "Windows processes ran as ano-core" 'grep -qx "ano-core" "$PREFIX/names.txt"'
   check "nothing ran as wine, wine64 or wineserver" '! grep -qxE "wine|wine64|wineserver" "$PREFIX/names.txt"'
-  echo "Wine processes seen (kernel name, then the Windows program it showed):"
+  # Wine must not overwrite a process's arguments with the Windows program (C:\...).
+  check "no process command starts with a Windows path" '! grep -qE "^ano-core +[A-Za-z]:" "$PREFIX/ps.txt"'
+  echo "Wine processes seen (kernel name, then the command ps shows):"
   awk '$1 ~ /^(ano-|wine)/' "$PREFIX/ps.txt" | sort | uniq -c | sort -rn | head -20
   rm -rf "$PREFIX"
 fi
