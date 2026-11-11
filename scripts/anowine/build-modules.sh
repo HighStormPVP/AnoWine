@@ -3,7 +3,7 @@
 # like the rest of the runtime, which runs under Rosetta on Apple Silicon).
 # These are the modules that start a renamed Wine program by name:
 #   ntdll.so      starts the loader (ano-core) and the boot program (ano-boot)
-#                 and keeps its program name (ntdll-no-proctitle.patch)
+#                 and keeps its program name and arguments (ntdll-no-proctitle.patch)
 #   user32.dll    starts ano-boot.exe to end the session
 #   services.exe  starts ano-device.exe to host drivers
 #   winedbg.exe   skips crash dialogs for ano-device.exe
