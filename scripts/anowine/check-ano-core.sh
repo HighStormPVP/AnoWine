@@ -17,6 +17,8 @@ check "loader is lib/wine/x86_64-unix/ano-core" '[ -x "$UNIX/ano-core" ] && [ ! 
 check "no loader named wine is left" '[ ! -e "$UNIX/wine" ] && [ ! -L "$UNIX/wine" ]'
 check "ntdll.so starts ano-core" 'grep -aq "%s%s/ano-core" "$UNIX/ntdll.so"'
 check "ntdll.so no longer starts wine" '! grep -aq "%s%s/wine" "$UNIX/ntdll.so"'
+# Wine's set_process_name (dlls/ntdll/unix/env.c) is its only caller of setprogname.
+check "ntdll.so does not rename its process (no setprogname)" '! nm -u "$UNIX/ntdll.so" | grep -qw _setprogname'
 
 if [ "${2:-}" = --boot ]; then
   PREFIX="$(mktemp -d "${TMPDIR:-/tmp}/anowine-anocore-XXXXXX")"
