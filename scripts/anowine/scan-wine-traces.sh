@@ -151,7 +151,6 @@ if [ -d "$P" ]; then
   done | cap 60 >> "$R"; endsection
 fi
 
-cp -R "$P/drive_c/users" "$OUT/bottle-users" 2>/dev/null
 cp "$P"/*.reg "$OUT/" 2>/dev/null
 ( cd "$P" && find . -type f -o -type l ) 2>/dev/null | sort > "$OUT/raw-bottle-files.txt"
 rm -rf "$WORK"
