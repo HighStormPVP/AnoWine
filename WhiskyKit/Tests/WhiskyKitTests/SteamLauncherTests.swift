@@ -283,4 +283,21 @@ struct SteamLauncherTests {
 
         #expect(SteamLauncher.steamPIDs(inProcessListing: listing) == [303, 505])
     }
+
+    @Test("Since runtime 3.1.6 the command is ano-core, then the Windows image and its arguments")
+    func steamPIDsAfterTheLoaderPath() {
+        let wine = "/Users/me/Library/Application Support/io.github.highstormpvp.Ano/Libraries/Wine"
+        let core = wine + "/lib/wine/x86_64-unix/ano-core"
+        let listing = """
+          101 \(wine)/bin/ano-server
+          202 \(core) C:\\windows\\system32\\ano-device.exe
+          303 \(core) C:\\Program Files (x86)\\Steam\\steam.exe -silent
+          404 \(core) C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win7x64\\steamwebhelper.exe -lang=en
+          505 \(core) C:\\Program Files (x86)\\Steam\\STEAM.EXE
+          606 /usr/bin/grep steam.exe
+          707 \(wine)/bin/ano-loader steam.exe
+        """
+
+        #expect(SteamLauncher.steamPIDs(inProcessListing: listing) == [303, 505])
+    }
 }

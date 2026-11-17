@@ -147,6 +147,23 @@ struct WineSteamClientDriverTests {
         #expect(names == ["steam.exe", "steamwebhelper.exe", "fsd-win64-shipping.exe"])
     }
 
+    @Test("Since runtime 3.1.6 the image follows the ano-core path; host commands are not images")
+    func exeNamesAfterTheLoaderPath() {
+        let wine = "/Users/me/Library/Application Support/io.github.highstormpvp.Ano/Libraries/Wine"
+        let core = wine + "/lib/wine/x86_64-unix/ano-core"
+        let listing = """
+        /sbin/launchd
+        \(core) C:\\Program Files (x86)\\Steam\\steam.exe -silent
+        \(core) C:\\Program Files (x86)\\Steam\\steamwebhelper.EXE --type=renderer
+        \(core) Z:\\Users\\me\\Games\\Deep Rock Galactic\\FSD\\Binaries\\Win64\\FSD-Win64-Shipping.exe
+        \(core) start.exe /exec cmd /c echo
+        \(wine)/bin/ano-server
+        /usr/bin/grep steam.exe
+        """
+        let names = WineSteamClientDriver.exeImageNames(inProcessListing: listing)
+        #expect(names == ["steam.exe", "steamwebhelper.exe", "fsd-win64-shipping.exe", "start.exe"])
+    }
+
     @Test("A listing without Wine processes yields nothing to check")
     func emptyWhenNoExe() {
         #expect(WineSteamClientDriver.exeImageNames(inProcessListing: "/sbin/launchd\nwineserver\n").isEmpty)
