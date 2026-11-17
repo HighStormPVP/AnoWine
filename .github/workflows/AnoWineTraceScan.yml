@@ -1,0 +1,61 @@
+name: AnoWine Trace Scan
+
+# Inventory of every trace of "wine" a bottle leaves on the Mac (processes,
+# environments, files, registry) while a bottle is created, programs and Wine
+# tools run, and winetricks runs. See scripts/anowine/scan-wine-traces.sh.
+# Reports only; the report is the job summary and the wine-traces artifact.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/anowine/scan-wine-traces.sh'
+      - '.github/workflows/AnoWineTraceScan.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.6/Libraries.tar.gz
+  RUNTIME_SHA256: 412035519d2df986aebb5c3a72c5dd6b00162d3b5aa52c1fff1713928b521ead
+
+jobs:
+  scan:
+    name: Scan a bottle for wine traces
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      - name: Cache runtime
+        id: runtime-cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/runtime.tar.gz
+          key: ano-runtime-${{ env.RUNTIME_SHA256 }}
+
+      - name: Runtime v3.1.6
+        run: |
+          [ -f "$RUNNER_TEMP/runtime.tar.gz" ] || curl -fsSL -o "$RUNNER_TEMP/runtime.tar.gz" "$RUNTIME_URL"
+          echo "$RUNTIME_SHA256  $RUNNER_TEMP/runtime.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/runtime"
+          tar -xzf "$RUNNER_TEMP/runtime.tar.gz" -C "$RUNNER_TEMP/runtime"
+
+      - name: Scan
+        run: |
+          bash "$GITHUB_WORKSPACE/scripts/anowine/scan-wine-traces.sh" "$RUNNER_TEMP/runtime/Libraries" \
+            "$GITHUB_WORKSPACE/Libraries/winetricks" "$RUNNER_TEMP/report"
+          cat "$RUNNER_TEMP/report/report.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: wine-traces
+          path: ${{ runner.temp }}/report
+          if-no-files-found: warn
