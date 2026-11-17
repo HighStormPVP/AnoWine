@@ -100,16 +100,18 @@ section "Open files and sockets of ano-* processes whose path contains wine (dis
 grep -i wine "$OUT/raw-lsof.txt" 2>/dev/null | sed -E 's#/private/tmp/ano-scan\.[^/]+#<work>#' | sort | uniq -c | sort -rn | cap 60 >> "$R"; endsection
 
 # Files created or changed outside the bottle, the runtime and this scan.
-find "$HOME" /private/tmp "$TMPROOT" /Users/Shared -xdev -newer "$WORK/marker" \
+find "$HOME" /private/tmp "$TMPROOT" /Users/Shared -xdev \
   \( -path "$WORK" -o -path "$LIB" -o -path "$OUT" -o -path "$HOME/work" -o -path "$HOME/actions-runner" \
-     -o -path "$HOME/runners" -o -path "$HOME/Library/Caches/com.apple.*" \) -prune -o -print 2>/dev/null \
+     -o -path "$HOME/runners" -o -path "$HOME/hostedtoolcache" -o -path "$HOME/Library/Caches/com.apple.*" \) \
+  -prune -o -newer "$WORK/marker" -print 2>/dev/null \
   | sort -u > "$OUT/raw-outside-changed.txt"
 section "Outside the bottle: created or changed paths that contain wine"
 grep -i wine "$OUT/raw-outside-changed.txt" | cap 80 >> "$R"; endsection
 section "Outside the bottle: created or changed files whose contents contain wine"
 while IFS= read -r f; do
-  [ -f "$f" ] && [ ! -L "$f" ] && grep -qai wine "$f" 2>/dev/null && echo "$f ($(grep -oai wine "$f" | wc -l | tr -d ' ') matches)"
-done < "$OUT/raw-outside-changed.txt" | cap 80 >> "$R"; endsection
+  [ -f "$f" ] && [ ! -L "$f" ] && [ "$(stat -f %z "$f")" -lt 20000000 ] && grep -qai wine "$f" 2>/dev/null \
+    && echo "$f ($(grep -oai wine "$f" | wc -l | tr -d ' ') matches)"
+done < <(head -n 5000 "$OUT/raw-outside-changed.txt") | cap 80 >> "$R"; endsection
 section "Outside the bottle: all created or changed paths (first 150)"
 cap 150 < "$OUT/raw-outside-changed.txt" >> "$R"; endsection
 
@@ -151,6 +153,7 @@ fi
 
 cp -R "$P/drive_c/users" "$OUT/bottle-users" 2>/dev/null
 cp "$P"/*.reg "$OUT/" 2>/dev/null
+( cd "$P" && find . -type f -o -type l ) 2>/dev/null | sort > "$OUT/raw-bottle-files.txt"
 rm -rf "$WORK"
 echo "report: $R"
 exit 0
