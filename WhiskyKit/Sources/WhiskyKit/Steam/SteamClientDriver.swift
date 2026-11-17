@@ -114,7 +114,7 @@ open class WineSteamClientDriver: SteamClientDriver {
             return nil
         }
         var from = rest.startIndex
-        while let exe = rest.range(of: ".exe", options: .caseInsensitive, range: from..<rest.endIndex) {
+        while let exe = rest.range(of: ".exe", options: .caseInsensitive, range: from ..< rest.endIndex) {
             from = exe.upperBound
             guard exe.upperBound == rest.endIndex || rest[exe.upperBound].isWhitespace else { continue }
             let path = rest[..<exe.upperBound]
