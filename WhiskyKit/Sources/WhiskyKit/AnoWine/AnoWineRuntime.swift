@@ -34,6 +34,10 @@ public enum AnoWineRuntime {
     public static let bootProgramName = "ano-boot"
     /// The Windows program that hosts drivers (upstream's `winedevice.exe`).
     public static let deviceHostImageName = "ano-device.exe"
+    /// The Unix program every Windows process runs as (upstream's
+    /// `lib/wine/x86_64-unix/wine`). From runtime 3.1.6 `ps` shows its path
+    /// first, then the Windows program.
+    public static let coreName = "ano-core"
 
     /// The loader inside the installed runtime.
     public static var loaderURL: URL {

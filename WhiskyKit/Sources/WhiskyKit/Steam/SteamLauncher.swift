@@ -198,7 +198,7 @@ public enum SteamLauncher {
         await Task.detached {
             let process = Process()
             process.executableURL = URL(filePath: "/bin/ps")
-            process.arguments = ["-Ao", "pid=,comm="]
+            process.arguments = ["-A", "-ww", "-o", "pid=,command="]
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = FileHandle.nullDevice
@@ -209,15 +209,14 @@ public enum SteamLauncher {
         }.value
     }
 
-    /// The IDs in a `ps -Ao pid=,comm=` listing whose command is a Windows
-    /// `steam.exe`.
+    /// The IDs in a `ps -A -ww -o pid=,command=` listing whose Windows image
+    /// is `steam.exe` (see ``WineSteamClientDriver/windowsImageName(inCommand:)``).
     static func steamPIDs(inProcessListing output: String) -> Set<Int32> {
         Set(output.split(whereSeparator: \.isNewline).compactMap { line -> Int32? in
             let fields = line.trimmingCharacters(in: .whitespaces)
                 .split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
             guard fields.count == 2, let pid = Int32(fields[0]) else { return nil }
-            let image = fields[1].split(separator: "\\").last ?? fields[1]
-            return image.lowercased() == "steam.exe" ? pid : nil
+            return WineSteamClientDriver.windowsImageName(inCommand: fields[1]) == "steam.exe" ? pid : nil
         })
     }
 

@@ -78,7 +78,7 @@ open class WineSteamClientDriver: SteamClientDriver {
         await Task.detached {
             let process = Process()
             process.executableURL = URL(filePath: "/bin/ps")
-            process.arguments = ["-Ao", "comm="]
+            process.arguments = ["-A", "-ww", "-o", "command="]
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = FileHandle.nullDevice
@@ -90,20 +90,39 @@ open class WineSteamClientDriver: SteamClientDriver {
         }.value
     }
 
-    /// The lower-cased `.exe` names in a `ps -Ao comm=` listing.
+    /// The lower-cased `.exe` names in a `ps -A -ww -o command=` listing.
     ///
-    /// Wine's processes show their Windows image path as the command, often
-    /// with backslashes, so the last backslash-separated component is the
-    /// image name. Anything that is not a `.exe` is host noise and dropped.
+    /// See ``windowsImageName(inCommand:)``. Anything that is not a Wine
+    /// program is host noise and dropped.
     public nonisolated static func exeImageNames(inProcessListing output: String) -> Set<String> {
-        Set(
-            output
-                .split(whereSeparator: \.isNewline)
-                .compactMap { line in
-                    let name = (line.split(separator: "\\").last ?? line).lowercased()
-                    return name.hasSuffix(".exe") ? String(name) : nil
-                }
-        )
+        Set(output.split(whereSeparator: \.isNewline).compactMap { windowsImageName(inCommand: $0) })
+    }
+
+    /// The lower-cased Windows image a host `ps` command line belongs to, or
+    /// `nil` when the line is not a Wine program.
+    ///
+    /// Runtimes up to 3.1.5 replace the arguments with the Windows path
+    /// (`C:\…\steam.exe`). From 3.1.6 the arguments are kept, so the command
+    /// is the `ano-core` path, then the Windows image and its arguments. The
+    /// image is the last backslash-separated component of everything up to
+    /// the first word that ends in `.exe`.
+    public nonisolated static func windowsImageName(inCommand line: Substring) -> String? {
+        var rest = line.drop { $0.isWhitespace }
+        if let core = rest.range(of: "/" + AnoWineRuntime.coreName + " ") {
+            rest = rest[core.upperBound...]
+        } else if rest.hasPrefix("/") {
+            return nil
+        }
+        var from = rest.startIndex
+        while let exe = rest.range(of: ".exe", options: .caseInsensitive, range: from..<rest.endIndex) {
+            from = exe.upperBound
+            guard exe.upperBound == rest.endIndex || rest[exe.upperBound].isWhitespace else { continue }
+            let path = rest[..<exe.upperBound]
+            // Without a backslash the image is a bare name, which is one word.
+            if !path.contains("\\"), path.contains(where: \.isWhitespace) { return nil }
+            return (path.split(separator: "\\").last ?? path).lowercased()
+        }
+        return nil
     }
 
     open func processList() async -> [WineProcess] {
