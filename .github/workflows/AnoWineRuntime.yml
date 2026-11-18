@@ -14,6 +14,7 @@ on:
       - 'scripts/anowine/check-runtime-digest.sh'
       - 'scripts/anowine/check-ano-core.sh'
       - 'scripts/anowine/check-ano-programs.sh'
+      - 'scripts/anowine/check-modules.sh'
       - 'scripts/anowine/tests/**'
       - 'scripts/anowine/build-modules.sh'
       - 'scripts/anowine/patches/**'
@@ -29,6 +30,12 @@ on:
 permissions:
   contents: read
 
+env:
+  ENGINE_URL: https://github.com/frankea/Whisky/releases/download/v4.8.3/Libraries.tar.gz
+  ENGINE_SHA256: 08ffabd7b7c352470faee2b1d51061b341316e401439ca805c5302acc2fb8818
+  OLD_RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.6/Libraries.tar.gz
+  OLD_RUNTIME_SHA256: 412035519d2df986aebb5c3a72c5dd6b00162d3b5aa52c1fff1713928b521ead
+
 jobs:
   modules:
     name: Build the Wine modules that start renamed programs
@@ -43,6 +50,23 @@ jobs:
       - name: Build
         run: |
           bash "$GITHUB_WORKSPACE/scripts/anowine/build-modules.sh" "$RUNNER_TEMP/modules"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ntdll-ano-core.patch"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ano-programs.patch"             "$GITHUB_WORKSPACE/scripts/anowine/patches/ntdll-no-proctitle.patch"
+
+      - name: Engine ntdll.so
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/engine.tar.gz
+          key: engine-v4.8.3-08ffabd7b7c3
+
+      - name: Extract the engine's ntdll.so
+        run: |
+          [ -f "$RUNNER_TEMP/engine.tar.gz" ] || curl -fsSL -o "$RUNNER_TEMP/engine.tar.gz" "$ENGINE_URL"
+          echo "$ENGINE_SHA256  $RUNNER_TEMP/engine.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/engine"
+          tar -xzf "$RUNNER_TEMP/engine.tar.gz" -C "$RUNNER_TEMP/engine" Libraries/Wine/lib/wine/x86_64-unix/ntdll.so
+
+      - name: Modules match the engine
+        run: |
+          bash "$GITHUB_WORKSPACE/scripts/anowine/check-modules.sh" "$RUNNER_TEMP/modules"             "$RUNNER_TEMP/engine/Libraries/Wine/lib/wine/x86_64-unix/ntdll.so"
 
       - name: Upload modules
         uses: actions/upload-artifact@v7
@@ -77,10 +101,21 @@ jobs:
           tar -xzf "$RUNNER_TEMP/out/Libraries.tar.gz" -C "$RUNNER_TEMP/smoke"
           bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-core.sh" "$RUNNER_TEMP/smoke/Libraries" --boot
 
-      - name: Smoke test - ano-boot and ano-device work, from new and older bottles
+      - name: Runtime 3.1.6 (older bottles, negative check)
         run: |
           mkdir -p "$RUNNER_TEMP/old"
-          curl -fsSL https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.4/Libraries.tar.gz             | tar -xzf - -C "$RUNNER_TEMP/old"
+          curl -fsSL -o "$RUNNER_TEMP/old.tar.gz" "$OLD_RUNTIME_URL"
+          echo "$OLD_RUNTIME_SHA256  $RUNNER_TEMP/old.tar.gz" | shasum -a 256 -c -
+          tar -xzf "$RUNNER_TEMP/old.tar.gz" -C "$RUNNER_TEMP/old"
+
+      - name: Checks reject runtime 3.1.6
+        run: |
+          if bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-core.sh" "$RUNNER_TEMP/old/Libraries"; then
+            echo "::error::check-ano-core accepted a 3.1.x runtime"; exit 1
+          fi
+
+      - name: Smoke test - ano-boot and ano-device work, from new and older bottles
+        run: |
           bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-programs.sh" "$RUNNER_TEMP/smoke/Libraries" --boot             --exitwindows "$RUNNER_TEMP/modules/tests/exitwindows.exe"             --upgrade-from "$RUNNER_TEMP/old/Libraries"             --winetricks "$GITHUB_WORKSPACE/Libraries/winetricks"
 
       - name: Upload runtime

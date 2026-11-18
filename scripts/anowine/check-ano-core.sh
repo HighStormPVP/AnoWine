@@ -1,9 +1,10 @@
 #!/bin/bash
 # Fails unless an unpacked runtime has the Wine loader renamed to ano-core:
-# the loader file, and the name ntdll.so starts it by. Optionally boots a
-# prefix and checks every Wine process runs as ano-core. Wine rewrites a
-# process's arguments to show the Windows program, so processes are told
-# apart by their kernel name (ucomm), which comes from the executable file.
+# the loader file, the bin/ano-loader link to it, and the name ntdll.so starts
+# it by. Optionally boots a prefix and checks the Wine processes: Windows
+# programs run as ano-core (or as ano-loader, for one the caller started
+# through the link), told apart by their kernel name (ucomm), and each command
+# shows the ano-core or ano-loader path, then the Windows program.
 #
 # Usage: scripts/anowine/check-ano-core.sh <Libraries-dir> [--boot]
 set -uo pipefail
@@ -15,6 +16,10 @@ check() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
 
 check "loader is lib/wine/x86_64-unix/ano-core" '[ -x "$UNIX/ano-core" ] && [ ! -L "$UNIX/ano-core" ]'
 check "no loader named wine is left" '[ ! -e "$UNIX/wine" ] && [ ! -L "$UNIX/wine" ]'
+# Wine's loader finds ntdll.so beside its resolved path, so bin holds a link, not a copy.
+check "bin/ano-loader links to ../lib/wine/x86_64-unix/ano-core" \
+  '[ -L "$BIN/ano-loader" ] && [ "$(readlink "$BIN/ano-loader")" = ../lib/wine/x86_64-unix/ano-core ]'
+check "bin holds only ano-loader and ano-server" '[ "$(ls -A "$BIN" | sort | tr "\n" " ")" = "ano-loader ano-server " ]'
 check "ntdll.so starts ano-core" 'grep -aq "%s%s/ano-core" "$UNIX/ntdll.so"'
 check "ntdll.so no longer starts wine" '! grep -aq "%s%s/wine" "$UNIX/ntdll.so"'
 # Wine's set_process_name (dlls/ntdll/unix/env.c) is its only caller of setprogname.
@@ -32,9 +37,14 @@ if [ "${2:-}" = --boot ]; then
   check "bottle booted" '[ "$status" -eq 0 ] && [ -f "$WINEPREFIX/system.reg" ]'
   awk '{print $1}' "$PREFIX/ps.txt" | sort -u > "$PREFIX/names.txt"
   check "Windows processes ran as ano-core" 'grep -qx "ano-core" "$PREFIX/names.txt"'
-  check "nothing ran as wine, wine64 or wineserver" '! grep -qxE "wine|wine64|wineserver" "$PREFIX/names.txt"'
+  check "nothing ran as wine, wine64, wineloader or wineserver" \
+    '! grep -qxE "wine|wine64|wineloader|wineserver" "$PREFIX/names.txt"'
   # Wine must not overwrite a process's arguments with the Windows program (C:\...).
-  check "no process command starts with a Windows path" '! grep -qE "^ano-core +[A-Za-z]:" "$PREFIX/ps.txt"'
+  check "no process command starts with a Windows path" '! grep -qE "^ano-(core|loader) +[A-Za-z]:" "$PREFIX/ps.txt"'
+  # Steam detection (WineSteamClientDriver.windowsImageName) reads the Windows program
+  # after the ano-core or ano-loader path, so every Wine process must start with one.
+  check "every Wine process command starts with the ano-core or ano-loader path" \
+    '[ -z "$(grep -E "^ano-(core|loader) " "$PREFIX/ps.txt" | grep -vE "^ano-(core|loader) +/[^ ]*/ano-(core|loader)( |$)")" ]'
   echo "Wine processes seen (kernel name, then the command ps shows):"
   awk '$1 ~ /^(ano-|wine)/' "$PREFIX/ps.txt" | sort | uniq -c | sort -rn | head -20
   rm -rf "$PREFIX"
