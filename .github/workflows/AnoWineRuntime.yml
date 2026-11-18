@@ -4,22 +4,20 @@ name: AnoWine Runtime
 # programs: the loader runs as ano-core and bin/ano-loader links to it,
 # wineboot.exe is ano-boot.exe and winedevice.exe is ano-device.exe, which needs
 # modules rebuilt from the engine's source), smoke-tests it, optionally
-# publishes it as release v4.9.0, and checks that the Pages
-# plist advertises the published asset's exact digest.
+# publishes it as release v4.9.0, and checks that every runtime feed
+# (dist/pages/WhiskyWineVersion*.plist) advertises its published asset's exact digest.
 
 on:
   push:
     branches: [main]
     paths:
       - 'scripts/anowine/repack-runtime.sh'
-      - 'scripts/anowine/check-runtime-digest.sh'
       - 'scripts/anowine/check-ano-core.sh'
       - 'scripts/anowine/check-ano-programs.sh'
       - 'scripts/anowine/check-modules.sh'
       - 'scripts/anowine/tests/**'
       - 'scripts/anowine/build-modules.sh'
       - 'scripts/anowine/patches/**'
-      - 'dist/pages/WhiskyWineVersion.plist'
       - '.github/workflows/AnoWineRuntime.yml'
   workflow_dispatch:
     inputs:
@@ -151,7 +149,7 @@ jobs:
             out/Libraries.tar.gz
 
   digest:
-    name: Pages plist matches published runtime
+    name: Runtime feeds match published runtimes
     needs: publish
     if: always()
     runs-on: ubuntu-latest
@@ -159,5 +157,5 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Check digest
+      - name: Check every feed's digest
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-runtime-digest.sh" "$GITHUB_WORKSPACE"
