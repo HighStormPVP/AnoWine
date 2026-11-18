@@ -115,13 +115,17 @@ open class WineSteamClientDriver: SteamClientDriver {
     ///
     /// Runtimes up to 3.1.5 replace the arguments with the Windows path
     /// (`C:\…\steam.exe`). From 3.1.6 the arguments are kept, so the command
-    /// is the `ano-core` path, then the Windows image and its arguments. The
-    /// image is the last backslash-separated component of everything up to
-    /// the first word that ends in `.exe`.
+    /// is a loader path, then the Windows image and its arguments: on 3.1.6
+    /// the `ano-core` path; on 4.9.0, where `bin/ano-loader` links to
+    /// `ano-core`, the `ano-loader` path for a program the app starts and the
+    /// `ano-core` path for its children. The image is the last
+    /// backslash-separated component of everything up to the first word that
+    /// ends in `.exe`.
     public nonisolated static func windowsImageName(inCommand line: Substring) -> String? {
         var rest = line.drop { $0.isWhitespace }
-        if let core = rest.range(of: "/" + AnoWineRuntime.coreName + " ") {
-            rest = rest[core.upperBound...]
+        let loaders = [AnoWineRuntime.coreName, AnoWineRuntime.loaderName].compactMap { rest.range(of: "/\($0) ") }
+        if let loader = loaders.min(by: { $0.lowerBound < $1.lowerBound }) {
+            rest = rest[loader.upperBound...]
         } else if rest.hasPrefix("/") {
             return nil
         }
