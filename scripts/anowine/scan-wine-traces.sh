@@ -95,14 +95,16 @@ step "Wine tool: control (closed after 15s)" 15 "$BIN/ano-loader" control
 # Winetricks runs many short Wine programs. On runtime 4.9.0 each one takes
 # seconds to reach the server on a CI runner, after the server's 3 s idle exit,
 # so every call would boot the prefix again. A server that stays up for 60 s
-# after its last program keeps one boot for the whole step.
+# after its last program keeps one boot for the whole step. Verbs that run
+# `ano-server -w` themselves (win10) wait out those 60 s and boot again, so they
+# get as long as the download verb.
 persistent_server() {
   "$BIN/ano-server" -k 2>/dev/null; "$BIN/ano-server" -w; "$BIN/ano-server" -p60
 }
 persistent_server
 step "winetricks list-installed" 120 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q list-installed
 persistent_server
-step "winetricks win10 sound=disabled" 180 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q win10 sound=disabled
+step "winetricks win10 sound=disabled" 420 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q win10 sound=disabled
 persistent_server
 step "winetricks vcrun2019 (download verb)" 420 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q vcrun2019
 step "shut down" 60 "$BIN/ano-loader" ano-boot --shutdown
