@@ -17,8 +17,8 @@ permissions:
   contents: read
 
 env:
-  RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.6/Libraries.tar.gz
-  RUNTIME_SHA256: 412035519d2df986aebb5c3a72c5dd6b00162d3b5aa52c1fff1713928b521ead
+  RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v4.9.0/Libraries.tar.gz
+  RUNTIME_SHA256: 7951aa539c1e0f371b4f5083c31599e582f902c33f80617321d745cc164743e5
 
 jobs:
   scan:
@@ -39,7 +39,7 @@ jobs:
           path: ${{ runner.temp }}/runtime.tar.gz
           key: ano-runtime-${{ env.RUNTIME_SHA256 }}
 
-      - name: Runtime v3.1.6
+      - name: Runtime v4.9.0
         run: |
           [ -f "$RUNNER_TEMP/runtime.tar.gz" ] || curl -fsSL -o "$RUNNER_TEMP/runtime.tar.gz" "$RUNTIME_URL"
           echo "$RUNTIME_SHA256  $RUNNER_TEMP/runtime.tar.gz" | shasum -a 256 -c -
