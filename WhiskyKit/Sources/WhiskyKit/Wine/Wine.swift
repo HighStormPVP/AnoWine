@@ -114,7 +114,7 @@ public class Wine {
         process.executableURL = executableURL
         process.arguments = args
         process.currentDirectoryURL = directory ?? executableURL.deletingLastPathComponent()
-        process.environment = ProxyEnvironment.launchEnvironment(environment, executable: executableURL)
+        process.environment = environment
         process.qualityOfService = .userInitiated
         return process
     }

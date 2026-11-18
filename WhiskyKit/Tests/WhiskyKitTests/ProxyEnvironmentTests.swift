@@ -80,6 +80,23 @@ final class ProxyEnvironmentTests: XCTestCase {
         XCTAssertNil(unproxied["DYLD_INSERT_LIBRARIES"])
     }
 
+    /// Every program the app starts goes through `Wine.makeProcess`, so a merge
+    /// that hands it the raw environment would take a proxied bottle off the
+    /// proxy without any other check noticing.
+    func testMakeProcessGivesOnlyWineTheInterceptor() {
+        let proxied = ProxyEnvironment.variables(port: 4_242, library: URL(filePath: "/tmp/libano_net.dylib"))
+
+        for executable in [AnoWineRuntime.loaderURL, AnoWineRuntime.serverURL] {
+            let process = Wine.makeProcess(args: [], environment: proxied, executableURL: executable)
+            XCTAssertEqual(process.environment?["DYLD_INSERT_LIBRARIES"], "/tmp/libano_net.dylib", executable.path)
+        }
+        var incoming = proxied
+        incoming["DYLD_INSERT_LIBRARIES"] = "/tmp/libano_net.dylib"
+        let native = Wine.makeProcess(args: [], environment: incoming, executableURL: URL(filePath: "/usr/bin/env"))
+        XCTAssertNotNil(native.environment)
+        XCTAssertNil(native.environment?["DYLD_INSERT_LIBRARIES"])
+    }
+
     func testTerminalForProxiedBottleShadowsLoaderAndNeverExportsDyld() {
         let bin = URL(filePath: "/tmp/ano-bin")
         var environment = ProxyEnvironment.variables(port: 4_242)
