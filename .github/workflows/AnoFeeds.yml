@@ -1,0 +1,33 @@
+name: Ano Feeds
+
+# Every runtime feed the app reads must name a published runtime by its exact
+# digest: a wrong sha256 blocks every first-run install of that app line.
+# WhiskyWineVersion.plist is the frozen feed Ano 6 and 7 read (runtime 3.1.6);
+# WhiskyWineVersion-v4.plist is the one Ano 8 and later read (runtime 4.9.0).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dist/pages/WhiskyWineVersion*.plist'
+      - 'scripts/anowine/check-runtime-digest.sh'
+      - '.github/workflows/AnoFeeds.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  feeds:
+    name: Both feeds match their published runtimes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check every feed
+        run: |
+          set -o pipefail
+          bash scripts/anowine/check-runtime-digest.sh | tee out.txt
+          grep -qx "digest OK WhiskyWineVersion.plist v3.1.6" out.txt
+          grep -qx "digest OK WhiskyWineVersion-v4.plist v4.9.0" out.txt
