@@ -50,9 +50,12 @@ enum Telemetry {
         case extractFailed = "extract_failed"
         case verifyFailed = "verify_failed"
         case downloadFailed = "download_failed"
-        /// Extraction reported success but the runtime is not actually usable
-        /// afterwards (e.g. the `wine64` binary is missing).
+        /// Extraction succeeded but the archive held no usable runtime (e.g.
+        /// the `wine64` binary is missing), so the installed one was kept.
         case runtimeIncomplete = "runtime_incomplete"
+        /// A web page came back instead of the version plist or the runtime
+        /// archive: a network filter, firewall or sign-in page is in the way.
+        case networkBlocked = "network_blocked"
     }
 
     enum Event {

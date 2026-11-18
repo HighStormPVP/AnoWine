@@ -166,7 +166,12 @@ func makePayload(
     }
 }
 
-/// Assembles a minimal Wine runtime tree with builtin-marked d3d DLLs.
+/// The import name Wine's own `d3d11` and `dxgi` carry and Apple's
+/// forwarders lack, as `WineD3DSource.importsWined3d(_:)` reads it.
+let wined3dImport = Data("wined3d.dll\0".utf8)
+
+/// Assembles a minimal Wine runtime tree with builtin-marked d3d DLLs that
+/// import wined3d, like Wine's own. `marker` stays the files' last bytes.
 func makeRuntime(at libraryFolder: URL, marker: String = "wine original") throws {
     let fileManager = FileManager.default
     let wineLib = libraryFolder.appending(path: "Wine").appending(path: "lib")
@@ -176,6 +181,7 @@ func makeRuntime(at libraryFolder: URL, marker: String = "wine original") throws
     try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
     for name in ["d3d10.dll", "d3d11.dll", "d3d12.dll", "dxgi.dll"] {
         var wineBuiltin = fakePE(builtin: true)
+        wineBuiltin.append(wined3dImport)
         wineBuiltin.append(Data(marker.utf8))
         try wineBuiltin.write(to: peDir.appending(path: name))
     }
@@ -190,10 +196,14 @@ func writeRuntimeVersion(at libraryFolder: URL, _ major: Int, _ minor: Int, _ pa
     )
 }
 
-/// Gzip-tars a minimal `Libraries` tree the way the runtime archive ships.
+/// Gzip-tars a minimal `Libraries` tree the way the runtime archive ships,
+/// carrying the version plist and `wine64` the installer requires.
 func makeLibrariesTarball(in directory: URL) throws -> URL {
     let source = directory.appending(path: "Libraries")
-    try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+    let binDir = source.appending(path: "Wine").appending(path: "bin")
+    try FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
+    try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "wine64"))
+    try writeRuntimeVersion(at: source, 3, 0, 0)
     try Data("marker".utf8).write(to: source.appending(path: "marker.txt"))
 
     let tarball = directory.appending(path: "archive.tar.gz")

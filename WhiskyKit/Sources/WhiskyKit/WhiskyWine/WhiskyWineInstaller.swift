@@ -29,11 +29,22 @@ public enum WhiskyWineInstallError: LocalizedError, Equatable {
     /// The downloaded tarball was not found at the expected path — typically the
     /// OS purged the temporary download before installation ran.
     case tarballNotFound
+    /// The archive extracted, but what it holds is not a usable runtime (no
+    /// version plist or no `wine64`). The installed runtime is left in place.
+    case runtimeIncomplete
+    /// The new runtime could not be moved into place, and the previous one
+    /// could not be put back either. The previous runtime stays in the staging
+    /// folder, and the next install restores it before doing anything else.
+    case restoreFailed
 
     public var errorDescription: String? {
         switch self {
         case .tarballNotFound:
             String(localized: "setup.whiskywine.error.tarballMissing")
+        case .runtimeIncomplete:
+            String(localized: "setup.whiskywine.error.runtimeIncomplete")
+        case .restoreFailed:
+            String(localized: "setup.whiskywine.error.restoreFailed")
         }
     }
 }
@@ -163,7 +174,10 @@ public class WhiskyWineInstaller {
     /// - Note: The tarball is NOT deleted after extraction. Call ``cleanupTarball(at:)``
     ///   after verifying installation success with ``isWhiskyWineInstalled()``.
     /// - Throws: ``WhiskyWineInstallError/tarballNotFound`` if the tarball is gone,
-    ///   or a `TarError`/`CocoaError` if extraction or the destination rebuild fails.
+    ///   ``WhiskyWineInstallError/runtimeIncomplete`` if the archive holds no
+    ///   usable runtime, ``WhiskyWineInstallError/restoreFailed`` if the swap
+    ///   failed and the previous runtime could not be put back, or a
+    ///   `TarError`/`CocoaError` if extraction or the destination rebuild fails.
     ///   The cause propagates so callers can surface the specific reason.
     ///
     /// - Important: Ensure the tarball is from a trusted source.
@@ -176,25 +190,86 @@ public class WhiskyWineInstaller {
     /// extraction can be tested against a temporary directory without touching
     /// the real application support folder.
     ///
-    /// Only the `Libraries` subfolder is removed before extraction. The
-    /// destination is the live Application Support folder, which also holds
-    /// unrelated app state (e.g. the analytics SDK's anonymous ID and queued
-    /// events) — wiping the whole folder destroyed that state on every runtime
-    /// install and update.
-    static func install(tarball: URL, into destination: URL) throws {
+    /// Only the `Libraries` subfolder is replaced. The destination is the live
+    /// Application Support folder, which also holds unrelated app state (e.g.
+    /// the analytics SDK's anonymous ID and queued events) — wiping the whole
+    /// folder destroyed that state on every runtime install and update.
+    ///
+    /// The archive is extracted into a staging folder inside `destination`
+    /// first, and the installed runtime is swapped out only once extraction
+    /// has succeeded and the result passes ``isRuntimePresent(inLibraryFolder:)``.
+    /// A failed extraction (a corrupt archive, or the disk filling up
+    /// mid-untar) or an archive without a usable runtime therefore leaves the
+    /// previous runtime in place instead of leaving every bottle without Wine.
+    ///
+    /// - Parameter moveItem: Performs each rename of the swap. Tests inject a
+    ///   failing one to exercise the restore path.
+    static func install(
+        tarball: URL,
+        into destination: URL,
+        moveItem: (URL, URL) throws -> Void = { try FileManager.default.moveItem(at: $0, to: $1) }
+    ) throws {
         // Verify the tarball exists before modifying the destination, so a
         // purged temp file can't leave the destination half-rebuilt.
         guard FileManager.default.fileExists(atPath: tarball.path) else {
             throw WhiskyWineInstallError.tarballNotFound
         }
 
+        let fileManager = FileManager.default
+        try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
         let existingRuntime = destination.appending(path: "Libraries")
-        if FileManager.default.fileExists(atPath: existingRuntime.path) {
-            try FileManager.default.removeItem(at: existingRuntime)
-        }
-        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
 
-        try Tar.untar(tarBall: tarball, toURL: destination)
+        cleanUpStaleStaging(in: destination, moveItem: moveItem)
+
+        // Staging inside the destination keeps every move below on one volume,
+        // so the swap is a rename rather than a copy.
+        let staging = destination.appending(path: stagingFolderPrefix + UUID().uuidString)
+        try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
+        // Kept when it ends up holding the only copy of the previous runtime.
+        var keepStaging = false
+        defer {
+            if !keepStaging {
+                try? fileManager.removeItem(at: staging)
+            }
+        }
+
+        // Tar stages its own extraction next to the folder it extracts into.
+        // Extracting into a subfolder puts that inside `staging` as well, so a
+        // force-quit mid-untar leaves nothing the cleanup above would miss.
+        let extracted = staging.appending(path: "extracted")
+        try fileManager.createDirectory(at: extracted, withIntermediateDirectories: true)
+        try Tar.untar(tarBall: tarball, toURL: extracted)
+
+        let newRuntime = extracted.appending(path: "Libraries")
+        guard isRuntimePresent(inLibraryFolder: newRuntime) else {
+            throw WhiskyWineInstallError.runtimeIncomplete
+        }
+
+        guard fileManager.fileExists(atPath: existingRuntime.path(percentEncoded: false)) else {
+            try moveItem(newRuntime, existingRuntime)
+            return
+        }
+
+        // Retire the old runtime into staging (removed by the defer), and put
+        // it back if the new one can't be moved into place.
+        let retiredRuntime = staging.appending(path: retiredRuntimeName)
+        try moveItem(existingRuntime, retiredRuntime)
+        do {
+            try moveItem(newRuntime, existingRuntime)
+        } catch {
+            do {
+                try moveItem(retiredRuntime, existingRuntime)
+            } catch let restoreError {
+                keepStaging = true
+                logger.error("""
+                Could not move the new runtime into place (\(error.localizedDescription)) or put the \
+                previous one back (\(restoreError.localizedDescription)); keeping it in \
+                \(staging.lastPathComponent)
+                """)
+                throw WhiskyWineInstallError.restoreFailed
+            }
+            throw error
+        }
     }
 
     /// Computes the SHA-256 of a file by streaming it in chunks.
@@ -292,38 +367,39 @@ public class WhiskyWineInstaller {
         }
     }
 
-    /// Removes everything Whisky has stored under Application Support: the
-    /// WhiskyWine runtime and every bottle whose plist registration lives in
-    /// the default bottles list. Caller is responsible for confirming with
-    /// the user — this is destructive and unrecoverable.
+    /// Removes the WhiskyWine runtime, the GPTK store, the default bottles
+    /// directory in the app container (``BottleData/defaultBottleDir``) and the
+    /// bottle registry (``BottleData/bottleEntriesDir``). The caller is
+    /// responsible for confirming with the user, since this is destructive and
+    /// unrecoverable, and for reloading its in-memory bottle list afterwards.
     ///
     /// Bottles stored at custom paths outside the default bottles directory
-    /// are not removed; their tracking entries are dropped from the
-    /// `BottleData` plist but the on-disk bottle directories are preserved
-    /// to avoid surprising users who relocated bottles intentionally.
+    /// are not removed; their registry entries go with the registry file but
+    /// the on-disk bottle directories are preserved to avoid surprising users
+    /// who relocated bottles intentionally.
     public static func uninstallAll() {
         // Drop the runtime first so partial failures still leave a coherent state.
         uninstall()
 
-        // Default bottles directory (matches `Bottle.defaultBottlesDirectory`).
-        let defaultBottles = applicationFolder.appending(path: "Bottles")
-        if FileManager.default.fileExists(atPath: defaultBottles.path(percentEncoded: false)) {
-            do {
-                try FileManager.default.removeItem(at: defaultBottles)
-            } catch {
-                logger.error("Failed to remove default bottles folder: \(error.localizedDescription)")
-            }
-        }
+        removeBottleStorage(defaultBottlesDir: BottleData.defaultBottleDir, registryFile: BottleData.bottleEntriesDir)
 
         // The GPTK store sits outside Libraries so it survives engine updates;
         // a full uninstall is the one case where it should not.
         try? FileManager.default.removeItem(at: GPTKImporter.storeFolder)
+    }
 
-        // BottleData.plist registers bottle paths; remove it so a reinstall
-        // starts with no orphaned entries pointing at deleted directories.
-        let bottleData = applicationFolder.appending(path: "BottleData.plist")
-        if FileManager.default.fileExists(atPath: bottleData.path(percentEncoded: false)) {
-            try? FileManager.default.removeItem(at: bottleData)
+    /// Removes the default bottles directory and the registry file that lists
+    /// bottle paths, so a reinstall starts with no orphaned entries pointing at
+    /// deleted directories. Bottles at custom paths are not touched. The
+    /// locations are parameters so tests can use temporary directories.
+    static func removeBottleStorage(defaultBottlesDir: URL, registryFile: URL) {
+        for url in [defaultBottlesDir, registryFile]
+            where FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) {
+            do {
+                try FileManager.default.removeItem(at: url)
+            } catch {
+                logger.error("Failed to remove \(url.lastPathComponent): \(error.localizedDescription)")
+            }
         }
     }
 
@@ -396,6 +472,14 @@ public class WhiskyWineInstaller {
     /// unavailable.
     public static func whiskyWineDXMTVersion() -> String? {
         whiskyWineInfo()?.dxmtVersion
+    }
+
+    /// Whether the installed runtime's Wine applies the Enhanced Sync setting
+    /// (see ``WhiskyWineVersion/implementsEnhancedSync``). `false` when
+    /// WhiskyWine is not installed or its plist does not show it. Reads the
+    /// plist on every call, so a view reads it once and keeps the answer.
+    public static func runtimeImplementsEnhancedSync() -> Bool {
+        whiskyWineInfo()?.implementsEnhancedSync ?? false
     }
 
     /// Whether `backend` can actually be selected against the currently

@@ -32,6 +32,13 @@ public protocol SteamClientDriver: AnyObject {
     /// and the bottle's own process list is not consulted.
     func hostWineImageNames() async -> Set<String>
 
+    /// Host process IDs of every `steam.exe`, in any bottle.
+    ///
+    /// The wait for a client the orchestrator started compares this with the
+    /// answer from before the start, and asks the bottle's own list only when
+    /// a new ID appears.
+    func hostSteamPIDs() async -> Set<Int32>
+
     /// The bottle's process list, as `tasklist.exe` reports it.
     func processList() async -> [WineProcess]
 
@@ -60,7 +67,7 @@ public protocol SteamClientDriver: AnyObject {
 /// The production driver: Wine, `tasklist.exe`, `ps`, and ``SteamLauncher``.
 ///
 /// `open` so the app can layer session-scoped behavior on the two lifecycle
-/// hooks (download monitoring) without the kit knowing about it.
+/// hooks without the kit knowing about it.
 @MainActor
 open class WineSteamClientDriver: SteamClientDriver {
     public let bottle: Bottle
@@ -88,6 +95,11 @@ open class WineSteamClientDriver: SteamClientDriver {
             guard let output = String(bytes: data, encoding: .utf8) else { return [] }
             return Self.exeImageNames(inProcessListing: output)
         }.value
+    }
+
+    /// One `ps`, like ``hostWineImageNames()``.
+    open func hostSteamPIDs() async -> Set<Int32> {
+        await SteamLauncher.hostSteamPIDs()
     }
 
     /// The lower-cased `.exe` names in a `ps -A -ww -o command=` listing.
@@ -134,8 +146,8 @@ open class WineSteamClientDriver: SteamClientDriver {
         SteamLauncher.startClient(steamExe: steamExe, bottle: bottle)
     }
 
-    /// Through the shared path, which carries the locale, DXVK and
-    /// GPU-spoofing settings steamwebhelper needs and not just the compat flag.
+    /// Through the shared path, which carries the DXVK and GPU-spoofing
+    /// settings steamwebhelper needs and not just the compat flag.
     open func applyLauncherFixes() {
         LauncherFixes.apply(to: bottle, launcher: .steam)
     }

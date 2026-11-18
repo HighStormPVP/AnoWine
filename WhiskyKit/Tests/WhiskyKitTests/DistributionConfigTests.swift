@@ -37,7 +37,7 @@ final class DistributionConfigTests: XCTestCase {
         // raw.githubusercontent.com, not github.io: some school and work networks block
         // github.io but allow GitHub itself, and setup must work there.
         let expectedURL =
-            "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion.plist"
+            "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion-v4.plist"
         XCTAssertEqual(DistributionConfig.versionPlistURL, expectedURL)
     }
 
@@ -170,7 +170,7 @@ final class DistributionConfigTests: XCTestCase {
         )
         XCTAssertEqual(
             expectedURL,
-            "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion.plist",
+            "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion-v4.plist",
             "WhiskyWineInstaller should use the raw GitHub URL, which works where github.io is blocked"
         )
     }

@@ -22,14 +22,29 @@ public enum DistributionConfig {
     /// Base URL for GitHub Pages distribution
     public static let baseURL = "https://highstormpvp.github.io/AnoWine"
 
-    /// URL for the runtime version plist. Served from raw.githubusercontent.com
-    /// rather than GitHub Pages: some school and work networks block github.io
-    /// while allowing GitHub itself. Same file as dist/pages/WhiskyWineVersion.plist.
-    public static let versionPlistURL =
-        "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion.plist"
+    /// Where the runtime version feeds are served from: raw.githubusercontent.com
+    /// rather than GitHub Pages, because some school and work networks block
+    /// github.io while allowing GitHub itself. Same files as dist/pages/.
+    static let feedBaseURL = "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages"
+
+    /// URL for the runtime version plist, which names the runtime to install
+    /// and offers as an update.
+    ///
+    /// Ano 6 and 7 read `WhiskyWineVersion.plist`, which stays on runtime
+    /// 3.1.6: runtime 4.9.0 needs this app's D3DMetal, DLL override,
+    /// environment and Steam detection changes, so older apps are not offered
+    /// a runtime nobody tested them with. This feed is the one that moves.
+    public static let versionPlistURL = "\(feedBaseURL)/WhiskyWineVersion-v4.plist"
+
+    /// The feed Ano 6 and 7 read, frozen on runtime 3.1.6.
+    static let legacyVersionPlistURL = "\(feedBaseURL)/WhiskyWineVersion.plist"
+
+    /// The GitHub Releases page, which lists app releases and the runtime
+    /// builds.
+    public static let releasesPageURL = "https://github.com/HighStormPVP/AnoWine/releases"
 
     /// Base URL for GitHub Releases downloads
-    public static let releasesBaseURL = "https://github.com/HighStormPVP/AnoWine/releases/download"
+    public static let releasesBaseURL = "\(releasesPageURL)/download"
 
     /// URL for the Sparkle appcast feed
     public static let appcastURL = "\(baseURL)/appcast.xml"
