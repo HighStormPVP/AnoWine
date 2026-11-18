@@ -1,6 +1,7 @@
 # Ano without "wine": full rename — design
 
-Date: 2026-11-18. Status: draft for the owner's approval.
+Date: 2026-11-18. Status: approved by the owner on 2026-11-18. Plan 3a:
+`docs/superpowers/plans/2026-11-18-ano-plan3a-upstream-engine.md`.
 Inputs: the five-agent audit and the trace scans of 2026-11-18 (workflow `AnoWine Trace Scan`,
 runs 44173510221 and 44188982344; script `scripts/anowine/scan-wine-traces.sh`). The appendix
 condenses what they found.
