@@ -164,6 +164,22 @@ struct WineSteamClientDriverTests {
         #expect(names == ["steam.exe", "steamwebhelper.exe", "fsd-win64-shipping.exe", "start.exe"])
     }
 
+    @Test("On runtime 4.9.0 a program the app starts keeps the ano-loader path")
+    func exeNamesAfterTheLoaderLink() {
+        let wine = "/Users/me/Library/Application Support/io.github.highstormpvp.Ano/Libraries/Wine"
+        let core = wine + "/lib/wine/x86_64-unix/ano-core"
+        let loader = wine + "/bin/ano-loader"
+        let listing = """
+        \(loader) C:\\Program Files (x86)\\Steam\\steam.exe -silent
+        \(loader) start.exe /unix /Users/me/Games/game.exe
+        \(core) C:\\windows\\system32\\services.exe
+        \(wine)/bin/ano-server
+        /bin/zsh -l
+        """
+        let names = WineSteamClientDriver.exeImageNames(inProcessListing: listing)
+        #expect(names == ["steam.exe", "start.exe", "services.exe"])
+    }
+
     @Test("A listing without Wine processes yields nothing to check")
     func emptyWhenNoExe() {
         #expect(WineSteamClientDriver.exeImageNames(inProcessListing: "/sbin/launchd\nwineserver\n").isEmpty)
