@@ -1,14 +1,14 @@
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
-@@ -484,6 +484,7 @@
+@@ -487,6 +487,7 @@
   */
  static void set_process_name( const char *name )
  {
 +    return;  /* Ano: keep the name the process started with */
-     char *p;
+     const char *p;
  
  #ifdef HAVE_SETPROCTITLE
-@@ -513,7 +514,7 @@
+@@ -516,7 +517,7 @@
      BOOL shift_strings = FALSE;
      int i;
  
@@ -17,7 +17,7 @@
      for (i = 1; i < main_argc; i++)
          if (main_argv[i - 1] + strlen( main_argv[i - 1] ) + 1 != main_argv[i]) break;
      shift_strings = (i == main_argc);
-@@ -566,7 +567,7 @@
+@@ -569,7 +570,7 @@
  
      /* copy what we can over the original argv */
  

@@ -1,11 +1,12 @@
 #!/bin/bash
-# Builds AnoWine's Wine runtime: upstream's published Libraries.tar.gz with the
-# two Wine programs renamed (wine64/wine -> ano-loader, wineserver -> ano-server)
-# and three Windows-side names changed: the Wine loader lib/wine/x86_64-unix/wine
-# is ano-core, wineboot.exe is ano-boot.exe and winedevice.exe is ano-device.exe.
-# The modules that start those by name are replaced with ones built by
-# build-modules.sh with scripts/anowine/patches/*.patch.
-# Recipe and evidence: spikes/REPORT.md section 2.
+# Builds Ano's Wine runtime: upstream's published engine (frankea/Whisky v4.8.3,
+# Wine 11.19 with CrossOver's macOS patches) with Ano's names. The Wine loader
+# lib/wine/x86_64-unix/wine is ano-core and bin/ano-loader links to it (in place
+# of bin/wine, wine64 and wineloader), wineserver is ano-server, wineboot.exe is
+# ano-boot.exe and winedevice.exe is ano-device.exe. The modules that start
+# those by name are replaced with ones build-modules.sh builds from the engine's
+# own source with scripts/anowine/patches/*.patch.
+# Recipe and evidence: spikes/REPORT.md section 2; Plan 3a.
 #
 # Usage: scripts/anowine/repack-runtime.sh <out-dir> <build-modules out-dir>
 # Produces <out-dir>/Libraries.tar.gz and prints its SHA-256. macOS only
@@ -17,9 +18,9 @@ MODULES="$(cd "${2:?usage: repack-runtime.sh <out-dir> <modules-dir>}/Wine" && p
 grep -aq "%s%s/ano-core" "$MODULES/lib/wine/x86_64-unix/ntdll.so" || { echo "error: built ntdll.so does not start ano-core" >&2; exit 1; }
 
 # ---- pinned inputs ----------------------------------------------------------
-BASE_URL="https://github.com/frankea/Whisky/releases/download/v3.1.1/Libraries.tar.gz"
-BASE_SHA256="01f3a1b43b98065fe20c529c1023b61dd79a6d2ad93bba6040865f646481ccf3"
-VERSION_MAJOR=3 VERSION_MINOR=1 VERSION_PATCH=6
+BASE_URL="https://github.com/frankea/Whisky/releases/download/v4.8.3/Libraries.tar.gz"
+BASE_SHA256="08ffabd7b7c352470faee2b1d51061b341316e401439ca805c5302acc2fb8818"
+VERSION_MAJOR=4 VERSION_MINOR=9 VERSION_PATCH=0
 LOADER=ano-loader
 SERVER=ano-server
 CORE=ano-core
@@ -37,19 +38,21 @@ LIB="$WORK/Libraries"
 BIN="$LIB/Wine/bin"
 
 echo "== rename programs"
-[ -L "$BIN/wine64" ] && [ "$(readlink "$BIN/wine64")" = "wine" ] || { echo "error: expected wine64 -> wine symlink" >&2; exit 1; }
-[ -f "$BIN/wine" ] && [ ! -L "$BIN/wine" ] || { echo "error: expected real file Wine/bin/wine" >&2; exit 1; }
+# The engine's bin holds links to the loader under three names, and the server.
+for n in wine wine64 wineloader; do
+  [ -L "$BIN/$n" ] && [ "$(readlink "$BIN/$n")" = ../lib/wine/x86_64-unix/wine ] ||
+    { echo "error: expected Wine/bin/$n -> ../lib/wine/x86_64-unix/wine" >&2; exit 1; }
+  rm "$BIN/$n"
+done
 [ -f "$BIN/wineserver" ] && [ ! -L "$BIN/wineserver" ] || { echo "error: expected real file Wine/bin/wineserver" >&2; exit 1; }
-# Every tool link (wine64, winecfg, regedit, ...) points at `wine` and would
-# dangle after the rename; the app runs tools as `ano-loader <tool>`, so drop them.
-find "$BIN" -type l -exec sh -c '[ "$(readlink "$1")" = wine ] && rm "$1" && echo "removed link $(basename "$1")"' _ {} \;
-mv "$BIN/wine" "$BIN/$LOADER"
 mv "$BIN/wineserver" "$BIN/$SERVER"
 
 echo "== rename the Wine loader to $CORE"
 UNIX="$LIB/Wine/lib/wine/x86_64-unix"
 [ -f "$UNIX/wine" ] && [ ! -L "$UNIX/wine" ] || { echo "error: expected real file lib/wine/x86_64-unix/wine" >&2; exit 1; }
 mv "$UNIX/wine" "$UNIX/$CORE"
+# Wine's loader looks for ntdll.so beside its resolved path, so bin gets a link, not a copy.
+ln -s "../lib/wine/x86_64-unix/$CORE" "$BIN/$LOADER"
 
 echo "== replace wineboot.exe and winedevice.exe with ano-boot.exe and ano-device.exe"
 WINDOWS="$LIB/Wine/lib/wine"
@@ -76,15 +79,19 @@ PB=/usr/libexec/PlistBuddy
 "$PB" -c "Set :version:major $VERSION_MAJOR" -c "Set :version:minor $VERSION_MINOR" -c "Set :version:patch $VERSION_PATCH" "$PLIST"
 "$PB" -c "Delete :sha256" "$PLIST" 2>/dev/null || true
 plutil -lint "$PLIST"
+# The app deploys an imported Game Porting Toolkit only into a gptkCapable runtime.
+for kv in gptkCapable=true dxvkVersion=1.10.3 dxmtVersion=0.80; do
+  [ "$("$PB" -c "Print :${kv%%=*}" "$PLIST" 2>/dev/null)" = "${kv#*=}" ] ||
+    { echo "error: $PLIST: ${kv%%=*} is not ${kv#*=}" >&2; exit 1; }
+done
 
 echo "== verify layout"
 fail=0
 for f in "$LOADER" "$SERVER"; do
   [ -x "$BIN/$f" ] || { echo "error: Wine/bin/$f missing or not executable" >&2; fail=1; }
 done
-for f in wine wine64 wineserver; do
-  [ ! -e "$BIN/$f" ] && [ ! -L "$BIN/$f" ] || { echo "error: Wine/bin/$f still present" >&2; fail=1; }
-done
+[ "$(ls -A "$BIN" | sort | tr '\n' ' ')" = "$LOADER $SERVER " ] ||
+  { echo "error: Wine/bin holds more than $LOADER and $SERVER:" >&2; ls -A "$BIN" >&2; fail=1; }
 dangling="$(find "$LIB" -type l ! -exec test -e {} \; -print)"
 [ -z "$dangling" ] || { echo "error: dangling symlinks:" >&2; echo "$dangling" >&2; fail=1; }
 [ "$fail" -eq 0 ] || exit 1

@@ -1,6 +1,6 @@
 --- a/dlls/ntdll/unix/env.c
 +++ b/dlls/ntdll/unix/env.c
-@@ -1541,9 +1541,9 @@
+@@ -1547,9 +1547,9 @@
      static const WCHAR eventW[] = {'\\','K','e','r','n','e','l','O','b','j','e','c','t','s',
          '\\','_','_','w','i','n','e','b','o','o','t','_','e','v','e','n','t',0};
      static const WCHAR appnameW[] = {'\\','?','?','\\','C',':','\\','w','i','n','d','o','w','s',
@@ -11,10 +11,10 @@
 +        's','y','s','t','e','m','3','2','\\','a','n','o','-','b','o','o','t','.','e','x','e','"',
          ' ','-','-','i','n','i','t',0};
      RTL_USER_PROCESS_PARAMETERS params = { sizeof(params), sizeof(params) };
-     PS_ATTRIBUTE_LIST ps_attr;
+     ULONG_PTR attr_buffer[offsetof(PS_ATTRIBUTE_LIST,Attributes[2]) / sizeof(ULONG_PTR)];
 --- a/dlls/user32/user_main.c
 +++ b/dlls/user32/user_main.c
-@@ -268,8 +268,8 @@
+@@ -267,8 +267,8 @@
      STARTUPINFOW si;
      void *redir;
  
@@ -27,7 +27,7 @@
      if (flags & EWX_FORCE) lstrcatW( cmdline, L" --kill" );
 --- a/programs/services/services.c
 +++ b/programs/services/services.c
-@@ -831,11 +831,11 @@
+@@ -838,11 +838,11 @@
  
      GetSystemDirectoryW(system_dir, MAX_PATH);
      free(*path);
@@ -41,7 +41,7 @@
      return ERROR_SUCCESS;
  }
  
-@@ -868,14 +868,14 @@
+@@ -875,14 +875,14 @@
  static DWORD add_winedevice_service(const struct service_entry *service, WCHAR *path, BOOL is_wow64,
                                      struct service_entry **entry)
  {
@@ -60,7 +60,7 @@
  
 --- a/programs/winedevice/device.c
 +++ b/programs/winedevice/device.c
-@@ -36,7 +36,7 @@
+@@ -35,7 +35,7 @@
  extern NTSTATUS CDECL wine_ntoskrnl_main_loop( HANDLE stop_event );
  extern void CDECL wine_enumerate_root_devices( const WCHAR *driver_name );
  
@@ -82,12 +82,12 @@
 @@ -1,4 +1,4 @@
 -MODULE    = wineboot.exe
 +MODULE    = ano-boot.exe
- IMPORTS   = uuid advapi32 ws2_32 kernelbase
+ IMPORTS   = uuid rpcrt4 advapi32 ws2_32 kernelbase
  DELAYIMPORTS = shell32 shlwapi version user32 gdi32 setupapi newdev wininet
  
 --- a/programs/wineboot/wineboot.c
 +++ b/programs/wineboot/wineboot.c
-@@ -1776,7 +1776,7 @@
+@@ -1875,7 +1875,7 @@
  
  static void usage( int status )
  {
@@ -96,15 +96,15 @@
      WINE_MESSAGE( "Options;\n" );
      WINE_MESSAGE( "    -h,--help         Display this help message\n" );
      WINE_MESSAGE( "    -e,--end-session  End the current session cleanly\n" );
-@@ -1816,7 +1816,7 @@
-         memset( &si, 0, sizeof(si) );
-         si.cb = sizeof(si);
+@@ -1915,7 +1915,7 @@
+         DWORD exit_code;
+ 
          GetSystemDirectoryW( filename, MAX_PATH );
 -        wcscat( filename, L"\\wineboot.exe" );
 +        wcscat( filename, L"\\ano-boot.exe" );
  
          Wow64DisableWow64FsRedirection( &redir );
-         if (CreateProcessW( filename, GetCommandLineW(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi ))
+         if (create_native_process( filename, GetCommandLineW(), FALSE, 0, NULL, &pi ))
 --- a/programs/winedbg/crashdlg.c
 +++ b/programs/winedbg/crashdlg.c
 @@ -369,7 +369,7 @@
@@ -127,7 +127,7 @@
  12,,mountmgr.sys
  
  [BaseInstall]
-@@ -770,7 +770,7 @@
+@@ -784,7 +784,7 @@
  11,,services.exe,-
  11,,spoolsv.exe,-
  11,,termsv.exe,-

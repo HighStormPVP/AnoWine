@@ -1,9 +1,10 @@
 name: AnoWine Runtime
 
-# Builds AnoWine's Wine runtime (upstream's with renamed programs: the loader
-# runs as ano-core, wineboot.exe is ano-boot.exe and winedevice.exe is
-# ano-device.exe, which needs rebuilt modules), smoke-tests it, optionally
-# publishes it as release v3.1.6, and checks that the Pages
+# Builds Ano's Wine runtime 4.9.0 (upstream's engine v4.8.3 with renamed
+# programs: the loader runs as ano-core and bin/ano-loader links to it,
+# wineboot.exe is ano-boot.exe and winedevice.exe is ano-device.exe, which needs
+# modules rebuilt from the engine's source), smoke-tests it, optionally
+# publishes it as release v4.9.0, and checks that the Pages
 # plist advertises the published asset's exact digest.
 
 on:
@@ -23,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: 'Publish the built runtime as release v3.1.6'
+        description: 'Publish the built runtime as release v4.9.0'
         type: boolean
         default: false
 
@@ -126,7 +127,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish release v3.1.6
+    name: Publish release v4.9.0
     needs: build
     if: github.event_name == 'workflow_dispatch' && inputs.publish
     runs-on: ubuntu-latest
@@ -144,9 +145,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sha256sum out/Libraries.tar.gz
-          gh release create v3.1.6 --repo "$GITHUB_REPOSITORY" \
-            --title "AnoWine Wine runtime v3.1.6" \
-            --notes "Upstream frankea/Whisky runtime v3.1.1 (Wine 11.0) with wine64/wine renamed to ano-loader, wineserver to ano-server, the loader lib/wine/x86_64-unix/wine to ano-core, wineboot.exe to ano-boot.exe and winedevice.exe to ano-device.exe (the modules that start them rebuilt from Wine 11.0 with scripts/anowine/patches/*.patch); ntdll.so no longer sets the program name or overwrites the process arguments with the Windows program. SHA-256: $(sha256sum out/Libraries.tar.gz | cut -d' ' -f1)" \
+          gh release create v4.9.0 --repo "$GITHUB_REPOSITORY" \
+            --title "Ano Wine runtime v4.9.0" \
+            --notes "Ano's Wine runtime 4.9.0, for Ano 8 and later (earlier Ano versions stay on v3.1.6). Upstream frankea/Whisky engine v4.8.3: Wine 11.19 with CrossOver's macOS patches (dappermint/winecx 9f3f644), built by frankea/winecx-gptk CI at 12af865. Ano's names: the loader runs as ano-core and bin/ano-loader links to it, wineserver is ano-server, wineboot.exe is ano-boot.exe and winedevice.exe is ano-device.exe, and ntdll.so neither renames its process nor overwrites its arguments. The modules that start these by name are rebuilt from the engine's own source with scripts/anowine/patches/. GPTK-capable: D3DMetal deploys when you import Apple's Game Porting Toolkit. SHA-256: $(sha256sum out/Libraries.tar.gz | cut -d' ' -f1)" \
             out/Libraries.tar.gz
 
   digest:
