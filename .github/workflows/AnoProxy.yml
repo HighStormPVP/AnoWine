@@ -15,9 +15,15 @@ on:
       - 'scripts/anowine/check-proxy.sh'
       - '.github/workflows/AnoProxy.yml'
   workflow_dispatch:
+    inputs:
+      runtime_run_id:
+        description: 'AnoWine Runtime run whose anowine-runtime artifact to test (empty: the published runtime)'
+        type: string
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 env:
   XRAY_URL: https://github.com/XTLS/Xray-core/releases/download/v26.10.21/Xray-macos-arm64-v8a.zip
@@ -66,19 +72,36 @@ jobs:
           x86_64-w64-mingw32-gcc -O2 -o "$RUNNER_TEMP/bin/netprobe.exe"             "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/netprobe.c" -lws2_32 -ldnsapi
 
       - name: Cache runtime
+        if: inputs.runtime_run_id == ''
         id: runtime-cache
         uses: actions/cache@v5
         with:
           path: ${{ runner.temp }}/runtime.tar.gz
           key: ano-runtime-${{ env.RUNTIME_SHA256 }}
 
-      - name: Runtime v3.1.6
+      - name: Runtime (published)
+        if: inputs.runtime_run_id == ''
         run: |
           [ -f "$RUNNER_TEMP/runtime.tar.gz" ] || curl -fsSL -o "$RUNNER_TEMP/runtime.tar.gz" "$RUNTIME_URL"
           echo "$RUNTIME_SHA256  $RUNNER_TEMP/runtime.tar.gz" | shasum -a 256 -c -
+
+      - name: Runtime from a build
+        if: inputs.runtime_run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: anowine-runtime
+          run-id: ${{ inputs.runtime_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/built
+
+      - name: Unpack runtime
+        run: |
+          [ -f "$RUNNER_TEMP/built/Libraries.tar.gz" ] && mv "$RUNNER_TEMP/built/Libraries.tar.gz" "$RUNNER_TEMP/runtime.tar.gz"
           mkdir -p "$RUNNER_TEMP/runtime"
           tar -xzf "$RUNNER_TEMP/runtime.tar.gz" -C "$RUNNER_TEMP/runtime"
-          ls "$RUNNER_TEMP/runtime/Libraries/Wine/bin"
+          ls -la "$RUNNER_TEMP/runtime/Libraries/Wine/bin"
+          plist="$RUNNER_TEMP/runtime/Libraries/WhiskyWineVersion.plist"
+          echo "runtime version $(/usr/libexec/PlistBuddy -c 'Print :version:major' "$plist").$(/usr/libexec/PlistBuddy -c 'Print :version:minor' "$plist").$(/usr/libexec/PlistBuddy -c 'Print :version:patch' "$plist")"
 
       - name: Build ano-proxy
         run: |
