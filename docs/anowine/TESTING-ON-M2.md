@@ -21,7 +21,7 @@ Ano isn't notarized by Apple yet, so macOS blocks it the first time.
 
 1. Double-click Ano. macOS says it can't be opened. Click **Done**.
 2. Open **System Settings → Privacy & Security** and scroll down. Next to the message about Ano, click **Open Anyway** and confirm with your password or Touch ID.
-3. Ano opens and offers to install Rosetta (if needed) and the **Wine runtime** (about 330 MB). Let it.
+3. Ano opens and offers to install Rosetta (if needed) and the **Wine runtime** (about 480 MB). Let it.
 
 ## 3. Steam
 
@@ -64,3 +64,22 @@ The sandbox round still allows internet access. The only difference between the 
 - The block from step 5.
 - What happened in step 4 (proxy).
 - Anything odd from step 3, with screenshots if something looks wrong.
+
+## Ano-8: runtime 4.9.0
+
+Ano-8 moves to runtime 4.9.0: Wine 11.19 with CrossOver's Mac patches, from upstream
+Whisky's engine 4.8.3, with Ano's names. Report each item as pass or fail.
+
+1. Open Ano-8. It offers runtime 4.9.0; accept it. **Settings** then shows 4.9.0.
+2. Open your existing Steam bottle (proxy on, Hiddify running). Steam starts, signs in,
+   and the store, menus and popups draw.
+3. Start a game download. It runs, and Hiddify shows Steam's connections.
+4. Start a game from Ano's **Library**. The tile shows it running, and closing the game
+   clears that.
+5. Optional (D3DMetal): download Apple's Game Porting Toolkit (it needs an Apple developer
+   sign-in), import it in **Settings**, set a DirectX 12 game's graphics to D3DMetal, and
+   start it.
+6. Still open from before: run `m2-sandbox-check.sh` (section 5).
+7. Start-up time: in Ano, select the Steam bottle, click **Open Terminal**, and run
+   `time ano-loader cmd /c echo hi` three times. Send the three `real` times. On GitHub's
+   test Macs each one takes about 8 seconds on this runtime (about 1 second on 3.1.6).

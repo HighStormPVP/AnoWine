@@ -98,3 +98,26 @@ Found by `scripts/anowine/check-proxy.sh` (workflow `Ano Proxy`), fixed in `AnoN
   already stopped them), but they are refused as well.
 - Windows programs see blocked UDP as `WSAEACCES` (10013) and a missing helper as
   `WSAECONNREFUSED` (10061) or a failed lookup (11003).
+
+## Plan 3a: Wine program start-up on runtime 4.9.0
+
+On runtime 4.9.0 the trace scan's winetricks steps hit their time limits. They finished
+on 3.1.6. The ps snapshots showed each Wine process taking about 4 s to appear. A
+program therefore reaches the server after the server's 3 s idle exit, and every
+winetricks Wine call boots the prefix again. The `Ano Engine Timing` workflow
+(dispatch only; run 44285254299, macos-15 runners) measured three runtimes:
+
+| Wall time | Ano 3.1.6 | Ano 4.9.0 | upstream 4.8.3 |
+|---|---|---|---|
+| `cmd /c echo hi`, server kept up (`-p`) | ~1.0 s | ~8.1 s | ~10.3 s |
+| same, no persistent server (each call reboots on 4.x) | ~1.2 s | ~33 s | ~44 s |
+| create a prefix (`ano-boot`/`wineboot --init`) | 40 s | 114 s | 124 s |
+| `--version` | ~0.2 s | ~0.2 s | ~0.2 s |
+
+A `+timestamp,+process` trace shows about 3.5 s of Mac-side start-up in each process
+before any Windows code runs. `start.exe` pays it, and then `cmd.exe` pays it again.
+Upstream's unmodified engine is as slow, so Ano's repack is not the cause. Whether
+real Macs are slow too is unknown: CI runners are virtual Macs with a paravirtual GPU
+and no display. The owner's Ano-8 test (item 7) measures it on the M2. For Plan 3c's
+inventory, the trace scan should keep a persistent server (`ano-server -p`) during
+its winetricks steps.
