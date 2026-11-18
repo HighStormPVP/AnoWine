@@ -70,6 +70,15 @@ The sandbox round still allows internet access. The only difference between the 
 Ano-8 moves to runtime 4.9.0: Wine 11.19 with CrossOver's Mac patches, from upstream
 Whisky's engine 4.8.3, with Ano's names. Report each item as pass or fail.
 
+**Before you start, copy your Steam bottle.** Opening a bottle with 4.9.0 updates it, and
+Ano-7 cannot undo that. Right-click the Steam bottle in Ano-7 and choose **Duplicate
+Bottle...** (it copies the installed games too, so check your free space). Leave the copy
+unopened in Ano-8.
+
+**To go back to Ano-7:** quit Ano, delete the folder
+`~/Library/Application Support/io.github.highstormpvp.Ano/Libraries` (that is the runtime;
+Ano-7 downloads 3.1.6 again), install Ano-7 with its install line, and use the copy.
+
 1. Open Ano-8. It offers runtime 4.9.0; accept it. **Settings** then shows 4.9.0.
 2. Open your existing Steam bottle (proxy on, Hiddify running). Steam starts, signs in,
    and the store, menus and popups draw.
@@ -80,6 +89,10 @@ Whisky's engine 4.8.3, with Ano's names. Report each item as pass or fail.
    sign-in), import it in **Settings**, set a DirectX 12 game's graphics to D3DMetal, and
    start it.
 6. Still open from before: run `m2-sandbox-check.sh` (section 5).
-7. Start-up time: in Ano, select the Steam bottle, click **Open Terminal**, and run
-   `time ano-loader cmd /c echo hi` three times. Send the three `real` times. On GitHub's
-   test Macs each one takes about 8 seconds on this runtime (about 1 second on 3.1.6).
+7. Start-up time: with Steam running in the Steam bottle, click **Open Terminal** for that
+   bottle and run `time ano-loader cmd /c echo hi` three times. Send the three `real`
+   times. On GitHub's test Macs each one takes about 8 seconds on this runtime while
+   another program runs in the bottle (about 1 second on 3.1.6).
+8. Create a new bottle. It finishes without an error. Note roughly how long it takes.
+9. In that new bottle, open **Winetricks** and install `d3dcompiler_47`. It finishes
+   without an error. Note roughly how long it takes.
