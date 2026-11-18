@@ -1,0 +1,96 @@
+name: Ano Engine Timing
+
+# Spike (Plan 3a, Task 5 finding): how long Wine programs take to start on each
+# runtime. The trace scan showed every Wine process on runtime 4.9.0 taking
+# about 4 s to start on a CI runner, so each winetricks call reboots the
+# prefix. This compares Ano 3.1.6, Ano 4.9.0 and upstream's unmodified engine
+# 4.8.3 (the base of 4.9.0) to tell whether Ano's repack causes it.
+# Dispatch only.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  timing:
+    name: Start-up times, ${{ matrix.name }}
+    runs-on: macos-15
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: ano-3.1.6
+            name: Ano 3.1.6
+            url: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.6/Libraries.tar.gz
+            sha: 412035519d2df986aebb5c3a72c5dd6b00162d3b5aa52c1fff1713928b521ead
+          - id: ano-4.9.0
+            name: Ano 4.9.0
+            url: https://github.com/HighStormPVP/AnoWine/releases/download/v4.9.0/Libraries.tar.gz
+            sha: 7951aa539c1e0f371b4f5083c31599e582f902c33f80617321d745cc164743e5
+          - id: upstream-4.8.3
+            name: upstream 4.8.3
+            url: https://github.com/frankea/Whisky/releases/download/v4.8.3/Libraries.tar.gz
+            sha: 08ffabd7b7c352470faee2b1d51061b341316e401439ca805c5302acc2fb8818
+    steps:
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      - name: Runtime
+        env:
+          URL: ${{ matrix.url }}
+          SHA: ${{ matrix.sha }}
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/rt.tar.gz" "$URL"
+          echo "$SHA  $RUNNER_TEMP/rt.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/rt"
+          tar -xzf "$RUNNER_TEMP/rt.tar.gz" -C "$RUNNER_TEMP/rt"
+          ls -la "$RUNNER_TEMP/rt/Libraries/Wine/bin"
+
+      - name: Time Wine starts
+        run: |
+          set -u
+          W="$RUNNER_TEMP/rt/Libraries/Wine"
+          LOADER="$W/bin/ano-loader"; [ -e "$LOADER" ] || LOADER="$W/bin/wine"
+          SERVER="$W/bin/ano-server"; [ -e "$SERVER" ] || SERVER="$W/bin/wineserver"
+          BOOT=ano-boot; [ -e "$W/lib/wine/x86_64-windows/ano-boot.exe" ] || BOOT=wineboot
+          export WINEPREFIX="$RUNNER_TEMP/prefix" WINESERVER="$SERVER"
+          export WINEDLLOVERRIDES="mscoree,mshtml=" WINEDEBUG=-all
+          LOG="$RUNNER_TEMP/timing"; mkdir -p "$LOG"
+          echo "loader $LOADER, server $SERVER, boot $BOOT" | tee "$LOG/times.txt"
+          now() { perl -MTime::HiRes=time -e 'printf "%.2f", time'; }
+          # run <label> <limit-seconds> <command...>: prints the wall time.
+          run() {
+            local label=$1 limit=$2 t0 t1 pid n=0 status; shift 2
+            t0=$(now)
+            "$@" >> "$LOG/out.txt" 2>&1 &
+            pid=$!
+            while kill -0 "$pid" 2>/dev/null && [ "$n" -lt $((limit * 10)) ]; do sleep 0.1; n=$((n + 1)); done
+            if kill -0 "$pid" 2>/dev/null; then kill "$pid"; status=timeout; else wait "$pid"; status="exit $?"; fi
+            t1=$(now)
+            printf "%-40s %7.2fs  %s\n" "$label" "$(perl -e "printf '%.2f', $t1 - $t0")" "$status" | tee -a "$LOG/times.txt"
+          }
+          run "loader --version (1)" 60 "$LOADER" --version
+          run "loader --version (2)" 60 "$LOADER" --version
+          run "create prefix ($BOOT --init)" 900 "$LOADER" "$BOOT" --init
+          run "server exits after create" 120 "$SERVER" -w
+          run "cold: cmd /c echo" 300 "$LOADER" cmd /c echo hi
+          run "server exits after cold run" 120 "$SERVER" -w
+          for i in 1 2 3; do run "no persistent server: cmd /c echo ($i)" 300 "$LOADER" cmd /c echo hi; done
+          run "server exits" 120 "$SERVER" -w
+          run "start persistent server" 60 "$SERVER" -p
+          run "persistent: first cmd /c echo (boots)" 300 "$LOADER" cmd /c echo hi
+          for i in 1 2 3 4 5; do run "persistent: cmd /c echo ($i)" 120 "$LOADER" cmd /c echo hi; done
+          for i in 1 2 3; do run "persistent: reg query ($i)" 120 "$LOADER" reg query 'HKLM\Software\Microsoft\Windows NT\CurrentVersion' /v ProductName; done
+          run "persistent: traced cmd /c echo" 120 env WINEDEBUG=+timestamp,+process,+loaddll sh -c '"$0" cmd /c echo hi 2> "$1"' "$LOADER" "$LOG/trace.txt"
+          run "kill server" 120 "$SERVER" -k
+          { echo "### ${{ matrix.name }}"; echo '```'; cat "$LOG/times.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload timing
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: timing-${{ matrix.id }}
+          path: ${{ runner.temp }}/timing
