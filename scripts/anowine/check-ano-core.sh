@@ -43,8 +43,11 @@ if [ "${2:-}" = --boot ]; then
   check "no process command starts with a Windows path" '! grep -qE "^ano-(core|loader) +[A-Za-z]:" "$PREFIX/ps.txt"'
   # Steam detection (WineSteamClientDriver.windowsImageName) reads the Windows program
   # after the ano-core or ano-loader path, so every Wine process must start with one.
+  # ps shows "(ano-core)" for a process whose arguments it cannot read (it is
+  # starting or exiting); such a sample has no command to check.
   check "every Wine process command starts with the ano-core or ano-loader path" \
-    '[ -z "$(grep -E "^ano-(core|loader) " "$PREFIX/ps.txt" | grep -vE "^ano-(core|loader) +/[^ ]*/ano-(core|loader)( |$)")" ]'
+    '[ -z "$(grep -E "^ano-(core|loader) " "$PREFIX/ps.txt" | grep -vE "^ano-(core|loader) +\(ano-(core|loader)\)$" |
+      grep -vE "^ano-(core|loader) +/[^ ]*/ano-(core|loader)( |$)")" ]'
   echo "Wine processes seen (kernel name, then the command ps shows):"
   awk '$1 ~ /^(ano-|wine)/' "$PREFIX/ps.txt" | sort | uniq -c | sort -rn | head -20
   rm -rf "$PREFIX"
