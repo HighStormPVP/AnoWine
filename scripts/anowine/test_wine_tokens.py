@@ -1,4 +1,6 @@
 """Tests for wine_tokens.py. Run: python3 -m unittest discover -s scripts/anowine -p 'test_*.py'"""
+import contextlib
+import io
 import os
 import sys
 import tempfile
@@ -63,6 +65,57 @@ class WineTokensTests(unittest.TestCase):
             for chunk in range(1, len(data) + 2):
                 ascii_counts, utf16_counts = wine_tokens.tokens_in_file(path, chunk=chunk)
                 self.assertEqual(ascii_counts + utf16_counts, expected, f"chunk={chunk}")
+
+
+PHRASE = "the Wine project authors"
+
+
+def run_gate(tmp, files, allowlist):
+    root = Path(tmp) / "Libraries"
+    root.mkdir()
+    for name, data in files.items():
+        (root / name).write_bytes(data)
+    allow = Path(tmp) / "allow.txt"
+    allow.write_text(allowlist, encoding="utf-8")
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        code = wine_tokens.main([str(root), "--out", str(Path(tmp) / "t.tsv"), "--allowlist", str(allow), "--gate"])
+    return code, out.getvalue()
+
+
+class GateTests(unittest.TestCase):
+    def test_gate_fails_on_wine(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = run_gate(tmp, {"ano.dll": b"\x00__wine_dbg_output\x00"}, "")
+            self.assertEqual(code, 1)
+            self.assertIn("__wine_dbg_output", out)
+
+    def test_gate_passes_allowlisted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            allow = ("WinExec\tnot-wine\tWindows API (Win + Exec)\n"
+                     "RKNS_5TwineE\tnot-wine\tLLVM's Twine class\n")
+            code, out = run_gate(tmp, {"ano.dll": b"\x00WinExec\x00\x01RKNS_5TwineE\x00"}, allow)
+            self.assertEqual(code, 0, out)
+
+    def test_license_phrase(self):
+        data = b"\x01" + PHRASE.encode("utf-16-le") + b"\x00\x00" + PHRASE.encode("ascii") + b"\x00"
+        self.assertEqual(tokens_in_bytes(data, phrases=(PHRASE,)), Counter())
+        self.assertEqual(tokens_in_bytes(data), Counter({"Wine": 2}))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "blob.bin"
+            path.write_bytes(b"\x02" * 7 + data)
+            for chunk in range(1, len(data) + 9):
+                ascii_counts, utf16_counts = wine_tokens.tokens_in_file(path, chunk=chunk, phrases=(PHRASE,))
+                self.assertEqual(ascii_counts + utf16_counts, Counter(), f"chunk={chunk}")
+            good = Path(tmp) / "good.txt"
+            good.write_text(f"{PHRASE}\tlicense\tWine's LGPL copyright line\n", encoding="utf-8")
+            self.assertEqual(load_allowlist(good)[PHRASE][0], "license")
+            code, out = run_gate(tmp, {"ano.dll": data}, good.read_text(encoding="utf-8"))
+            self.assertEqual(code, 0, out)
+            bad = Path(tmp) / "bad.txt"
+            bad.write_text(f"# c\n{PHRASE}\tnot-wine\tnot a license\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"line 2\b"):
+                load_allowlist(bad)
 
 
 if __name__ == "__main__":
