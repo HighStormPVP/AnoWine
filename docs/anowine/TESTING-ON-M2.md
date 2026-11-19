@@ -96,3 +96,16 @@ Ano-7 downloads 3.1.6 again), install Ano-7 with its install line, and use the c
 8. Create a new bottle. It finishes without an error. Note roughly how long it takes.
 9. In that new bottle, open **Winetricks** and install `d3dcompiler_47`. It finishes
    without an error. Note roughly how long it takes.
+
+## D3DMetal names (only if you have imported the Game Porting Toolkit)
+
+The rename (Plan 3c) has to keep the few Wine names that Apple's D3DMetal looks for, because
+Apple's files cannot be changed. This lists them. It only reads files; it changes nothing.
+
+1. Download `list-gptk-wine-names.sh` from the
+   [ano-test-8 release](https://github.com/HighStormPVP/AnoWine/releases/tag/ano-test-8).
+2. In Terminal: `bash ~/Downloads/list-gptk-wine-names.sh`
+3. Send back `ano-gptk-wine-names.txt` from your Desktop.
+
+If it says no Game Porting Toolkit has been imported, skip this section: it needs item 5 of
+the Ano-8 list first.
