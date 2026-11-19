@@ -11,8 +11,9 @@ The rule, case-sensitive, in this order:
 It renames path names and the contents of every text file. In C-family
 files (CODE_SUFFIXES) a program name is mapped inside string literals and
 where it names a file (winecfg.ico); elsewhere it is an identifier (a debug
-channel such as winedbg) and follows the case rule, so it stays a valid C name. Binary files that still say
-"wine" are listed, not changed. Exit 1 when two paths would
+channel such as winedbg) and follows the case rule, so it stays a valid C name.
+A character array ({'w','i','n','e',0}) is renamed as a string. Binary files
+that still say "wine" are listed, not changed. Exit 1 when two paths would
 get the same name or a protected entry never occurs in the tree.
 """
 import argparse
@@ -32,6 +33,12 @@ CODE_SUFFIXES = frozenset((".c", ".h", ".m", ".mm", ".cpp", ".cc", ".cxx", ".hpp
 # Comments, string literals and character literals of C-family code, left to
 # right, so a quote inside a comment or a character literal opens no string.
 CODE_SPAN = re.compile(r"""//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'""", re.S)
+# Wine spells some strings as character arrays ({'w','i','n','e',0}): a run of
+# two or more character literals separated by commas is renamed as a string.
+CHAR = r"""'(?:\\[\\'"ntr0]|[^'\\\n])'"""
+CHAR_RUN = re.compile(CHAR + r"(?:\s*,\s*" + CHAR + r")+")
+CHAR_ESCAPES = {"\\": "\\", "'": "'", '"': '"', "n": "\n", "t": "\t", "r": "\r", "0": "\0"}
+CHAR_SPELL = {value: "\\" + key for key, value in CHAR_ESCAPES.items() if key != '"'}
 BINARY_WINE = re.compile(
     b"|".join(re.escape(w.encode(enc)) for w in CASES for enc in ("ascii", "utf-16-le", "utf-16-be")))
 
@@ -125,7 +132,15 @@ def rename_text(text: str, rules: Rules, code: bool = False) -> str:
         parts.append(file_name.sub(lambda _m: stash(new), text[pos:]))
         return "".join(parts)
 
-    out = rules.protect.sub(keep, text)
+    def char_run(match):
+        run = match.group(0)
+        old = "".join(CHAR_ESCAPES[lit[2]] if lit[1] == "\\" else lit[1] for lit in re.findall(CHAR, run))
+        new = rename_text(old, rules)
+        if new == old:
+            return run
+        return stash(",".join("'" + CHAR_SPELL.get(c, c) + "'" for c in new))
+
+    out = rules.protect.sub(keep, CHAR_RUN.sub(char_run, text) if code else text)
     for pattern, new, file_name in rules.stages:
         if code and file_name:
             out = in_code(pattern, file_name, new, out)
