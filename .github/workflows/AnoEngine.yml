@@ -5,12 +5,19 @@ name: Ano Engine
 # with scripts/anowine/compare_runtimes.py; first it checks the comparator on
 # real runtimes: upstream's engine must equal itself, and Ano 4.9.0 (a repack
 # with renamed files and rebuilt modules) must not equal it.
+# Plan 3c: version 5.0.0 or later builds Ano's renamed engine instead, and
+# `check` makes a bottle with it and runs the gate (wine_tokens.py --gate):
+# every "wine" token in the engine and the bottle must be on the allowlist.
 # Dispatch only. A build holds a Mac runner for 1.5 to 2 hours; to work on
 # `check` alone, pass engine_run to reuse an earlier run's engine.
 
 on:
   workflow_dispatch:
     inputs:
+      version:
+        description: "Engine version: 4.x is upstream's v4.8.3 rebuilt, 5.0.0 or later Ano's renamed engine"
+        type: string
+        default: "4.8.3"
       engine_run:
         description: "Skip the build and compare the ano-engine artifact of this run ID"
         type: string
@@ -32,14 +39,22 @@ jobs:
     if: inputs.engine_run == ''
     runs-on: macos-15
     timeout-minutes: 300
-    env:
-      # Upstream's v4.8.3 was built in its checkout, and lsteamclient.so keeps
-      # the absolute path of every object it links (it is compiled with -g), so
-      # an equal engine has to be built in the same folder.
-      ANO_ENGINE_WORK: /Users/runner/work/winecx-gptk/winecx-gptk
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      # Upstream's v4.8.3 was built in its checkout, and lsteamclient.so keeps
+      # the absolute path of every object it links (it is compiled with -g), so
+      # an equal engine has to be built in the same folder. Ano's engine is
+      # built in a folder without "wine" in its name.
+      - name: Work folder
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          case "$VERSION" in
+            4.*) echo "ANO_ENGINE_WORK=/Users/runner/work/winecx-gptk/winecx-gptk" >> "$GITHUB_ENV" ;;
+            *) echo "ANO_ENGINE_WORK=$RUNNER_TEMP/ano-engine" >> "$GITHUB_ENV" ;;
+          esac
 
       - name: Rosetta
         run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
@@ -58,9 +73,18 @@ jobs:
             brew list --versions "$formula" > /dev/null || brew install -q "$formula"
           done
 
+      # The renamed tree shares no compile with upstream's, so it has a cache
+      # of its own.
       - name: Compiler cache key
         id: key
-        run: echo "winecx=$(sed -n 's/^WINECX_COMMIT=//p' scripts/anowine/build-engine.sh)" >> "$GITHUB_OUTPUT"
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          winecx=$(sed -n 's/^WINECX_COMMIT=//p' scripts/anowine/build-engine.sh)
+          case "$VERSION" in
+            4.*) echo "prefix=ccache-$winecx" >> "$GITHUB_OUTPUT" ;;
+            *) echo "prefix=ccache-ano-$winecx" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       # Restored and saved as two steps so a build that fails after the
       # compile still keeps it (the one-step cache saves only on success).
@@ -68,10 +92,9 @@ jobs:
         uses: actions/cache/restore@v5
         with:
           path: ~/.ccache
-          key: ccache-${{ steps.key.outputs.winecx }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.key.outputs.prefix }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ccache-${{ steps.key.outputs.winecx }}-
-            ccache-
+            ${{ steps.key.outputs.prefix }}-
 
       - name: Nix
         uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa
@@ -82,7 +105,7 @@ jobs:
 
       - name: Build
         env:
-          ANO_ENGINE_VERSION: "4.8.3"
+          ANO_ENGINE_VERSION: ${{ inputs.version }}
         run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
 
       - name: Save the compiler cache
@@ -90,7 +113,7 @@ jobs:
         uses: actions/cache/save@v5
         with:
           path: ~/.ccache
-          key: ccache-${{ steps.key.outputs.winecx }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.key.outputs.prefix }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload the engine
         uses: actions/upload-artifact@v7
@@ -126,6 +149,7 @@ jobs:
         run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
 
       - name: Reference runtimes
+        if: startsWith(inputs.version, '4.')
         run: |
           fetch() { # fetch <dir> <url> <sha256>
             curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors -o "$RUNNER_TEMP/$1.tar.gz" "$2"
@@ -139,6 +163,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/reports"
 
       - name: "Self-check 1: upstream's engine equals itself"
+        if: startsWith(inputs.version, '4.')
         run: |
           set +e
           python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ref" "$RUNNER_TEMP/ref" \
@@ -150,6 +175,7 @@ jobs:
           grep -q ' interface=0 different=0 ' "$RUNNER_TEMP/reports/self1.txt"
 
       - name: "Self-check 2: Ano 4.9.0 is not upstream's engine"
+        if: startsWith(inputs.version, '4.')
         run: |
           set +e
           python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ano490" "$RUNNER_TEMP/ref" \
@@ -176,6 +202,7 @@ jobs:
       - name: Unpack our engine
         id: unpack
         run: |
+          mkdir -p "$RUNNER_TEMP/reports"
           cd "$RUNNER_TEMP/ours-download"
           shasum -a 256 -c Libraries.tar.gz.sha256
           mkdir -p "$RUNNER_TEMP/ours"
@@ -187,6 +214,7 @@ jobs:
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
       # records each in spikes/REPORT.md). Exit 1: a real difference.
       - name: Compare with upstream's v4.8.3
+        if: startsWith(inputs.version, '4.')
         run: |
           set +e
           python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ours" "$RUNNER_TEMP/ref" \
@@ -210,7 +238,7 @@ jobs:
       # Plan 3c's gate starts from this: every "wine" token in the engine and
       # in a new bottle made with it, with the not-Wine allowlist applied.
       - name: New bottle from our engine
-        if: always() && steps.unpack.outcome == 'success'
+        if: always() && steps.unpack.outcome == 'success' && startsWith(inputs.version, '4.')
         timeout-minutes: 20
         run: |
           W="$RUNNER_TEMP/ours/Libraries/Wine"
@@ -221,13 +249,32 @@ jobs:
           ls "$WINEPREFIX"
 
       - name: Wine token inventory
-        if: always() && steps.unpack.outcome == 'success'
+        if: always() && steps.unpack.outcome == 'success' && startsWith(inputs.version, '4.')
         run: |
           python3 scripts/anowine/wine_tokens.py "$RUNNER_TEMP/ours/Libraries" "$RUNNER_TEMP/prefix" \
             --allowlist scripts/anowine/wine-allowlist.txt --out "$RUNNER_TEMP/tokens.tsv"
           head -40 "$RUNNER_TEMP/tokens.tsv"
           echo "not-wine candidates:"
           awk -F'\t' '$2 == "not-wine-candidate"' "$RUNNER_TEMP/tokens.tsv"
+
+      # Plan 3c: Ano's engine and a new bottle made with it, through the gate.
+      - name: New bottle from Ano's engine
+        id: bottle
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 20
+        run: |
+          A="$RUNNER_TEMP/ours/Libraries/Ano"
+          export ANOPREFIX="$RUNNER_TEMP/bottle" DYLD_FALLBACK_LIBRARY_PATH="$A/lib"
+          export ANODLLOVERRIDES="mscoree=d;mshtml=d" ANODEBUG=-all
+          "$A/bin/ano-loader" ano-boot --init
+          "$A/bin/ano-server" -w
+          ls "$ANOPREFIX"
+          echo "system32: $(ls "$ANOPREFIX/drive_c/windows/system32" | wc -l) files"
+
+      - name: The gate
+        if: always() && steps.bottle.outcome == 'success'
+        run: |
+          python3 scripts/anowine/wine_tokens.py "$RUNNER_TEMP/ours/Libraries" "$RUNNER_TEMP/bottle"             --allowlist scripts/anowine/wine-allowlist.txt --out "$RUNNER_TEMP/tokens.tsv" --gate
 
       - name: Upload the inventory
         if: always() && steps.unpack.outcome == 'success'

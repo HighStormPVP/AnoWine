@@ -5,14 +5,18 @@
 # sources, libraries, tools and settings, so the result can be compared file
 # for file with upstream's (scripts/anowine/compare_runtimes.py).
 #
-# Plan 3b keeps upstream's names. Plan 3c adds its rename step after
-# apply_patches.
+# Version 4.x keeps upstream's names (Plan 3b: equal to upstream's v4.8.3).
+# Version 5 and later is Ano's engine (Plan 3c): the Wine tree is renamed by
+# rename_sources.py after apply_patches, so nothing it builds says "wine",
+# and the layout is Libraries/Ano with bin/ano-loader and bin/ano-server.
+# 3c-1 builds Wine's own parts only: no DXVK, DXMT, wine-mono or Gecko.
 #
 # Usage: ANO_ENGINE_VERSION=4.8.3 build-engine.sh <out-dir>
-#   ANO_ENGINE_VERSION  major.minor.patch stamped into WhiskyWineVersion.plist
+#   ANO_ENGINE_VERSION  major.minor.patch stamped into the version plist
 #   ANO_ENGINE_WORK     work folder (default $RUNNER_TEMP/ano-engine)
-# Writes <out-dir>/Libraries.tar.gz, Libraries.tar.gz.sha256,
-# WhiskyWineVersion.plist and build-info.txt. Logs go to <work>/logs.
+# Writes <out-dir>/Libraries.tar.gz, Libraries.tar.gz.sha256, the version plist
+# (WhiskyWineVersion.plist, or AnoRuntimeVersion.plist from 5.0) and
+# build-info.txt. Logs go to <work>/logs.
 # Needs macOS 15 on Apple silicon with Rosetta, Xcode with the macOS 15 SDK,
 # nix, Homebrew's mingw-w64, cmake, git and python3. ccache is used if present.
 set -euo pipefail
@@ -42,6 +46,8 @@ DXMT_URL=https://github.com/3Shain/dxmt/releases/download/v0.80/dxmt-v0.80-built
 DXMT_SHA=8f260e36b5739e68f3bad613381441385c4dc7b85b78ba8de653d5a6a264529d
 MOLTENVK_URL=https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2/MoltenVK-macos.tar
 MOLTENVK_SHA=f95765a6229cb7b915990a2890ce12ebe36a730b021545d3d52ae69ce4c4024e
+# rename_binaries.py rewrites the engine's fonts with it (5.x only).
+FONTTOOLS_VERSION=4.57.0
 
 # Upstream's recipe files (frankea/winecx-gptk has no license, so they are
 # downloaded at the commit that built v4.8.3, never stored here): one Wine
@@ -78,6 +84,16 @@ OUT=${1:-}
 [ -n "$OUT" ] || die "usage: ANO_ENGINE_VERSION=x.y.z build-engine.sh <out-dir>"
 VERSION=${ANO_ENGINE_VERSION:-}
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "ANO_ENGINE_VERSION must be major.minor.patch, not '$VERSION'"
+HERE=$(cd "$(dirname "$0")" && pwd)
+# The names of each layout. Folder names end up inside the binaries (__FILE__
+# paths, the install prefix), so 5.x uses none with "wine".
+if [ "${VERSION%%.*}" -ge 5 ]; then
+  RENAME=1 SRC=ano-src PREFIX=/opt/ano TOP=Libraries/Ano MOD=ano PLIST=AnoRuntimeVersion.plist
+  LOADER=ano-core SERVER=ano-server BUILTIN="Ano builtin DLL"
+else
+  RENAME=0 SRC=winecx PREFIX=/opt/whiskywine TOP=Libraries/Wine MOD=wine PLIST=WhiskyWineVersion.plist
+  LOADER=wine SERVER=wineserver BUILTIN="Wine builtin DLL"
+fi
 WORK=${ANO_ENGINE_WORK:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/ano-engine}
 mkdir -p "$WORK/logs" "$OUT"
 WORK=$(cd "$WORK" && pwd)
@@ -180,10 +196,10 @@ check_host() {
 # and upstream's recipe files.
 # ---------------------------------------------------------------------------
 fetch_sources() {
-  rm -rf winecx recipe
-  logged clone git clone "$WINECX_URL" winecx
-  git -C winecx checkout --quiet --detach "$WINECX_COMMIT"
-  info "winecx: $WINECX_COMMIT ($(git -C winecx describe --tags 2> /dev/null || echo 'no tag'))"
+  rm -rf "$SRC" recipe
+  logged clone git clone "$WINECX_URL" "$SRC"
+  git -C "$SRC" checkout --quiet --detach "$WINECX_COMMIT"
+  info "winecx: $WINECX_COMMIT ($(git -C "$SRC" describe --tags 2> /dev/null || echo 'no tag')) in $SRC"
   local sha path
   while read -r sha path; do
     [ -n "$sha" ] || continue
@@ -191,7 +207,7 @@ fetch_sources() {
     fetch "$RECIPE_BASE/$path" "recipe/$path" "$sha"
   done <<< "$RECIPE_FILES"
   # FAudio is part of the Wine tree; only check it is the pinned release.
-  local header=winecx/libs/faudio/include/FAudio.h major minor
+  local header=$SRC/libs/faudio/include/FAudio.h major minor
   major=$(sed -nE 's/^#define FAUDIO_MAJOR_VERSION[[:space:]]+([0-9]+).*/\1/p' "$header")
   minor=$(sed -nE 's/^#define FAUDIO_MINOR_VERSION[[:space:]]+([0-9]+).*/\1/p' "$header")
   [ "$major.$minor" = "$FAUDIO_VERSION" ] || die "FAudio in the tree is $major.$minor, not $FAUDIO_VERSION"
@@ -205,9 +221,37 @@ apply_patches() {
   local patch
   for patch in recipe/patches/*.patch; do
     [ -e "$patch" ] || continue
-    git -C winecx apply --verbose "$WORK/$patch"
+    git -C "$SRC" apply --verbose "$WORK/$patch"
     info "patch: $(basename "$patch")"
   done
+}
+
+# ---------------------------------------------------------------------------
+# rename_sources (5.x): the owner's naming rule over the whole tree, then
+# Ano's own patches (written against the renamed tree), then the binary files
+# that ship: the fonts (fontTools) and pidgen's placeholder resource. Other
+# binary files with "wine" are test data (not built) or ICU's dictionary.
+# ---------------------------------------------------------------------------
+rename_sources() {
+  [ "$RENAME" = 1 ] || return 0
+  local patch font fonts=() code=0
+  python3 "$HERE/rename_sources.py" "$SRC" --protect "$HERE/rename-protect.txt" --map "$HERE/rename-map.txt" \
+    --report "$LOGS/rename.txt" > /dev/null || code=$?
+  { grep -v $'^binary\t' "$LOGS/rename.txt" || true; } | sed 's/^/rename: /' | tee -a "$INFO"
+  { grep $'^binary\t' "$LOGS/rename.txt" || true; } | cut -f2 | sed 's/^/rename: binary with wine: /'
+  [ "$code" = 0 ] || die "rename_sources.py exit $code: a rule conflicts (see above)"
+  for patch in "$HERE"/patches/rename/*.patch; do
+    git -C "$SRC" apply --verbose "$patch"
+    info "rename patch: $(basename "$patch")"
+  done
+  rm -rf "$WORK/venv"
+  python3 -m venv "$WORK/venv"
+  logged fonttools "$WORK/venv/bin/pip" install --quiet "fonttools==$FONTTOOLS_VERSION"
+  for font in "$SRC"/fonts/*.ttf; do fonts+=(--font "$font"); done
+  logged rename-binaries "$WORK/venv/bin/python" "$HERE/rename_binaries.py" --protect "$HERE/rename-protect.txt" \
+    --map "$HERE/rename-map.txt" "${fonts[@]}" --padded "$SRC/dlls/pidgen/bink.bin"
+  info "rename: fontTools $FONTTOOLS_VERSION, $(grep -c . "$LOGS/rename-binaries.log") changes in" \
+    "$((${#fonts[@]} / 2)) fonts and bink.bin"
 }
 
 # ---------------------------------------------------------------------------
@@ -260,7 +304,7 @@ build_tools() {
     export PATH="$NIX_TOOL_PATH$PATH" SDKROOT="$(/usr/bin/xcrun --show-sdk-path)"
     export CC="${CCACHE:+$CCACHE }/usr/bin/clang" PKG_CONFIG_PATH="$pcp"
     # shellcheck disable=SC2086
-    logged build-tools-configure ../winecx/configure --enable-archs=i386,x86_64 --without-gstreamer \
+    logged build-tools-configure "../$SRC/configure" --enable-archs=i386,x86_64 --without-gstreamer \
       --without-ffmpeg $WINE_WITHOUT --disable-tests
     logged build-tools-make make -j"$NCPU" __tooldeps__
     # wrc looks for nls/locale.nls next to its own tree, and __tooldeps__ does
@@ -268,7 +312,7 @@ build_tools() {
     # would land inside an existing nls/ as nls/nls.
     rm -rf nls
     mkdir nls
-    ln -s ../../winecx/nls/locale.nls nls/locale.nls
+    ln -s "../../$SRC/nls/locale.nls" nls/locale.nls
     [ -r nls/locale.nls ] || die "build-tools/nls/locale.nls does not resolve"
   )
 }
@@ -316,8 +360,8 @@ configure_wine() {
     export ac_cv_lib_soname_MoltenVK=libMoltenVK.dylib ac_cv_lib_soname_SDL2=libSDL2-2.0.0.dylib
     export SDL2_CFLAGS="-I$SDL2_PREFIX/include/SDL2"
     # shellcheck disable=SC2086
-    if ! ../winecx/configure --host=x86_64-apple-darwin24 --with-wine-tools=../build-tools \
-      --enable-archs=i386,x86_64 --disable-tests $WINE_WITHOUT --prefix=/opt/whiskywine \
+    if ! "../$SRC/configure" --host=x86_64-apple-darwin24 "--with-$MOD-tools=../build-tools" \
+      --enable-archs=i386,x86_64 --disable-tests $WINE_WITHOUT --prefix="$PREFIX" \
       > "$LOGS/configure.log" 2>&1; then
       tail -n 40 "$LOGS/configure.log" >&2
       sed -n '100,400p' config.log >&2
@@ -356,13 +400,23 @@ make_wine() {
 # fetch_payloads: wine-mono, wine-gecko, DXVK, DXMT and MoltenVK.
 # ---------------------------------------------------------------------------
 fetch_payloads() {
-  local addons=winecx/dlls/appwiz.cpl/addons.c mono gecko
+  local addons=$SRC/dlls/appwiz.cpl/addons.c mono gecko
+  rm -rf downloads addons payload
+  mkdir -p downloads payload
+  fetch "$MOLTENVK_URL" downloads/moltenvk.tar "$MOLTENVK_SHA"
+  tar -xf downloads/moltenvk.tar -C payload MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib
+  # Khronos ships it universal; the engine is x86_64 only.
+  lipo -thin x86_64 payload/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib -output payload/libMoltenVK.dylib
+  if [ "$RENAME" = 1 ]; then
+    # Plan 3c-2 brings DXVK, DXMT and wine-mono back, rebuilt or renamed.
+    info "payloads: MoltenVK $(lipo -archs payload/libMoltenVK.dylib)"
+    return
+  fi
   mono=$(sed -n 's/^#define MONO_VERSION "\(.*\)"/\1/p' "$addons")
   gecko=$(sed -n 's/^#define GECKO_VERSION "\(.*\)"/\1/p' "$addons")
   [ "$mono" = "$MONO_VERSION" ] || die "Wine asks for wine-mono $mono, pinned is $MONO_VERSION"
   [ "$gecko" = "$GECKO_VERSION" ] || die "Wine asks for wine-gecko $gecko, pinned is $GECKO_VERSION"
-  rm -rf downloads addons payload
-  mkdir -p downloads addons/mono addons/gecko payload
+  mkdir -p addons/mono addons/gecko
   fetch "https://dl.winehq.org/wine/wine-mono/$mono/wine-mono-$mono-x86.tar.xz" downloads/mono.tar.xz "$MONO_SHA"
   fetch "https://dl.winehq.org/wine/wine-gecko/$gecko/wine-gecko-$gecko-x86.tar.xz" \
     downloads/gecko-x86.tar.xz "$GECKO_X86_SHA"
@@ -376,22 +430,37 @@ fetch_payloads() {
   fetch "$DXVK_MAC_URL" downloads/dxvk-macos.tar.gz "$DXVK_MAC_SHA"
   fetch "$DXVK_UP_URL" downloads/dxvk.tar.gz "$DXVK_UP_SHA"
   fetch "$DXMT_URL" downloads/dxmt.tar.gz "$DXMT_SHA"
-  fetch "$MOLTENVK_URL" downloads/moltenvk.tar "$MOLTENVK_SHA"
   tar -xzf downloads/dxvk-macos.tar.gz -C payload
   tar -xzf downloads/dxvk.tar.gz -C payload
   tar -xzf downloads/dxmt.tar.gz -C payload
-  tar -xf downloads/moltenvk.tar -C payload MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib
-  # Khronos ships it universal; the engine is x86_64 only.
-  lipo -thin x86_64 payload/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib -output payload/libMoltenVK.dylib
   info "payloads: wine-mono $mono, wine-gecko $gecko, DXVK $DXVK_VERSION, DXMT $DXMT_VERSION," \
     "MoltenVK $(lipo -archs payload/libMoltenVK.dylib)"
+}
+
+# install_ano_layout (5.x): bin/ano-loader and bin/ano-server only; the loader
+# itself is lib/ano/x86_64-unix/ano-core, the name ntdll starts it by
+# (patches/rename/0001). No man pages or desktop files: they are for a Linux
+# install, not the app.
+install_ano_layout() {
+  local unix=$TOP/lib/$MOD/x86_64-unix
+  rm -rf "$TOP/share/man" "$TOP/share/applications"
+  find "$TOP/lib/$MOD"/*-windows -name '*.a' -delete
+  find "$TOP/lib/$MOD"/*-windows -type f -print0 \
+    | xargs -0 -P "$NCPU" -n 64 x86_64-w64-mingw32-strip --strip-debug 2> /dev/null || true
+  [ -x "$unix/ano" ] || die "no loader at $unix/ano"
+  mv "$unix/ano" "$unix/$LOADER"
+  rm -f "$TOP/bin/ano"
+  ln -s "../lib/$MOD/x86_64-unix/$LOADER" "$TOP/bin/ano-loader"
+  [ -x "$TOP/bin/$SERVER" ] || die "no $SERVER in $TOP/bin"
+  info "bin: $(ls "$TOP/bin" | tr '\n' ' ')"
+  info "ano-loader --version: $("$TOP/bin/ano-loader" --version)"
 }
 
 # ---------------------------------------------------------------------------
 # install_tree: lay out Libraries/ the way the app expects it.
 # ---------------------------------------------------------------------------
 install_tree() {
-  local staging="$WORK/staging" root=/opt/whiskywine dxmt="payload/v$DXMT_VERSION"
+  local staging="$WORK/staging" root=$PREFIX dxmt="payload/v$DXMT_VERSION"
   local dxvk="payload/dxvk-macOS-async-v$DXVK_VERSION-20230507-repack" arch dll file loader name
   rm -rf staging Libraries
   # install-lib: what programs need at run time, without the import libraries.
@@ -400,13 +469,17 @@ install_tree() {
     export PATH="$NIX_TOOL_PATH$PATH"
     logged install make -j"$NCPU" install-lib DESTDIR="$staging"
   )
-  mkdir -p "$staging$root/share/wine/mono" "$staging$root/share/wine/gecko"
-  cp -R addons/mono/* "$staging$root/share/wine/mono/"
-  cp -R addons/gecko/* "$staging$root/share/wine/gecko/"
-  mkdir -p Libraries/Wine
-  cp -R "$staging$root/bin" Libraries/Wine/bin
-  cp -R "$staging$root/lib" Libraries/Wine/lib
-  cp -R "$staging$root/share" Libraries/Wine/share
+  mkdir -p "$TOP"
+  cp -R "$staging$root/bin" "$TOP/bin"
+  cp -R "$staging$root/lib" "$TOP/lib"
+  cp -R "$staging$root/share" "$TOP/share"
+  if [ "$RENAME" = 1 ]; then
+    install_ano_layout
+    return
+  fi
+  mkdir -p Libraries/Wine/share/wine/mono Libraries/Wine/share/wine/gecko
+  cp -R addons/mono/* Libraries/Wine/share/wine/mono/
+  cp -R addons/gecko/* Libraries/Wine/share/wine/gecko/
 
   # DXMT's Wine half is only the winemetal bridge. Its d3d11, dxgi and
   # d3d10core stay out of the builtins (they would take over every new bottle)
@@ -464,7 +537,7 @@ imports_iconv() {
 # relink <file>: point a Mach-O file's own id and its /nix/store dependencies
 # at the bundled copies, relative to itself, and sign it again.
 relink() {
-  local file=$1 libdir="$WORK/Libraries/Wine/lib" rel ref
+  local file=$1 libdir="$WORK/$TOP/lib" rel ref
   rel=$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[1], os.path.dirname(os.path.abspath(sys.argv[2]))))' \
     "$libdir" "$file")
   chmod u+w "$file" 2> /dev/null || true
@@ -483,10 +556,10 @@ relink() {
 
 # ---------------------------------------------------------------------------
 # bundle_libraries: copy every library the engine needs from /nix/store into
-# Libraries/Wine/lib and make the tree relocatable.
+# <top>/lib and make the tree relocatable.
 # ---------------------------------------------------------------------------
 bundle_libraries() {
-  local libdir="$WORK/Libraries/Wine/lib" path plugin so file queue next lib base
+  local libdir="$WORK/$TOP/lib" path plugin so file queue next lib base
   # GStreamer's plugins are loaded from a folder, so they are copied first and
   # their own dependencies (the codecs) are found through them.
   mkdir -p "$libdir/gstreamer-1.0"
@@ -510,7 +583,7 @@ bundle_libraries() {
       [ ! -f "$path/lib/$so" ] || queue="$queue $path/lib/$so"
     done
   done < store-outs.txt
-  for file in Libraries/Wine/lib/wine/*-unix/*.so Libraries/Wine/bin/wine "$libdir"/gstreamer-1.0/*.dylib; do
+  for file in "$TOP/lib/$MOD"/*-unix/*.so "$TOP/lib/$MOD/x86_64-unix/$LOADER" "$libdir"/gstreamer-1.0/*.dylib; do
     [ -f "$file" ] || continue
     queue="$queue $(scan "$file" | tr '\n' ' ')"
   done
@@ -532,13 +605,13 @@ bundle_libraries() {
   for file in "$libdir"/*.dylib* "$libdir"/gstreamer-1.0/*.dylib*; do
     [ ! -f "$file" ] || relink "$file"
   done
-  while read -r file; do relink "$file"; done < <(find Libraries/Wine/bin -type f)
-  while read -r file; do relink "$file"; done < <(find Libraries/Wine/lib/wine -name '*.so')
+  while read -r file; do relink "$file"; done < <(find "$TOP/bin" -type f)
+  while read -r file; do relink "$file"; done < <(find "$TOP/lib/$MOD" -name '*.so')
   ln -sf libfreetype.6.dylib "$libdir/libfreetype.dylib"
   ln -sf libSDL2-2.0.0.dylib "$libdir/libSDL2.dylib"
   # The Wine modules open gnutls, freetype and MoltenVK by bare name, which
   # dlopen looks up on the caller's rpaths: two folders up is lib/.
-  for file in Libraries/Wine/lib/wine/*-unix/*.so; do
+  for file in "$TOP/lib/$MOD"/*-unix/*.so; do
     install_name_tool -add_rpath "@loader_path/../../" "$file" 2> /dev/null || true
     codesign -f -s - "$file" 2> /dev/null || true
   done
@@ -546,15 +619,15 @@ bundle_libraries() {
     "$(find "$libdir/gstreamer-1.0" -mindepth 1 | wc -l | tr -d ' ') gstreamer plugins"
 }
 
-# mark_builtin <dll>: write the "Wine builtin DLL" mark Wine checks at 0x40.
+# mark_builtin <dll>: write the builtin mark the engine checks at 0x40.
 mark_builtin() {
-  python3 - "$1" << 'PY'
+  python3 - "$1" "$BUILTIN" << 'PY'
 import struct, sys
-path = sys.argv[1]
+path, mark = sys.argv[1], sys.argv[2].encode()
 data = bytearray(open(path, "rb").read())
 if struct.unpack_from("<I", data, 0x3C)[0] < 0x60:
     sys.exit(f"{path}: the PE header starts inside the 32 bytes at 0x40")
-data[0x40:0x60] = b"Wine builtin DLL" + bytes(16)
+data[0x40:0x60] = mark + bytes(32 - len(mark))
 open(path, "wb").write(bytes(data))
 PY
 }
@@ -564,7 +637,7 @@ PY
 # Game Porting Toolkit is imported (d3d12 video processing, DXGI driver version).
 # ---------------------------------------------------------------------------
 build_shims() {
-  local dest=Libraries/Wine/lib/gptk-video src=recipe/gptk-video
+  local dest=$TOP/lib/gptk-video src=recipe/gptk-video
   mkdir -p "$dest"
   x86_64-w64-mingw32-gcc -shared -O2 -fno-strict-aliasing -o "$dest/d3d12shim.dll" \
     "$WORK/$src/d3d12shim.c" "$WORK/$src/d3d12shim.def" -I"$WORK/$src" -luuid -ldxguid
@@ -573,13 +646,13 @@ build_shims() {
     "$WORK/$src/dxgishim.c" "$WORK/$src/dxgishim.def" -luuid -ldxguid
   mark_builtin "$dest/dxgishim.dll"
   # tar keeps no empty folders, and the app's importer needs this one.
-  mkdir -p Libraries/Wine/lib/external
-  cat > Libraries/Wine/lib/external/README << 'EOF'
+  mkdir -p "$TOP/lib/external"
+  cat > "$TOP/lib/external/README" << EOF
 This folder is for Apple's Game Porting Toolkit (D3DMetal.framework and
 libd3dshared.dylib). Apple does not allow it to be redistributed, so it is
 not shipped here. When you import the toolkit in Ano's settings, Ano puts
 both here and makes d3d10.so, d3d11.so, d3d12.so and dxgi.so in
-lib/wine/x86_64-unix symbolic links to ../../external/libd3dshared.dylib.
+lib/$MOD/x86_64-unix symbolic links to ../../external/libd3dshared.dylib.
 
 Keep them links: libd3dshared.dylib finds D3DMetal.framework through its
 only rpath, @loader_path, so a copy anywhere else cannot load it.
@@ -587,7 +660,7 @@ EOF
 }
 
 # ---------------------------------------------------------------------------
-# write_version: WhiskyWineVersion.plist, laid out as upstream's.
+# write_version: the version plist, laid out as upstream's WhiskyWineVersion.plist.
 # ---------------------------------------------------------------------------
 write_version() {
   local major=${VERSION%%.*} minor patch=${VERSION##*.}
@@ -614,7 +687,7 @@ write_version() {
     "    <integer>$patch</integer>" \
     '  </dict>' \
     '</dict>' \
-    '</plist>' > Libraries/WhiskyWineVersion.plist
+    '</plist>' > "Libraries/$PLIST"
   info "version: $VERSION"
 }
 
@@ -622,7 +695,7 @@ write_version() {
 # verify_tree: refuse a tree that would not work on someone else's Mac.
 # ---------------------------------------------------------------------------
 verify_tree() {
-  local w=Libraries/Wine lib count deps dll
+  local w=$TOP lib count deps dll
   # Every Mach-O file: no absolute paths outside the system, nothing above the
   # floor, and every undefined symbol defined by the SDK or the bundle.
   python3 - Libraries "$(xcrun --sdk macosx --show-sdk-path)" "${FLOOR%%.*}" << 'PY'
@@ -725,33 +798,53 @@ for problem in problems:
 print(f"{len(machos)} Mach-O files checked, {len(offered)} symbols offered, {len(problems)} problem(s)")
 sys.exit(1 if problems else 0)
 PY
-  count=$(find "$w/lib/wine/i386-windows" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')
+  local m="$w/lib/$MOD"
+  count=$(find "$m/i386-windows" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')
   [ "$count" -gt 500 ] || die "i386-windows has only $count files; 32-bit programs could not start"
-  count=$(wc -c < "$w/lib/wine/x86_64-windows/ntdll.dll" | tr -d ' ')
+  count=$(wc -c < "$m/x86_64-windows/ntdll.dll" | tr -d ' ')
   [ "$count" -lt 1500000 ] || die "ntdll.dll is $count bytes: the Windows half was not stripped"
-  for lib in "$w"/share/wine/mono/wine-mono-* "$w"/share/wine/gecko/wine-gecko-*-x86 \
-    "$w"/share/wine/gecko/wine-gecko-*-x86_64; do
-    [ -d "$lib" ] || die "missing $lib (a new bottle would stop on an install dialog)"
-  done
-  [ -f Libraries/DXVK/x64/d3d11.dll ] || die "no DXVK payload"
-  [ -f Libraries/DXVK/x32/dxgi.dll ] || die "no 32-bit DXVK dxgi"
-  [ -f "$w/lib/wine/x86_64-unix/winemetal.so" ] || die "no DXMT winemetal bridge"
+  if [ "$RENAME" = 0 ]; then
+    for lib in "$w"/share/wine/mono/wine-mono-* "$w"/share/wine/gecko/wine-gecko-*-x86 \
+      "$w"/share/wine/gecko/wine-gecko-*-x86_64; do
+      [ -d "$lib" ] || die "missing $lib (a new bottle would stop on an install dialog)"
+    done
+    [ -f Libraries/DXVK/x64/d3d11.dll ] || die "no DXVK payload"
+    [ -f Libraries/DXVK/x32/dxgi.dll ] || die "no 32-bit DXVK dxgi"
+    [ -f "$m/x86_64-unix/winemetal.so" ] || die "no DXMT winemetal bridge"
+  fi
   [ -d "$w/lib/external" ] || die "no lib/external for the Game Porting Toolkit"
   for dll in d3d11 dxgi d3d10core; do
-    ! grep -aqE 'DXMT_|dxmt\.con' "$w/lib/wine/x86_64-windows/$dll.dll" \
-      || die "the builtin $dll.dll is DXMT's, not Wine's"
+    ! grep -aqE 'DXMT_|dxmt\.con' "$m/x86_64-windows/$dll.dll" \
+      || die "the builtin $dll.dll is DXMT's, not the engine's"
   done
-  [ ! -f "$w/lib/wine/x86_64-windows/nvapi64.dll" ] || die "nvapi64.dll must not be a builtin"
-  deps=$(otool -L "$w/lib/wine/x86_64-unix/winedmo.so")
-  grep -q libavcodec <<< "$deps" || die "winedmo.so does not link ffmpeg: no video decoding"
-  deps=$(otool -L "$w/lib/wine/x86_64-unix/winegstreamer.so")
-  grep -q libgstreamer-1.0 <<< "$deps" || die "winegstreamer.so does not link gstreamer"
+  [ ! -f "$m/x86_64-windows/nvapi64.dll" ] || die "nvapi64.dll must not be a builtin"
+  deps=$(otool -L "$m/x86_64-unix/${MOD}dmo.so")
+  grep -q libavcodec <<< "$deps" || die "${MOD}dmo.so does not link ffmpeg: no video decoding"
+  deps=$(otool -L "$m/x86_64-unix/${MOD}gstreamer.so")
+  grep -q libgstreamer-1.0 <<< "$deps" || die "${MOD}gstreamer.so does not link gstreamer"
   count=$(find "$w/lib/gstreamer-1.0" -mindepth 1 -maxdepth 1 | wc -l | tr -d ' ')
   [ "$count" -gt 50 ] || die "only $count gstreamer plugins"
-  ! grep -aq 'SDL support not compiled in' "$w/lib/wine/x86_64-unix/winebus.so" \
-    || die "winebus.so has no SDL bus: no game controllers"
+  ! grep -aq 'SDL support not compiled in' "$m/x86_64-unix/${MOD}bus.so" \
+    || die "${MOD}bus.so has no SDL bus: no game controllers"
   [ -f "$w/lib/libSDL2-2.0.0.dylib" ] || die "libSDL2-2.0.0.dylib is not bundled"
+  [ "$RENAME" = 0 ] || verify_no_wine
   info "verify: relocatable, floor $FLOOR, symbols resolved, payloads present"
+}
+
+# verify_no_wine (5.x): the loader's own name for itself, no "wine" in any
+# path, and none in the signing identifier of any Mach-O file.
+verify_no_wine() {
+  local version paths file id ids=""
+  version=$("$TOP/bin/ano-loader" --version)
+  [[ "$version" == ano-11.19* ]] || die "ano-loader --version says '$version', not ano-11.19"
+  paths=$(find Libraries | grep -i wine || true)
+  [ -z "$paths" ] || die "paths with wine: $(head -n 20 <<< "$paths" | tr '\n' ' ')"
+  while read -r file; do
+    id=$(codesign -dv "$file" 2>&1 | sed -n 's/^Identifier=//p')
+    if grep -qi wine <<< "$id"; then ids="$ids $file ($id)"; fi
+  done < <(find "$TOP/bin" "$TOP/lib" -type f ! -path '*-windows/*')
+  [ -z "$ids" ] || die "signing identifiers with wine:$ids"
+  info "verify: $version; no path or signing identifier with wine"
 }
 
 # ---------------------------------------------------------------------------
@@ -759,7 +852,9 @@ PY
 # ---------------------------------------------------------------------------
 smoke_test() {
   (
-    local s="$WORK/smoke" w="$WORK/Libraries/Wine" t="$WORK/recipe/tests" results
+    local s="$WORK/smoke" w="$WORK/$TOP" t="$WORK/recipe/tests" results
+    local run="$w/bin/wine64" boot=wineboot pfx=WINE diag=winediag
+    [ "$RENAME" = 0 ] || { run="$w/bin/ano-loader" boot=ano-boot pfx=ANO diag=anodiag; }
     rm -rf "$s"
     mkdir -p "$s"
     export PATH="$NIX_TOOL_PATH$PATH"
@@ -767,21 +862,21 @@ smoke_test() {
     x86_64-w64-mingw32-gcc -O2 -Wall -Wextra -o "$s/flsgetvalue2.exe" "$t/flsgetvalue2.c"
     x86_64-w64-mingw32-gcc -O2 -o "$s/mfprobe.exe" "$t/mfprobe.c" -lmfplat -lole32
     clang -arch x86_64 -O2 -o "$s/dlopenall" "$t/dlopenall.c"
-    export WINEPREFIX="$s/prefix" DYLD_FALLBACK_LIBRARY_PATH="$w/lib" WINEDLLOVERRIDES="mscoree=d;mshtml=d"
-    WINEDEBUG=-all "$w/bin/wine64" wineboot -u > "$LOGS/smoke-wineboot.log" 2>&1 || true
+    export "${pfx}PREFIX=$s/prefix" DYLD_FALLBACK_LIBRARY_PATH="$w/lib" "${pfx}DLLOVERRIDES=mscoree=d;mshtml=d"
+    env "${pfx}DEBUG=-all" "$run" "$boot" -u > "$LOGS/smoke-boot.log" 2>&1 || true
 
     # A display driver that fails to start falls back to "nodrv" silently;
     # only creating a window shows it.
-    WINEDEBUG=+winediag "$w/bin/wine64" "$s/winmsg.exe" > "$LOGS/smoke-winmsg.log" 2>&1 || true
+    env "${pfx}DEBUG=+$diag" "$run" "$s/winmsg.exe" > "$LOGS/smoke-winmsg.log" 2>&1 || true
     grep -E '^\[|^RESULT|^FAIL' "$LOGS/smoke-winmsg.log" || true
     ! grep -q nodrv_CreateWindow "$LOGS/smoke-winmsg.log" || die "the display driver did not load (nodrv)"
     grep -q 'RESULT: windows ok' "$LOGS/smoke-winmsg.log" || die "the engine cannot create a window"
 
-    WINEDEBUG=-all MVK_CONFIG_LOG_LEVEL=0 "$w/bin/wine64" "$s/flsgetvalue2.exe" > "$LOGS/smoke-fls.log" 2>&1 \
+    env "${pfx}DEBUG=-all" MVK_CONFIG_LOG_LEVEL=0 "$run" "$s/flsgetvalue2.exe" > "$LOGS/smoke-fls.log" 2>&1 \
       || { cat "$LOGS/smoke-fls.log"; die "flsgetvalue2.exe failed"; }
 
     # Media Foundation answers even with no GStreamer plugins found; ask for a decoder.
-    WINEDEBUG=-all "$w/bin/wine64" "$s/mfprobe.exe" > "$LOGS/smoke-mf.log" 2>&1 || true
+    env "${pfx}DEBUG=-all" "$run" "$s/mfprobe.exe" > "$LOGS/smoke-mf.log" 2>&1 || true
     grep -E '^\[|^RESULT|^FAIL' "$LOGS/smoke-mf.log" || true
     grep -q 'RESULT: media foundation has decoders' "$LOGS/smoke-mf.log" \
       || die "Media Foundation has no H.264 decoder: GStreamer found no plugins"
@@ -795,7 +890,7 @@ smoke_test() {
     echo "$results"
     [ -n "$results" ] && ! grep -q '^FAIL' "$LOGS/smoke-dlopen.log" && ! grep -qv '^RESULT: 0 of' <<< "$results" \
       || die "bundled libraries do not load"
-    "$w/bin/wineserver" -k 2> /dev/null || true
+    "$w/bin/$SERVER" -k 2> /dev/null || true
   )
   info "smoke tests: window, fibers, media foundation, every bundled library loads"
 }
@@ -807,11 +902,11 @@ package() {
   rm -f "$OUT/Libraries.tar.gz" "$OUT/Libraries.tar.gz.sha256"
   tar -czf "$OUT/Libraries.tar.gz" Libraries
   (cd "$OUT" && shasum -a 256 Libraries.tar.gz > Libraries.tar.gz.sha256)
-  cp Libraries/WhiskyWineVersion.plist "$OUT/WhiskyWineVersion.plist"
+  cp "Libraries/$PLIST" "$OUT/$PLIST"
   info "tarball: $(wc -c < "$OUT/Libraries.tar.gz" | tr -d ' ') bytes, sha256 $(cut -d' ' -f1 < "$OUT/Libraries.tar.gz.sha256")"
 }
 
-PHASES="check_host fetch_sources apply_patches nix_inputs build_tools build_sdl2 configure_wine make_wine
+PHASES="check_host fetch_sources apply_patches rename_sources nix_inputs build_tools build_sdl2 configure_wine make_wine
   fetch_payloads install_tree bundle_libraries build_shims write_version verify_tree smoke_test package"
 
 total=$SECONDS
