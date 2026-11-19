@@ -109,7 +109,10 @@ logged() {
 
 # fetch <url> <file> <sha256>: download and check.
 fetch() {
-  curl -fsSL --retry 3 -o "$2" "$1" || die "download failed: $1"
+  # Any error is retried: a long GitHub release download can drop mid-transfer
+  # (curl 56), which plain --retry does not count as transient.
+  curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors --connect-timeout 30 -o "$2" "$1" \
+    || die "download failed: $1"
   local got
   got=$(shasum -a 256 "$2" | cut -d' ' -f1)
   [ "$got" = "$3" ] || { rm -f "$2"; die "SHA-256 of $1 is $got, expected $3"; }

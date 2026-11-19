@@ -57,11 +57,13 @@ jobs:
         id: key
         run: echo "winecx=$(sed -n 's/^WINECX_COMMIT=//p' scripts/anowine/build-engine.sh)" >> "$GITHUB_OUTPUT"
 
+      # Restored and saved as two steps so a build that fails after the
+      # compile still keeps it (the one-step cache saves only on success).
       - name: Compiler cache
-        uses: actions/cache@v5
+        uses: actions/cache/restore@v5
         with:
           path: ~/.ccache
-          key: ccache-${{ steps.key.outputs.winecx }}-${{ github.run_id }}
+          key: ccache-${{ steps.key.outputs.winecx }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             ccache-${{ steps.key.outputs.winecx }}-
             ccache-
@@ -77,6 +79,13 @@ jobs:
         env:
           ANO_ENGINE_VERSION: "4.8.3"
         run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.ccache
+          key: ccache-${{ steps.key.outputs.winecx }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload the engine
         uses: actions/upload-artifact@v7
@@ -114,7 +123,7 @@ jobs:
       - name: Reference runtimes
         run: |
           fetch() { # fetch <dir> <url> <sha256>
-            curl -fsSL --retry 3 -o "$RUNNER_TEMP/$1.tar.gz" "$2"
+            curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors -o "$RUNNER_TEMP/$1.tar.gz" "$2"
             echo "$3  $RUNNER_TEMP/$1.tar.gz" | shasum -a 256 -c -
             mkdir -p "$RUNNER_TEMP/$1"
             tar -xzf "$RUNNER_TEMP/$1.tar.gz" -C "$RUNNER_TEMP/$1"
