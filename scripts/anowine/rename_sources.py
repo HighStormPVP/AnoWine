@@ -8,8 +8,11 @@ The rule, case-sensitive, in this order:
      letters, plain words, license phrases);
   2. the fixed map: program names (ano-cfg), reverse-DNS identities, URLs;
   3. wine -> ano, Wine -> Ano, WINE -> ANO.
-It renames path names and the contents of every text file. Binary files
-that still say "wine" are listed, not changed. Exit 1 when two paths would
+It renames path names and the contents of every text file. In C-family
+files (CODE_SUFFIXES) a program name is mapped only inside string literals;
+elsewhere it is an identifier (a debug channel such as winedbg) and follows
+the case rule, so it stays a valid C name. Binary files that still say
+"wine" are listed, not changed. Exit 1 when two paths would
 get the same name or a protected entry never occurs in the tree.
 """
 import argparse
@@ -25,6 +28,10 @@ IDENT = "A-Za-z0-9_"
 URL_TAIL = r"(?:/[^\s\"'<>()\\]*)?"
 PROTECT_KINDS = ("substring", "word", "license")
 MAP_KINDS = ("program", "identity", "url")
+CODE_SUFFIXES = frozenset((".c", ".h", ".m", ".mm", ".cpp", ".cc", ".cxx", ".hpp", ".y", ".l", ".idl", ".rc"))
+# Comments, string literals and character literals of C-family code, left to
+# right, so a quote inside a comment or a character literal opens no string.
+CODE_SPAN = re.compile(r"""//[^\n]*|/\*.*?\*/|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'""", re.S)
 BINARY_WINE = re.compile(
     b"|".join(re.escape(w.encode(enc)) for w in CASES for enc in ("ascii", "utf-16-le", "utf-16-be")))
 
@@ -33,7 +40,7 @@ BINARY_WINE = re.compile(
 class Rules:
     protect: re.Pattern
     protect_texts: list
-    stages: list  # (pattern, replacement) pairs, applied in order
+    stages: list  # (pattern, replacement, is_program) triples, applied in order
     used: set = field(default_factory=set)
 
 
@@ -82,18 +89,19 @@ def load_rules(protect: Path, mapping: Path) -> Rules:
             raise ValueError(f"{mapping}: unknown kind {kind} for {old}")
         escaped = re.escape(old)
         if kind == "program":
-            pattern = f"(?<![{IDENT}]){escaped}(?![{IDENT}])"
+            # A name right after an escape in a string ("\twinedbg") counts too.
+            pattern = rf"(?:(?<![{IDENT}])|(?<=\\[ntr])){escaped}(?![{IDENT}])"
         elif kind == "identity":
             pattern = escaped
         elif old.count(".") > 1:  # a full host: bugs.winehq.org
             pattern = f"(?:https?://)?{escaped}{URL_TAIL}"
         else:  # a domain: any host under it
             pattern = f"(?:https?://)?(?:[A-Za-z0-9-]+\\.)*{escaped}{URL_TAIL}"
-        stages.append((re.compile(pattern), new))
+        stages.append((re.compile(pattern), new, kind == "program"))
     return Rules(protect=protect_re, protect_texts=texts, stages=stages)
 
 
-def rename_text(text: str, rules: Rules) -> str:
+def rename_text(text: str, rules: Rules, code: bool = False) -> str:
     saved = []
 
     def stash(value):
@@ -104,9 +112,18 @@ def rename_text(text: str, rules: Rules) -> str:
         rules.used.add(match.group(0))
         return stash(match.group(0))
 
+    def in_strings(pattern, new, text):
+        def span(match):
+            literal = match.group(0)
+            return pattern.sub(lambda _m: stash(new), literal) if literal[0] in "\"'" else literal
+        return CODE_SPAN.sub(span, text)
+
     out = rules.protect.sub(keep, text)
-    for pattern, new in rules.stages:
-        out = pattern.sub(lambda _m, new=new: stash(new), out)
+    for pattern, new, is_program in rules.stages:
+        if code and is_program:
+            out = in_strings(pattern, new, out)
+        else:
+            out = pattern.sub(lambda _m, new=new: stash(new), out)
     out = CASE_RE.sub(lambda m: CASES[m.group(0)], out)
     return re.sub("(\\d+)", lambda m: saved[int(m.group(1))], out)
 
@@ -146,7 +163,7 @@ def rename_tree(src: Path, rules: Rules) -> Report:
                     report.binary_with_wine.append(rename_path(rel, rules))
                 continue
             text, encoding = _decode(data)
-            new = rename_text(text, rules)
+            new = rename_text(text, rules, code=os.path.splitext(name)[1] in CODE_SUFFIXES)
             if new != text:
                 Path(path).write_bytes(new.encode(encoding))
                 report.changed_files += 1
