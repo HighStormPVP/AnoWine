@@ -280,6 +280,7 @@ jobs:
       # Plan 3c-1 Task 4: a stand-in for Apple's D3DMetal must still load.
       - name: Hidden aliases for closed parts
         if: always() && steps.bottle.outcome == 'success'
+        timeout-minutes: 15
         run: |
           brew list --versions mingw-w64 > /dev/null || brew install -q mingw-w64
           scripts/anowine/check-aliases.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle"

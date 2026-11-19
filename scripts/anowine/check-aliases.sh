@@ -29,11 +29,16 @@ PY
 
 cp "$WORK/aliastest.dll" "$PE/"
 cp "$WORK/aliastest.so" "$UNIX/"
-export ANOPREFIX=$BOTTLE DYLD_FALLBACK_LIBRARY_PATH=$ENGINE/lib ANODEBUG=-all ANODLLOVERRIDES="mscoree=d;mshtml=d"
+# warn+module names a missing import. ano-dbg is disabled and the run is
+# stopped after three minutes: a crash dialog would wait for a click. The
+# output goes to a file: processes the run starts may keep a pipe open.
+export ANOPREFIX=$BOTTLE DYLD_FALLBACK_LIBRARY_PATH=$ENGINE/lib ANODEBUG=warn+module,+loaddll
+export ANODLLOVERRIDES="mscoree=d;mshtml=d;ano-dbg.exe=d"
 code=0
-out=$("$ENGINE/bin/ano-loader" "$WORK/aliasrun.exe" 2>&1) || code=$?
+perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 180 "$ENGINE/bin/ano-loader" "$WORK/aliasrun.exe" \
+  > "$WORK/out.txt" 2>&1 || code=$?
 "$ENGINE/bin/ano-server" -k 2> /dev/null || true
 rm -f "$PE/aliastest.dll" "$UNIX/aliastest.so"
-echo "$out"
-echo "aliasrun.exe exit $code"
-grep -q 'RESULT: alias_call(21) = 42' <<< "$out"
+cat "$WORK/out.txt"
+echo "aliasrun.exe exit $code$([ "$code" != 142 ] || echo ' (stopped after 180 s)')"
+grep -q 'RESULT: alias_call(21) = 42' "$WORK/out.txt"
