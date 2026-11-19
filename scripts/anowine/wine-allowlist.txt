@@ -1,0 +1,10 @@
+# Tokens that contain "wine" and may stay after the rename (Plan 3c's gate reads this).
+# One entry per line: token<TAB>category<TAB>reason. Tokens are case-sensitive and unique.
+# Categories, and only these (rename design, "The gate"):
+#   not-wine       not about Wine at all (WinExec = Win + Exec)
+#   alias          a hidden alias a closed part needs (Apple's D3DMetal)
+#   apple          inside Apple's own files
+#   license        license and copyright notices
+#   code-only      names only in the app's source, and the repo URL
+#   mono-internal  wine-mono's internal assembly names
+# Anything else needs the owner's approval to be added.

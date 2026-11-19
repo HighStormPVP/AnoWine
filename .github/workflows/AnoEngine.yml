@@ -160,6 +160,7 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Unpack our engine
+        id: unpack
         run: |
           cd "$RUNNER_TEMP/ours-download"
           shasum -a 256 -c Libraries.tar.gz.sha256
@@ -191,6 +192,36 @@ jobs:
             2) echo "::warning::equal to upstream's v4.8.3 only by interface; explain each file" ;;
             *) echo "::error::compare_runtimes.py exit $code: not upstream's v4.8.3"; exit 1 ;;
           esac
+
+      # Plan 3c's gate starts from this: every "wine" token in the engine and
+      # in a new bottle made with it, with the not-Wine allowlist applied.
+      - name: New bottle from our engine
+        if: always() && steps.unpack.outcome == 'success'
+        timeout-minutes: 20
+        run: |
+          W="$RUNNER_TEMP/ours/Libraries/Wine"
+          export WINEPREFIX="$RUNNER_TEMP/prefix" DYLD_FALLBACK_LIBRARY_PATH="$W/lib"
+          export WINEDLLOVERRIDES="mscoree=d;mshtml=d" WINEDEBUG=-all
+          "$W/bin/wine64" wineboot --init
+          "$W/bin/wineserver" -w
+          ls "$WINEPREFIX"
+
+      - name: Wine token inventory
+        if: always() && steps.unpack.outcome == 'success'
+        run: |
+          python3 scripts/anowine/wine_tokens.py "$RUNNER_TEMP/ours/Libraries" "$RUNNER_TEMP/prefix" \
+            --allowlist scripts/anowine/wine-allowlist.txt --out "$RUNNER_TEMP/tokens.tsv"
+          head -40 "$RUNNER_TEMP/tokens.tsv"
+          echo "not-wine candidates:"
+          awk -F'\t' '$2 == "not-wine-candidate"' "$RUNNER_TEMP/tokens.tsv"
+
+      - name: Upload the inventory
+        if: always() && steps.unpack.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: wine-tokens
+          path: ${{ runner.temp }}/tokens.tsv
+          if-no-files-found: warn
 
       - name: Upload reports
         if: always()
