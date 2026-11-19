@@ -112,20 +112,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      # Diagnosis (Plan 3b): the FAudio DLLs as linked, before the strip, next
-      # to a plain DLL, in case their build IDs still differ from upstream's.
-      - name: Upload unstripped FAudio DLLs
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: ano-engine-unstripped
-          path: |
-            ${{ env.ANO_ENGINE_WORK }}/build/dlls/x3daudio1_7/*-windows/x3daudio1_7.dll
-            ${{ env.ANO_ENGINE_WORK }}/build/dlls/acledit/*-windows/acledit.dll
-            ${{ env.ANO_ENGINE_WORK }}/build/libs/faudio/*-windows/libfaudio.a
-          if-no-files-found: warn
-          retention-days: 14
-
   check:
     name: Compare with upstream's v4.8.3
     needs: build
