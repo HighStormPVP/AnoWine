@@ -45,7 +45,8 @@ class WineTokensTests(unittest.TestCase):
             for body, line in (("# c\nWinExec\tnot-a-category\twhy\n", 2),
                                ("WinExec\tnot-wine\t\n", 1),
                                ("WinExec\tnot-wine\n", 1),
-                               ("WinExec\tnot-wine\ta\nX\talias\tb\nWinExec\tnot-wine\tc\n", 3)):
+                               ("WinExec\tnot-wine\ta\nwinecfg\talias\tb\nWinExec\tnot-wine\tc\n", 3),
+                               ("SetEvent\tnot-wine\tnot a wine token\n", 1)):
                 bad = Path(tmp) / "bad.txt"
                 bad.write_text(body)
                 with self.assertRaisesRegex(ValueError, rf"line {line}\b"):
