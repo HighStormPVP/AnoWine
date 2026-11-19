@@ -85,6 +85,10 @@ class RenameTextTests(unittest.TestCase):
                          "ANO_DECLARE_DEBUG_CHANNEL(anodbg);\n"
                          "/* don't start anodbg */ static const char *cmd = \"ano-dbg --auto %ld\";\n"
                          "if (c == '\"') run(anocfg, L\"ano-cfg.exe\");\n")
+        # A file name is a file name anywhere, quoted or not (.rc files, makedep comments).
+        rc = "/* @makedep: winecfg.ico */\nIDI_WINECFG ICON winecfg.ico\n1 RT_MANIFEST winedbg.manifest\n"
+        self.assertEqual(rename_text(rc, self.rules, code=True),
+                         "/* @makedep: ano-cfg.ico */\nIDI_ANOCFG ICON ano-cfg.ico\n1 RT_MANIFEST ano-dbg.manifest\n")
 
     def test_identity_and_urls(self):
         self.assertEqual(self.r("org.winehq.wine"), "io.github.highstormpvp.Ano.core")
