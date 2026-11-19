@@ -371,13 +371,11 @@ configure_wine() {
       sed -n '100,400p' config.log >&2
       die "Wine's configure failed"
     fi
-    # Configure only warns when an optional library is missing; these three
-    # would ship without video decoding, media or game controllers.
-    grep -q '^#define HAVE_FFMPEG 1' include/config.h || die "configure did not find ffmpeg (winedmo)"
-    grep -qE '^GSTREAMER_LIBS *= *.+' Makefile || die "configure did not find gstreamer (winegstreamer)"
-    grep -q '^#define SONAME_LIBSDL2 ' include/config.h || die "configure did not find SDL2 (winebus)"
+    # Configure only warns when an optional library is missing, and the soname
+    # presets above silence even its FreeType error: check what it found.
+    bash "$HERE/check-wine-config.sh" . > /dev/null || die "configure lost a library the engine needs (see above)"
   )
-  info "configure: ffmpeg, gstreamer and SDL2 found"
+  info "$(bash "$HERE/check-wine-config.sh" build)"
 }
 
 # ---------------------------------------------------------------------------
