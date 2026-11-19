@@ -113,9 +113,24 @@ class GateTests(unittest.TestCase):
             code, out = run_gate(tmp, {"ano.dll": data}, good.read_text(encoding="utf-8"))
             self.assertEqual(code, 0, out)
             bad = Path(tmp) / "bad.txt"
-            bad.write_text(f"# c\n{PHRASE}\tnot-wine\tnot a license\n", encoding="utf-8")
+            bad.write_text(f"# c\n{PHRASE}\tcode-only\tnot the repo URL\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, r"line 2\b"):
                 load_allowlist(bad)
+
+    def test_not_wine_phrase(self):
+        # Unicode character names in ICU's data: the drink, not the project.
+        # Only these contexts are allowed; a bare WINE elsewhere still fails.
+        data = b"@CITY\x86@WINE\x86@DIST\x86@SACRIFICIAL WINEDDFF\x88B130 OIL,B \xa3B131 WINE,B \x03"
+        allow = ("@WINE\tnot-wine\tUnicode name word list in ICU data\n"
+                 "SACRIFICIAL WINE\tnot-wine\tUnicode name in ICU data\n"
+                 "B131 WINE\tnot-wine\tUnicode name of Linear B ideogram B131 in ICU data\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = run_gate(tmp, {"icudtl.dat": data}, allow)
+            self.assertEqual(code, 0, out)
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = run_gate(tmp, {"icudtl.dat": data, "system.reg": b"WINE REGISTRY Version 2\n"}, allow)
+            self.assertEqual(code, 1, out)
+            self.assertIn("WINE\t1\tLibraries/system.reg", out)
 
     def test_alias_phrase(self):
         # The builtin mark Apple's D3DMetal DLLs carry, kept in ntdll as an alias.

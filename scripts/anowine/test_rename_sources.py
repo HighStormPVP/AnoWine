@@ -32,6 +32,7 @@ MAP = (
     "org/winehq/\tio/github/highstormpvp/Ano/\tidentity\n"
     "bugs.winehq.org\thttps://github.com/HighStormPVP/AnoWine/issues\turl\n"
     "winehq.org\thttps://github.com/HighStormPVP/AnoWine\turl\n"
+    "WIne\tAno\ttext\n"
 )
 
 
@@ -107,6 +108,10 @@ class RenameTextTests(unittest.TestCase):
                          "static const char q[] = {'\\'','A','N','O','D','E','B','U','G','=',0};\n"
                          "static const WCHAR kept[] = {'K','e','r',\n    'n','e','l',0}; switch (c) { case 'w': case 'i': break; }\n")
 
+    def test_misspelling(self):
+        # Translations spell Wine as "WIne" twice; a text entry renames it anywhere.
+        self.assertEqual(self.r("mas WIneDbg nun; prefixo do WIne.\\n"), "mas AnoDbg nun; prefixo do Ano.\\n")
+
     def test_identity_and_urls(self):
         self.assertEqual(self.r("org.winehq.wine"), "io.github.highstormpvp.Ano.core")
         self.assertEqual(self.r("org.winehq.builtin.text"), "io.github.highstormpvp.Ano.builtin.text")
@@ -160,6 +165,20 @@ class RenameTreeTests(unittest.TestCase):
 
             again = rename_tree(src, rules)
             self.assertEqual((again.renamed_paths, again.changed_files), (0, 0))
+
+    def test_tree_without_protect(self):
+        # DXVK's and DXMT's trees need no protected text (Plan 3c-2).
+        with tempfile.TemporaryDirectory() as tmp:
+            mapping = Path(tmp) / "map.txt"
+            mapping.write_text(MAP, encoding="utf-8")
+            rules = load_rules(None, mapping)
+            src = Path(tmp) / "src"
+            (src / "src/vulkan").mkdir(parents=True)
+            (src / "src/vulkan/presenter.cpp").write_text('GetModuleHandleA("winevulkan.dll");\n', encoding="utf-8")
+            report = rename_tree(src, rules)
+            self.assertEqual((src / "src/vulkan/presenter.cpp").read_text(encoding="utf-8"),
+                             'GetModuleHandleA("anovulkan.dll");\n')
+            self.assertEqual(report.changed_files, 1)
 
     def test_collision_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
