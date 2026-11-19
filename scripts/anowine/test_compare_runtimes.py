@@ -279,6 +279,38 @@ class CompareRuntimesTests(unittest.TestCase):
 
         self.assertEqual(classify(ours, ref, macho_interface=differ)[0], "different")
 
+    def test_explained_interface_is_expected(self):
+        # A file whose interface-only difference was explained by hand (Plan 3b:
+        # FAudio's stray export table) passes; any other interface row still exits 2.
+        imports = {"KERNEL32.dll": ["GetProcAddress", 7]}
+        for name in ("x.dll", "y.dll"):
+            self.t.put("ours", f"Libraries/{name}", make_pe(exports=("a",), imports=imports, code=b"\x90"))
+            self.t.put("ref", f"Libraries/{name}", make_pe(exports=("a",), imports=imports, code=b"\xcc"))
+        result = compare(self.t.ours, self.t.ref, set(), {"Libraries/x.dll": "stray export table"})
+        self.assertEqual(classes(result), {("expected", "Libraries/x.dll"), ("interface", "Libraries/y.dll")})
+        self.assertIn(("expected", "Libraries/x.dll", "explained interface: stray export table"), result.rows)
+        self.assertEqual(result.exit_code, 2)
+        explained = {"Libraries/x.dll": "stray export table", "Libraries/y.dll": "stray export table"}
+        self.assertEqual(compare(self.t.ours, self.t.ref, set(), explained).exit_code, 0)
+        # An explanation never excuses a real difference.
+        self.t.put("ours", "Libraries/z.dll", make_pe(exports=("a",)))
+        self.t.put("ref", "Libraries/z.dll", make_pe(exports=("a", "b")))
+        result = compare(self.t.ours, self.t.ref, set(), {**explained, "Libraries/z.dll": "stray"})
+        self.assertIn("different", {cls for cls, rel, _ in result.rows if rel == "Libraries/z.dll"})
+        self.assertEqual(result.exit_code, 1)
+
+    def test_main_reads_explained_interface_file(self):
+        imports = {"KERNEL32.dll": ["GetProcAddress", 7]}
+        self.t.put("ours", "Libraries/x.dll", make_pe(exports=("a",), imports=imports, code=b"\x90"))
+        self.t.put("ref", "Libraries/x.dll", make_pe(exports=("a",), imports=imports, code=b"\xcc"))
+        listing = Path(self._tmp.name) / "explained.txt"
+        listing.write_text("# path<TAB>reason\n\nLibraries/x.dll\tstray export table\n", encoding="utf-8")
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main([str(self.t.ours), str(self.t.ref), "--explained-interface", str(listing)]), 0)
+        listing.write_text("Libraries/x.dll without a reason\n", encoding="utf-8")
+        with redirect_stdout(io.StringIO()), mock.patch("sys.stderr", io.StringIO()):
+            self.assertEqual(main([str(self.t.ours), str(self.t.ref), "--explained-interface", str(listing)]), 3)
+
     def test_main_writes_report_and_exit_code(self):
         self.t.both("Libraries/a.txt", b"same")
         self.t.put("ours", "Libraries/x.dll", make_pe(exports=("a",)))
