@@ -276,6 +276,13 @@ jobs:
         run: |
           python3 scripts/anowine/wine_tokens.py "$RUNNER_TEMP/ours/Libraries" "$RUNNER_TEMP/bottle"             --allowlist scripts/anowine/wine-allowlist.txt --out "$RUNNER_TEMP/tokens.tsv" --gate
 
+      # Plan 3c-1 Task 4: a stand-in for Apple's D3DMetal must still load.
+      - name: Hidden aliases for closed parts
+        if: always() && steps.bottle.outcome == 'success'
+        run: |
+          brew list --versions mingw-w64 > /dev/null || brew install -q mingw-w64
+          scripts/anowine/check-aliases.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle"
+
       - name: Upload the inventory
         if: always() && steps.unpack.outcome == 'success'
         uses: actions/upload-artifact@v7

@@ -117,6 +117,13 @@ class GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, r"line 2\b"):
                 load_allowlist(bad)
 
+    def test_alias_phrase(self):
+        # The builtin mark Apple's D3DMetal DLLs carry, kept in ntdll as an alias.
+        data = b"\x00Wine builtin DLL\x00\x01Ano builtin DLL\x00"
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = run_gate(tmp, {"ntdll.dll": data}, "Wine builtin DLL\talias\tApple's D3DMetal mark\n")
+            self.assertEqual(code, 0, out)
+
     def test_repo_url_phrase(self):
         # In a font's name table the URL runs straight into the next record.
         url = "github.com/HighStormPVP/AnoWine"
