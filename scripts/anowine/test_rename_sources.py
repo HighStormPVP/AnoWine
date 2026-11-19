@@ -23,6 +23,7 @@ PROTECT = (
     "the Wine project authors\tlicense\tLGPL copyright line\n"
 )
 MAP = (
+    "wineboot\tano-boot\tprogram\n"
     "winecfg\tano-cfg\tprogram\n"
     "winedbg\tano-dbg\tprogram\n"
     "org.winehq.wine\tio.github.highstormpvp.Ano.core\tidentity\n"
@@ -89,6 +90,22 @@ class RenameTextTests(unittest.TestCase):
         rc = "/* @makedep: winecfg.ico */\nIDI_WINECFG ICON winecfg.ico\n1 RT_MANIFEST winedbg.manifest\n"
         self.assertEqual(rename_text(rc, self.rules, code=True),
                          "/* @makedep: ano-cfg.ico */\nIDI_ANOCFG ICON ano-cfg.ico\n1 RT_MANIFEST ano-dbg.manifest\n")
+
+    def test_char_arrays_in_code(self):
+        # Wine spells some strings as character arrays; they are strings too.
+        code = ("static const WCHAR appW[] = {'\\\\','?','?','\\\\','C',':','\\\\','w','i','n','e',\n"
+                "    'b','o','o','t','.','e','x','e',0};\n"
+                "static const WCHAR keyW[] = {'S','o','f','t','w','a','r','e','\\\\','W','i','n','e',0};\n"
+                "static const WCHAR evW[] = {'_','_','w','i','n','e','b','o','o','t',0};\n"
+                "static const char q[] = {'\\'','W','I','N','E','D','E','B','U','G','=',0};\n"
+                "static const WCHAR kept[] = {'K','e','r',\n    'n','e','l',0}; switch (c) { case 'w': case 'i': break; }\n")
+        self.assertEqual(rename_text(code, self.rules, code=True),
+                         "static const WCHAR appW[] = {'\\\\','?','?','\\\\','C',':','\\\\','a','n','o','-',"
+                         "'b','o','o','t','.','e','x','e',0};\n"
+                         "static const WCHAR keyW[] = {'S','o','f','t','w','a','r','e','\\\\','A','n','o',0};\n"
+                         "static const WCHAR evW[] = {'_','_','a','n','o','b','o','o','t',0};\n"
+                         "static const char q[] = {'\\'','A','N','O','D','E','B','U','G','=',0};\n"
+                         "static const WCHAR kept[] = {'K','e','r',\n    'n','e','l',0}; switch (c) { case 'w': case 'i': break; }\n")
 
     def test_identity_and_urls(self):
         self.assertEqual(self.r("org.winehq.wine"), "io.github.highstormpvp.Ano.core")
