@@ -17,7 +17,8 @@ It exits 0 unless the allowlist is malformed (exit 1) or, with --gate, a token
 is not on the allowlist (exit 1, the tokens printed). The allowlist has one
 entry per line, `token<TAB>category<TAB>reason`, with `#` comments; categories
 are exactly CATEGORIES below. An entry with a space is a phrase of a license
-notice (category `license` only): its occurrences are blanked before tokens
+notice or an alias (category `license` or `alias`, as the "Wine builtin DLL"
+mark Apple's DLLs carry): its occurrences are blanked before tokens
 are taken (Latin-1, UTF-8 and UTF-16LE), so its "Wine" is allowed there and
 nowhere else. An entry with a slash is the repo URL (category `code-only`
 only), blanked the same way: in a font's name table the URL runs straight
@@ -174,8 +175,9 @@ def load_allowlist(path: Path) -> dict:
             if category != "code-only" or not tokens_in_name(token):
                 raise ValueError(f"line {number}: a URL must be the repo URL (code-only) with a wine token: {token!r}")
         elif " " in token:
-            if category != "license" or not tokens_in_name(token):
-                raise ValueError(f"line {number}: a phrase must be a license line with a wine token: {token!r}")
+            if category not in ("license", "alias") or not tokens_in_name(token):
+                raise ValueError(f"line {number}: a phrase must be a license line or an alias with a wine token: "
+                                 f"{token!r}")
         elif not tokens_in_name(token) or tokens_in_name(token) != [token]:
             raise ValueError(f"line {number}: {token!r} is not a single wine token")
         if category not in CATEGORIES:
