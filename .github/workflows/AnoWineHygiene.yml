@@ -24,6 +24,11 @@ jobs:
       - name: Check hygiene
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/check-hygiene.sh" "$GITHUB_WORKSPACE"
 
+      # rename_binaries.py rewrites the engine's fonts with fontTools, pinned
+      # as in build-engine.sh; without it the font tests are skipped.
+      - name: fontTools
+        run: python3 -m pip install --user --break-system-packages --quiet fonttools==4.57.0
+
       - name: Rebrand script tests
         run: python3 -m unittest discover -s "$GITHUB_WORKSPACE/scripts/anowine" -p 'test_*.py' -v
 

@@ -117,6 +117,20 @@ class GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, r"line 2\b"):
                 load_allowlist(bad)
 
+    def test_license_phrase_beyond_ascii(self):
+        # A font's copyright record: Mac Roman (the copyright sign is 0xA9, as
+        # in Latin-1), UTF-16, and UTF-8 in text files.
+        phrase = "WineSymbol © (Jon Parshall for CodeWeavers)"
+        data = b"\x01".join(phrase.encode(enc) for enc in ("latin-1", "utf-16-le", "utf-8")) + b"\x00"
+        self.assertEqual(tokens_in_bytes(data), Counter({"WineSymbol": 3}))
+        self.assertEqual(tokens_in_bytes(data, phrases=(phrase,)), Counter())
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "font.ttf"
+            path.write_bytes(data)
+            for chunk in range(1, len(data) + 2):
+                ascii_counts, utf16_counts = wine_tokens.tokens_in_file(path, chunk=chunk, phrases=(phrase,))
+                self.assertEqual(ascii_counts + utf16_counts, Counter(), f"chunk={chunk}")
+
 
 if __name__ == "__main__":
     unittest.main()
