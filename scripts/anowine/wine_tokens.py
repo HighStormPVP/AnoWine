@@ -18,7 +18,10 @@ is not on the allowlist (exit 1, the tokens printed). The allowlist has one
 entry per line, `token<TAB>category<TAB>reason`, with `#` comments; categories
 are exactly CATEGORIES below. An entry with a space is a phrase of a license
 notice (category `license` only): its occurrences are blanked before tokens
-are taken, so its "Wine" is allowed there and nowhere else.
+are taken (Latin-1, UTF-8 and UTF-16LE), so its "Wine" is allowed there and
+nowhere else. An entry with a slash is the repo URL (category `code-only`
+only), blanked the same way: in a font's name table the URL runs straight
+into the next record, so a token would not match.
 """
 import argparse
 import os
@@ -74,12 +77,26 @@ def _utf16_tokens(buf: bytes) -> list:
     return tokens
 
 
+PHRASE_ENCODINGS = (("latin-1", b" "), ("utf-8", b" "), ("utf-16-le", b" \x00"))
+
+
+def _encoded(phrase: str):
+    """(bytes, space) for each form a phrase takes in files: Latin-1 (as Mac
+    Roman for the copyright sign in font records), UTF-8 and UTF-16LE."""
+    forms = {}
+    for encoding, space in PHRASE_ENCODINGS:
+        try:
+            forms.setdefault(phrase.encode(encoding), space)
+        except UnicodeEncodeError:
+            pass
+    return forms.items()
+
+
 def _blank(buf: bytes, phrases) -> bytes:
-    """Allowlisted phrases (license lines), ASCII and UTF-16LE, become spaces."""
+    """Allowlisted phrases (license lines) become spaces."""
     for phrase in phrases:
-        for encoding, space in (("ascii", b" "), ("utf-16-le", b" \x00")):
-            encoded = phrase.encode(encoding)
-            buf = buf.replace(encoded, space * len(phrase))
+        for encoded, space in _encoded(phrase):
+            buf = buf.replace(encoded, space * (len(encoded) // len(space)))
     return buf
 
 
@@ -109,7 +126,7 @@ def tokens_in_file(path: Path, chunk: int = CHUNK, phrases=()) -> tuple:
     that crosses a chunk edge is carried into the next chunk whole, and so is
     the tail where an allowlisted phrase could still be incomplete."""
     ascii_counts, utf16_counts = Counter(), Counter()
-    hold = 2 * max((len(p) for p in phrases), default=0)
+    hold = max((len(encoded) for p in phrases for encoded, _ in _encoded(p)), default=0)
     carry = b""
     with open(path, "rb") as fh:
         while True:
@@ -153,7 +170,10 @@ def load_allowlist(path: Path) -> dict:
         if len(fields) != 3:
             raise ValueError(f"line {number}: want token<TAB>category<TAB>reason, got {len(fields)} field(s)")
         token, category, reason = (field.strip() for field in fields)
-        if " " in token:
+        if "/" in token:
+            if category != "code-only" or not tokens_in_name(token):
+                raise ValueError(f"line {number}: a URL must be the repo URL (code-only) with a wine token: {token!r}")
+        elif " " in token:
             if category != "license" or not tokens_in_name(token):
                 raise ValueError(f"line {number}: a phrase must be a license line with a wine token: {token!r}")
         elif not tokens_in_name(token) or tokens_in_name(token) != [token]:
@@ -219,7 +239,7 @@ def main(argv: list) -> int:
     except ValueError as error:
         print(f"wine_tokens.py: {args.allowlist}: {error}", file=sys.stderr)
         return 1
-    inventory = _Inventory(phrases=[token for token in allow if " " in token])
+    inventory = _Inventory(phrases=[token for token in allow if " " in token or "/" in token])
     for root in args.roots:
         inventory.scan(root)
     rows = sorted(inventory.count.items(), key=lambda item: (-item[1], item[0]))
