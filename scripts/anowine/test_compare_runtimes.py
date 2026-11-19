@@ -18,10 +18,11 @@ from compare_runtimes import classify, compare, main  # noqa: E402
 DOS_STUB = bytes.fromhex("0e1fba0e00b409cd21b8014ccd219090")
 
 
-def make_pe(timestamp=0, checksum=0, export_ts=0, exports=(), imports=None, code=b"\x90"):
+def make_pe(timestamp=0, checksum=0, export_ts=0, exports=(), imports=None, code=b"\x90", build_id=None):
     """A minimal PE32+ DLL (machine 0x8664) with one section at RVA 0x1000.
 
-    `imports` maps a DLL name to a list of names (str) or ordinals (int)."""
+    `imports` maps a DLL name to a list of names (str) or ordinals (int);
+    `build_id` (16 bytes) adds a CodeView debug entry, as `ld --build-id` writes."""
     sect_rva, sect_off = 0x1000, 0x200
     sec = bytearray()
 
@@ -72,6 +73,15 @@ def make_pe(timestamp=0, checksum=0, export_ts=0, exports=(), imports=None, code
                 struct.pack_into("<Q", sec, ilt_rva - sect_rva + 8 * k, value)
             struct.pack_into("<IIIII", sec, import_rva - sect_rva + 20 * d, ilt_rva, 0, 0, name_rva, ilt_rva)
 
+    debug_rva = 0
+    if build_id is not None:
+        debug_rva = here()
+        sec += bytes(28)
+        cv_rva = here()
+        sec += b"RSDS" + build_id + struct.pack("<I", 1) + b"\0"
+        struct.pack_into("<IIHHIIII", sec, debug_rva - sect_rva, 0, 0, 0, 0, 2, 25, cv_rva,
+                         sect_off + cv_rva - sect_rva)
+
     code_rva = here()
     sec += code
     virtual_size = len(sec)
@@ -93,9 +103,30 @@ def make_pe(timestamp=0, checksum=0, export_ts=0, exports=(), imports=None, code
     struct.pack_into("<I", hdr, opt + 108, 16)
     struct.pack_into("<II", hdr, opt + 112, export_rva, export_size)
     struct.pack_into("<II", hdr, opt + 120, import_rva, import_size)
+    struct.pack_into("<II", hdr, opt + 160, debug_rva, 28 if debug_rva else 0)
     struct.pack_into("<8sIIIIIIHHI", hdr, opt + 240, b".data", virtual_size, sect_rva, len(sec),
                      sect_off, 0, 0, 0, 0, 0xC0000040)
     return bytes(hdr) + bytes(sec)
+
+
+def make_macho(code=b"\x90", oso_mtime=0, uuid=bytes(16), signature=b"sig"):
+    """A minimal thin x86_64 Mach-O dylib: LC_UUID, LC_SYMTAB with one N_OSO
+    entry (an object file and its modification time, as ld64 writes for code
+    built with -g) and LC_CODE_SIGNATURE."""
+    header_size, cmds_size = 32, 24 + 24 + 16
+    code_off = header_size + cmds_size
+    sym_off = code_off + len(code)
+    strings = b"\0/build/a.o\0"
+    str_off = sym_off + 16
+    sig_off = str_off + len(strings)
+    out = struct.pack("<IiiIIIII", 0xFEEDFACF, 0x01000007, 3, 6, 3, cmds_size, 0, 0)
+    out += struct.pack("<II", 0x1B, 24) + uuid
+    out += struct.pack("<IIIIII", 0x2, 24, sym_off, 1, str_off, len(strings))
+    out += struct.pack("<IIII", 0x1D, 16, sig_off, len(signature))
+    out += code
+    out += struct.pack("<IBBHQ", 1, 0x66, 0, 1, oso_mtime)
+    out += strings + signature
+    return out
 
 
 class Trees:
@@ -220,6 +251,33 @@ class CompareRuntimesTests(unittest.TestCase):
         self.assertEqual(cls, "different")
         self.assertTrue(reason.startswith("imports"), reason)
         self.assertIn("_zz_missing", reason)
+
+    def test_pe_build_id_is_a_timestamp(self):
+        # ld's build ID hashes the link output, export timestamp included.
+        ours = self.t.put("ours", "Libraries/x.dll", make_pe(timestamp=1, export_ts=1, exports=("a",),
+                                                             build_id=b"A" * 16))
+        ref = self.t.put("ref", "Libraries/x.dll", make_pe(timestamp=2, export_ts=2, exports=("a",),
+                                                           build_id=b"B" * 16))
+        self.assertEqual(classify(ours, ref)[0], "timestamps")
+        ref = self.t.put("ref", "Libraries/x.dll", make_pe(exports=("a",), build_id=b"B" * 16, code=b"\xcc"))
+        self.assertEqual(classify(ours, ref)[0], "interface")
+
+    def test_macho_object_times_uuid_and_signature_are_timestamps(self):
+        ours = self.t.put("ours", "Libraries/lib/a.so", make_macho(oso_mtime=1, uuid=b"A" * 16, signature=b"sA"))
+        ref = self.t.put("ref", "Libraries/lib/a.so", make_macho(oso_mtime=2, uuid=b"B" * 16, signature=b"sB"))
+
+        def no_tools(path):
+            raise AssertionError("the interface is not needed for timestamps")
+
+        self.assertEqual(classify(ours, ref, macho_interface=no_tools),
+                         ("timestamps", "Mach-O object times, UUID or signature only"))
+
+        ref = self.t.put("ref", "Libraries/lib/a.so", make_macho(code=b"\xcc", oso_mtime=2, uuid=b"B" * 16))
+
+        def differ(path):
+            return {"archs": ["x86_64"], "identifier": "a-1" if path == ours else "a-2"}
+
+        self.assertEqual(classify(ours, ref, macho_interface=differ)[0], "different")
 
     def test_main_writes_report_and_exit_code(self):
         self.t.both("Libraries/a.txt", b"same")
