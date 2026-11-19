@@ -154,9 +154,13 @@ check_host() {
   # Content checks survive image updates; the sloppiness covers Wine's
   # __DATE__/__TIME__ users on a fresh checkout; paths under the work folder are
   # hashed relative; file clones keep later in-place strips off the cache.
+  # Unlike upstream, the folder stays in the hash of compiles with debug info
+  # (lsteamclient's -g): their DWARF names the folder they were compiled in, and
+  # the linker copies it into lsteamclient.so, so a hit from another folder
+  # would put a wrong path in the engine.
   export CCACHE_DIR="$HOME/.ccache" CCACHE_MAXSIZE=4G CCACHE_COMPILERCHECK=content
   export CCACHE_SLOPPINESS=time_macros,locale,include_file_mtime,include_file_ctime
-  export CCACHE_BASEDIR="$WORK" CCACHE_NOHASHDIR=1 CCACHE_FILECLONE=1 CCACHE_INODECACHE=1
+  export CCACHE_BASEDIR="$WORK" CCACHE_FILECLONE=1 CCACHE_INODECACHE=1
   CCACHE=ccache
   # The mingw compilers go through ccache by wrappers that name the real
   # compiler; a wrapper that looked itself up on PATH would find itself.

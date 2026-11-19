@@ -32,6 +32,11 @@ jobs:
     if: inputs.engine_run == ''
     runs-on: macos-15
     timeout-minutes: 300
+    env:
+      # Upstream's v4.8.3 was built in its checkout, and lsteamclient.so keeps
+      # the absolute path of every object it links (it is compiled with -g), so
+      # an equal engine has to be built in the same folder.
+      ANO_ENGINE_WORK: /Users/runner/work/winecx-gptk/winecx-gptk
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -101,9 +106,23 @@ jobs:
         with:
           name: ano-engine-logs
           path: |
-            ${{ runner.temp }}/ano-engine/build-info.txt
-            ${{ runner.temp }}/ano-engine/logs/
-            ${{ runner.temp }}/ano-engine/build/config.log
+            ${{ env.ANO_ENGINE_WORK }}/build-info.txt
+            ${{ env.ANO_ENGINE_WORK }}/logs/
+            ${{ env.ANO_ENGINE_WORK }}/build/config.log
+          if-no-files-found: warn
+          retention-days: 14
+
+      # Diagnosis (Plan 3b): the FAudio DLLs as linked, before the strip, next
+      # to a plain DLL, in case their build IDs still differ from upstream's.
+      - name: Upload unstripped FAudio DLLs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-engine-unstripped
+          path: |
+            ${{ env.ANO_ENGINE_WORK }}/build/dlls/x3daudio1_7/*-windows/x3daudio1_7.dll
+            ${{ env.ANO_ENGINE_WORK }}/build/dlls/acledit/*-windows/acledit.dll
+            ${{ env.ANO_ENGINE_WORK }}/build/libs/faudio/*-windows/libfaudio.a
           if-no-files-found: warn
           retention-days: 14
 
