@@ -16,13 +16,14 @@ letter other than the end of "lib", as in "twine") or `wine`.
 It exits 0 unless the allowlist is malformed (exit 1) or, with --gate, a token
 is not on the allowlist (exit 1, the tokens printed). The allowlist has one
 entry per line, `token<TAB>category<TAB>reason`, with `#` comments; categories
-are exactly CATEGORIES below. An entry with a space is a phrase of a license
-notice or an alias (category `license` or `alias`, as the "Wine builtin DLL"
-mark Apple's DLLs carry): its occurrences are blanked before tokens
-are taken (Latin-1, UTF-8 and UTF-16LE), so its "Wine" is allowed there and
-nowhere else. An entry with a slash is the repo URL (category `code-only`
-only), blanked the same way: in a font's name table the URL runs straight
-into the next record, so a token would not match.
+are exactly CATEGORIES below. An entry with a character a token cannot have
+(a space, @) is a phrase: a license notice, an alias (the "Wine builtin DLL"
+mark Apple's DLLs carry) or a not-Wine context (ICU's Unicode name "B131
+WINE", where a bare WINE token must stay a failure). Its occurrences are
+blanked before tokens are taken (Latin-1, UTF-8 and UTF-16LE), so its "Wine"
+is allowed there and nowhere else. An entry with a slash is the repo URL
+(category `code-only` only), blanked the same way: in a font's name table the
+URL runs straight into the next record, so a token would not match.
 """
 import argparse
 import os
@@ -161,6 +162,11 @@ def classify_token(token: str, allow: dict) -> str:
     return "not-wine-candidate" if _looks_not_wine(token) else "wine"
 
 
+def is_phrase(entry: str) -> bool:
+    """An allowlist entry with any character a token cannot have (a space, @, /)."""
+    return not re.fullmatch(r"[A-Za-z0-9_]+", entry)
+
+
 def load_allowlist(path: Path) -> dict:
     """{token: (category, reason)}; ValueError names the first bad line."""
     allow = {}
@@ -174,10 +180,10 @@ def load_allowlist(path: Path) -> dict:
         if "/" in token:
             if category != "code-only" or not tokens_in_name(token):
                 raise ValueError(f"line {number}: a URL must be the repo URL (code-only) with a wine token: {token!r}")
-        elif " " in token:
-            if category not in ("license", "alias") or not tokens_in_name(token):
-                raise ValueError(f"line {number}: a phrase must be a license line or an alias with a wine token: "
-                                 f"{token!r}")
+        elif is_phrase(token):
+            if category not in ("license", "alias", "not-wine") or not tokens_in_name(token):
+                raise ValueError(f"line {number}: a phrase must be a license line, an alias or a not-Wine context "
+                                 f"with a wine token: {token!r}")
         elif not tokens_in_name(token) or tokens_in_name(token) != [token]:
             raise ValueError(f"line {number}: {token!r} is not a single wine token")
         if category not in CATEGORIES:
@@ -241,7 +247,7 @@ def main(argv: list) -> int:
     except ValueError as error:
         print(f"wine_tokens.py: {args.allowlist}: {error}", file=sys.stderr)
         return 1
-    inventory = _Inventory(phrases=[token for token in allow if " " in token or "/" in token])
+    inventory = _Inventory(phrases=[token for token in allow if is_phrase(token)])
     for root in args.roots:
         inventory.scan(root)
     rows = sorted(inventory.count.items(), key=lambda item: (-item[1], item[0]))

@@ -6,6 +6,7 @@
 # identity: reverse-DNS names (bundle identifier, pasteboard types).
 # url:      a host Ano does not control must never appear (anohq.org);
 #           a whole URL on the host is replaced and its path dropped.
+# text:     a misspelling the case rule cannot know, replaced anywhere.
 wineboot	ano-boot	program
 winebrowser	ano-browser	program
 winecfg	ano-cfg	program
@@ -25,3 +26,4 @@ org/winehq/wine	io/github/highstormpvp/Ano/core	identity
 org/winehq/	io/github/highstormpvp/Ano/	identity
 bugs.winehq.org	https://github.com/HighStormPVP/AnoWine/issues	url
 winehq.org	https://github.com/HighStormPVP/AnoWine	url
+WIne	Ano	text

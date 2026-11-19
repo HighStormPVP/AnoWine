@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Rename a Wine source tree by the owner's naming rule (Plan 3c-1).
 
-Usage: rename_sources.py SRC --protect FILE --map FILE [--report FILE]
+Usage: rename_sources.py SRC [--protect FILE] --map FILE [--report FILE]
 
 The rule, case-sensitive, in this order:
   1. protected text stays as it is (Windows names that only contain the
      letters, plain words, license phrases);
-  2. the fixed map: program names (ano-cfg), reverse-DNS identities, URLs;
+  2. the fixed map: program names (ano-cfg), reverse-DNS identities, URLs,
+     misspellings the case rule cannot know (WIne);
   3. wine -> ano, Wine -> Ano, WINE -> ANO.
 It renames path names and the contents of every text file. In C-family
 files (CODE_SUFFIXES) a program name is mapped inside string literals and
@@ -28,7 +29,7 @@ CASE_RE = re.compile("wine|Wine|WINE")
 IDENT = "A-Za-z0-9_"
 URL_TAIL = r"(?:/[^\s\"'<>()\\]*)?"
 PROTECT_KINDS = ("substring", "word", "license")
-MAP_KINDS = ("program", "identity", "url")
+MAP_KINDS = ("program", "identity", "url", "text")
 CODE_SUFFIXES = frozenset((".c", ".h", ".m", ".mm", ".cpp", ".cc", ".cxx", ".hpp", ".y", ".l", ".idl", ".rc"))
 # Comments, string literals and character literals of C-family code, left to
 # right, so a quote inside a comment or a character literal opens no string.
@@ -75,9 +76,10 @@ def _rows(path, kinds, what):
     return rows
 
 
-def load_rules(protect: Path, mapping: Path) -> Rules:
+def load_rules(protect, mapping: Path) -> Rules:
+    """protect may be None: a tree with no protected text (DXVK, DXMT)."""
     texts, parts = [], []
-    for text, kind, _ in _rows(protect, PROTECT_KINDS, "protected text"):
+    for text, kind, _ in _rows(protect, PROTECT_KINDS, "protected text") if protect else []:
         if kind not in PROTECT_KINDS:
             raise ValueError(f"{protect}: unknown kind {kind} for {text}")
         texts.append(text)
@@ -98,7 +100,7 @@ def load_rules(protect: Path, mapping: Path) -> Rules:
         if kind == "program":
             # A name right after an escape in a string ("\twinedbg") counts too.
             pattern = rf"(?:(?<![{IDENT}])|(?<=\\[ntr])){escaped}(?![{IDENT}])"
-        elif kind == "identity":
+        elif kind in ("identity", "text"):  # text: a misspelling (WIne), anywhere
             pattern = escaped
         elif old.count(".") > 1:  # a full host: bugs.winehq.org
             pattern = f"(?:https?://)?{escaped}{URL_TAIL}"
@@ -213,7 +215,7 @@ def rename_tree(src: Path, rules: Rules) -> Report:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Rename a Wine source tree by the owner's naming rule.")
     parser.add_argument("src", type=Path)
-    parser.add_argument("--protect", type=Path, required=True)
+    parser.add_argument("--protect", type=Path, help="protected text (none if omitted)")
     parser.add_argument("--map", type=Path, required=True, dest="mapping")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args(argv)

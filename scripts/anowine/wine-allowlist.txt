@@ -16,6 +16,46 @@ Wine distribution in the file COPYING.LIB	license	the LGPL notice in the Symbol 
 WineSymbol © (Jon Parshall for CodeWeavers)	license	the Symbol font's copyright line
 github.com/HighStormPVP/AnoWine	code-only	the repo URL, where Wine's winehq.org links now point
 
+# not-wine: Plan 3c-1's gate (Ano Engine run 44603973479), each read by hand. The last
+# three are phrases: ICU's Unicode names say WINE, and a bare WINE must stay a failure.
+_Winerror_map	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_map (Win + error)
+__Winerror_map	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_map (Win + error)
+_winerror_map	not-wine	Microsoft's C++ library (msvcp): _Winerror_map, lower case (Win + error)
+winerror_map	not-wine	Microsoft's C++ library (msvcp): _Winerror_map, lower case (Win + error)
+_Winerror_map_str	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_map_str (Win + error)
+__Winerror_map_str	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_map_str (Win + error)
+_Winerror_message	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_message (Win + error)
+__Winerror_message	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_message (Win + error)
+winevent	not-wine	Windows names for WinEvents in lower case (Win + event)
+WH_WINEVENT	not-wine	the WinEvent hook type (Win + event)
+MSG_WINEVENT	not-wine	the server's WinEvent message kind (Win + event)
+msaa_winevent_handler_AddRef	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+_msaa_winevent_handler_AddRef	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+msaa_winevent_handler_QueryInterface	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+_msaa_winevent_handler_QueryInterface	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+msaa_winevent_handler_Release	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+_msaa_winevent_handler_Release	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+msaa_winevent_handler_RespondToWinEvent	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+_msaa_winevent_handler_RespondToWinEvent	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+msaa_winevent_handler_vtbl	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+_msaa_winevent_handler_vtbl	not-wine	uiautomationcore's MSAA WinEvent handler (Win + event)
+winEventsWWW	not-wine	uiautomationcore's WinEvents data (win + Events)
+WINetFwServiceRestriction	not-wine	the Windows Firewall interface INetFwServiceRestriction after a W
+winExtra	not-wine	window extra bytes in a debug message (win + Extra)
+winExt	not-wine	window extra bytes in a debug message (win + Ext)
+winExtr	not-wine	window extra bytes in a debug message (win + Extr)
+WINEXEC	not-wine	16-bit KERNEL's WinExec export, upper case (Win + Exec)
+__WINEM87INFO	not-wine	Windows 3.1 WIN87EM.DLL export __WinEm87Info, upper case (Win + Em87)
+__WINEM87RESTORE	not-wine	Windows 3.1 WIN87EM.DLL export __WinEm87Restore, upper case (Win + Em87)
+__WINEM87SAVE	not-wine	Windows 3.1 WIN87EM.DLL export __WinEm87Save, upper case (Win + Em87)
+__ano_stub_WinEnumerateDevices	not-wine	the stub for utildll's WinEnumerateDevices (Win + Enumerate)
+___ano_stub_WinEnumerateDevices	not-wine	the stub for utildll's WinEnumerateDevices (Win + Enumerate)
+___ano_stub_CreateProcessFromWinExec	not-wine	the stub for CreateProcessFromWinExec (Win + Exec)
+200winegeardogsbootgarycutstyletemption	not-wine	brotli's static dictionary of English words (wine, the drink)
+@WINE	not-wine	ICU data: a word of Unicode character names (WINE GLASS)
+SACRIFICIAL WINE	not-wine	ICU data: a Unicode character name (Egyptian hieroglyph)
+B131 WINE	not-wine	ICU data: the Unicode name of Linear B ideogram B131
+
 # not-wine: the not-Wine candidates of Plan 3b's inventory (Ano Engine run 44467343690),
 # each read by hand. Candidates that refer to Wine are left out.
 entwine	not-wine	English word (en-US.dic)
