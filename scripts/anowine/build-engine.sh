@@ -456,6 +456,19 @@ install_ano_layout() {
   rm -f "$TOP/bin/ano"
   ln -s "../lib/$MOD/x86_64-unix/$LOADER" "$TOP/bin/ano-loader"
   [ -x "$TOP/bin/$SERVER" ] || die "no $SERVER in $TOP/bin"
+  # The LGPL notice. Its only "wine" words are the license phrase and the repo
+  # URL, both on the gate's allowlist.
+  cat > "$TOP/share/$MOD/NOTICES" << EOF
+Ano engine $VERSION
+
+This engine is a modified copy of software by the Wine project authors,
+with CrossOver's macOS changes. It is distributed under the GNU Lesser
+General Public License, version 2.1 or (at your option) any later version.
+Ano renamed its files, programs and settings and changed how it is built.
+
+The source of this engine and the scripts that build it:
+https://github.com/HighStormPVP/AnoWine
+EOF
   info "bin: $(ls "$TOP/bin" | tr '\n' ' ')"
   info "ano-loader --version: $("$TOP/bin/ano-loader" --version)"
 }
