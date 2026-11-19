@@ -410,8 +410,15 @@ fetch_payloads() {
   # Khronos ships it universal; the engine is x86_64 only.
   lipo -thin x86_64 payload/MoltenVK/MoltenVK/dynamic/dylib/macOS/libMoltenVK.dylib -output payload/libMoltenVK.dylib
   if [ "$RENAME" = 1 ]; then
+    # MoltenVK's copy of the SPIR-V tool table names Wine as a generator
+    # ("Wine", "Wine VKD3D Shader Compiler"): renamed in place, NUL-padded.
+    # bundle_libraries signs the dylib again.
+    "$WORK/venv/bin/python" "$HERE/rename_binaries.py" --protect "$HERE/rename-protect.txt" \
+      --map "$HERE/rename-map.txt" --padded payload/libMoltenVK.dylib > "$LOGS/rename-moltenvk.log" 2>&1 \
+      || { cat "$LOGS/rename-moltenvk.log" >&2; die "could not rename MoltenVK's strings"; }
+    ! grep -aq Wine payload/libMoltenVK.dylib || die "libMoltenVK.dylib still says Wine"
     # Plan 3c-2 brings DXVK, DXMT and wine-mono back, rebuilt or renamed.
-    info "payloads: MoltenVK $(lipo -archs payload/libMoltenVK.dylib)"
+    info "payloads: MoltenVK $(lipo -archs payload/libMoltenVK.dylib), its Wine strings renamed"
     return
   fi
   mono=$(sed -n 's/^#define MONO_VERSION "\(.*\)"/\1/p' "$addons")

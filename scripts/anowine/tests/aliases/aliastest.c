@@ -9,6 +9,8 @@ typedef UINT64 unixlib_handle_t;
 __declspec(dllimport) extern NTSTATUS (WINAPI *__wine_unix_call_dispatcher)(unixlib_handle_t, unsigned int, void *);
 __declspec(dllimport) const char * __cdecl __wine_dbg_strdup(const char *);
 __declspec(dllimport) int __cdecl __wine_dbg_output(const char *);
+/* mingw's winternl.h does not declare it; the class is Wine's private one. */
+NTSTATUS NTAPI NtQueryVirtualMemory(HANDLE, PVOID, int, PVOID, SIZE_T, SIZE_T *);
 extern IMAGE_DOS_HEADER __ImageBase;
 
 /* MemoryWineUnixFuncs: the unix-call table of a builtin module. */
