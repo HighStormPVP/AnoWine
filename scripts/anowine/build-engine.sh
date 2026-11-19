@@ -19,7 +19,11 @@
 # build-info.txt. Logs go to <work>/logs.
 # Needs macOS 15 on Apple silicon with Rosetta, Xcode with the macOS 15 SDK,
 # nix, Homebrew's mingw-w64, cmake, git and python3. ccache is used if present.
-set -euo pipefail
+set -Eeuo pipefail
+# A command that fails without a message still names its phase and line.
+FAILED=
+trap 'FAILED="line $LINENO: $BASH_COMMAND"' ERR
+trap 'rc=$?; [ "$rc" = 0 ] || echo "::error::stopped (exit $rc) in ${phase:-setup}${FAILED:+ at $FAILED}" >&2' EXIT
 
 # The pins: exactly what upstream's v4.8.3 was built from. The workflow reads
 # WINECX_COMMIT from this line for its compiler-cache key.
@@ -78,7 +82,7 @@ NIX_X86_PACKAGES="freetype gnutls libpng zlib brotli bzip2 nettle libtasn1 libid
 WINE_WITHOUT="--without-x --without-wayland --without-oss --without-alsa --without-pulse --without-sane
   --without-usb --without-v4l2 --without-pcap --without-capi --without-opencl --without-cups"
 
-die() { echo "::error::$*" >&2; exit 1; }
+die() { echo "::error::$*" >&2; trap - EXIT; exit 1; }
 
 OUT=${1:-}
 [ -n "$OUT" ] || die "usage: ANO_ENGINE_VERSION=x.y.z build-engine.sh <out-dir>"
@@ -840,7 +844,7 @@ verify_no_wine() {
   paths=$(find Libraries | grep -i wine || true)
   [ -z "$paths" ] || die "paths with wine: $(head -n 20 <<< "$paths" | tr '\n' ' ')"
   while read -r file; do
-    id=$(codesign -dv "$file" 2>&1 | sed -n 's/^Identifier=//p')
+    id=$(codesign -dv "$file" 2>&1 | sed -n 's/^Identifier=//p' || true)  # unsigned: no identifier
     if grep -qi wine <<< "$id"; then ids="$ids $file ($id)"; fi
   done < <(find "$TOP/bin" "$TOP/lib" -type f ! -path '*-windows/*')
   [ -z "$ids" ] || die "signing identifiers with wine:$ids"
