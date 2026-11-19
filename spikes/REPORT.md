@@ -121,3 +121,67 @@ real Macs are slow too is unknown: CI runners are virtual Macs with a paravirtua
 and no display. The owner's Ano-8 test (item 7) measures it on the M2. For Plan 3c's
 inventory, the trace scan should keep a persistent server (`ano-server -p`) during
 its winetricks steps.
+
+## Plan 3b: Ano builds the engine
+
+`scripts/anowine/build-engine.sh` (workflow `Ano Engine`, dispatch only) builds upstream's
+GPTK engine v4.8.3 from source on a macos-15 runner: Wine 11.19 with CrossOver's patches
+(dappermint/winecx `9f3f644`), upstream's recipe files fetched at frankea/winecx-gptk
+`12af865` with SHA-256 checks (they have no license, so they are not stored here), and
+x86_64 libraries from nixpkgs `ac62194c`. Job `check` compares the result file by file with
+upstream's published `Libraries.tar.gz` (`scripts/anowine/compare_runtimes.py`).
+
+**Result** (build run 44511381580, check run 44528033062): `compare_runtimes.py` exit 2, "equal to upstream's v4.8.3 only by interface": 5,968 files, 4,383 byte-identical, 1,514 differing only in timestamps, 70 only in an unused export table, 1 expected (Ano's README), 0 different, none missing on either side; the version plist is byte-identical. Both self-checks passed (upstream equals itself; Ano 4.9.0 differs from upstream in its 8 renamed modules). The check waited for a macOS runner through 29 dropped attempts.
+
+Every file that is not byte-identical, and why:
+
+| Files | Class | Cause |
+|---|---|---|
+| 1,513 PE and Mach-O files | timestamps | link times, PE checksums and ld's CodeView build ID (a hash of the link output, different on every link) |
+| `x86_64-unix/lsteamclient.so` | timestamps | its 219 objects are the only ones compiled with `-g`, so ld64 writes each object's path and modification time into the debug map (N_OSO) and hashes them into LC_UUID and the ad-hoc signature's identifier. With those zeroed it is byte-identical to upstream's. The paths are absolute, so the engine is built in upstream's own folder (`/Users/runner/work/winecx-gptk/winecx-gptk`). |
+| 70 FAudio DLLs (35 names, i386 and x86_64: `xaudio2_*`, `x3daudio1_*`, `xactengine*`, `xapofx1_*`) | interface | FAudio marks its API `dllexport`, so ld writes a second export directory that nothing points at, stamped with the link time. Code, data, imports and exports are equal. Not normalized away: that would widen the comparator for one stray table. |
+| `lib/external/README` | expected | Ano's own text |
+
+Build time per phase (seconds). Run 2 was cold (ccache 1.5% hits), run 3 warm (99.7%):
+
+| Phase | Cold | Warm |
+|---|---|---|
+| fetch_sources | 26 | 17 |
+| nix_inputs | 107 | 111 |
+| build_tools | 72 | 65 |
+| build_sdl2 | 59 | 52 |
+| configure_wine | 55 | 40 |
+| make_wine | 3325 | 829 |
+| fetch_payloads | 13 | 12 |
+| install_tree | 21 | 1779 |
+| bundle_libraries | 148 | 159 |
+| verify_tree | 73 | 70 |
+| smoke_test | 328 | 340 |
+| package | 52 | 56 |
+| total | 4285 | 3535 |
+
+The warm `install_tree` relinked 1541 of 1579 modules: with `CCACHE_FILECLONE` (upstream's
+setting) a cache hit is a clone that keeps the cached file's old modification time, so
+`make install-lib` saw every object as stale. The script now copies hits instead; the next
+warm build shows the saving.
+
+Tools next to upstream's run (43653944195): same Xcode 16.4 (SDK 15.5, clang-1700.0.13.5),
+Homebrew mingw-w64 14.0.0_3 (gcc 16.2.0, binutils 2.47.20260726), cmake 4.4.5, nix 2.35.4.
+Run 3 got upstream's runner image (macos15 20261104); run 2 had 20261112. Our ccache 4.14.2
+to 4.14.3; upstream's version is not recorded.
+
+**"wine" tokens** (`scripts/anowine/wine_tokens.py`, the starting point for Plan 3c's gate),
+in our engine and a new bottle made with it, before the allowlist: 41,653 distinct tokens,
+667,221 occurrences. Engine: 174 in names, 324,248 in ASCII text, 9,286 in UTF-16 text.
+Bottle: 56 in names, 324,434 ASCII, 9,023 UTF-16. Most frequent: Wine 15,642,
+wine_dbg_log 15,240, wine 13,981, __wine_dbg_output 8,783, __wine_dbg_header 8,773,
+__wine_dbg_get_channel_flags 8,765, __wine_dbg_strdup 8,762, __wine_call_gcc_ctors 7,439,
+__wine_call_gcc_dtors 7,439, wine_dbg_sprintf 6,382, wine_dbg_vprintf 6,331,
+fallback__wine_dbg_get_channel_flags, fallback__wine_dbg_header, fallback__wine_dbg_output
+and fallback__wine_dbg_strdup 6,167 each, winecx 6,121, wine_dbgstr_wn 4,716,
+__wine_spec_unimplemented_stub 3,824, _wine_dbg_log 3,254, wine_dbgstr_an 2,692. By part:
+Wine's Windows half 316,716 (1,579 files), Gecko 9,600, wine-mono 3,799, Wine's Mac half
+2,070, DXVK 54, DXMT 78. Of 1,219 tokens that looked not-Wine, 930 were read as such and
+allowlisted (`not-wine`: 811 LLVM `Twine` symbols in DXMT, 91 Windows `WinE…` names, 28
+words) and 289 refer to Wine. For Plan 3c: `winecx` is the source folder, baked into 1,033
+files through `__FILE__`, so the renamed tree is built in a folder without "wine".
