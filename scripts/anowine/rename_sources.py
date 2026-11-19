@@ -9,9 +9,9 @@ The rule, case-sensitive, in this order:
   2. the fixed map: program names (ano-cfg), reverse-DNS identities, URLs;
   3. wine -> ano, Wine -> Ano, WINE -> ANO.
 It renames path names and the contents of every text file. In C-family
-files (CODE_SUFFIXES) a program name is mapped only inside string literals;
-elsewhere it is an identifier (a debug channel such as winedbg) and follows
-the case rule, so it stays a valid C name. Binary files that still say
+files (CODE_SUFFIXES) a program name is mapped inside string literals and
+where it names a file (winecfg.ico); elsewhere it is an identifier (a debug
+channel such as winedbg) and follows the case rule, so it stays a valid C name. Binary files that still say
 "wine" are listed, not changed. Exit 1 when two paths would
 get the same name or a protected entry never occurs in the tree.
 """
@@ -40,7 +40,7 @@ BINARY_WINE = re.compile(
 class Rules:
     protect: re.Pattern
     protect_texts: list
-    stages: list  # (pattern, replacement, is_program) triples, applied in order
+    stages: list  # (pattern, replacement, file-name pattern of a program or None), in order
     used: set = field(default_factory=set)
 
 
@@ -97,7 +97,9 @@ def load_rules(protect: Path, mapping: Path) -> Rules:
             pattern = f"(?:https?://)?{escaped}{URL_TAIL}"
         else:  # a domain: any host under it
             pattern = f"(?:https?://)?(?:[A-Za-z0-9-]+\\.)*{escaped}{URL_TAIL}"
-        stages.append((re.compile(pattern), new, kind == "program"))
+        # In code, outside strings, only a file name counts (winecfg.ico).
+        file_name = re.compile(pattern + r"(?=\.[A-Za-z])") if kind == "program" else None
+        stages.append((re.compile(pattern), new, file_name))
     return Rules(protect=protect_re, protect_texts=texts, stages=stages)
 
 
@@ -112,16 +114,21 @@ def rename_text(text: str, rules: Rules, code: bool = False) -> str:
         rules.used.add(match.group(0))
         return stash(match.group(0))
 
-    def in_strings(pattern, new, text):
-        def span(match):
+    def in_code(pattern, file_name, new, text):
+        """Strings get the program name; code and comments only file names."""
+        parts, pos = [], 0
+        for match in CODE_SPAN.finditer(text):
+            parts.append(file_name.sub(lambda _m: stash(new), text[pos:match.start()]))
             literal = match.group(0)
-            return pattern.sub(lambda _m: stash(new), literal) if literal[0] in "\"'" else literal
-        return CODE_SPAN.sub(span, text)
+            parts.append((pattern if literal[0] in "\"'" else file_name).sub(lambda _m: stash(new), literal))
+            pos = match.end()
+        parts.append(file_name.sub(lambda _m: stash(new), text[pos:]))
+        return "".join(parts)
 
     out = rules.protect.sub(keep, text)
-    for pattern, new, is_program in rules.stages:
-        if code and is_program:
-            out = in_strings(pattern, new, out)
+    for pattern, new, file_name in rules.stages:
+        if code and file_name:
+            out = in_code(pattern, file_name, new, out)
         else:
             out = pattern.sub(lambda _m, new=new: stash(new), out)
     out = CASE_RE.sub(lambda m: CASES[m.group(0)], out)
