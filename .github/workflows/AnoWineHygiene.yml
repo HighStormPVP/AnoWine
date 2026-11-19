@@ -27,6 +27,9 @@ jobs:
       - name: Rebrand script tests
         run: python3 -m unittest discover -s "$GITHUB_WORKSPACE/scripts/anowine" -p 'test_*.py' -v
 
+      - name: D3DMetal names script test
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-list-gptk-wine-names.sh"
+
       # Fails after an upstream merge brings new "Whisky" strings; fix by running
       # python3 scripts/anowine/rebrand_strings.py Whisky/Localizable.xcstrings
       # then python3 scripts/british-english.py
