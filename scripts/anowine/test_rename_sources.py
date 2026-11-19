@@ -72,6 +72,19 @@ class RenameTextTests(unittest.TestCase):
         self.assertEqual(self.r("programs/winedbg/"), "programs/ano-dbg/")
         self.assertEqual(self.r("winedbg_main"), "anodbg_main")
         self.assertEqual(self.r("WINEDBG"), "ANODBG")
+        # After an escape inside a C string the name is still the program.
+        self.assertEqual(self.r(r'"Usage:\n\twinedbg [options]"'), r'"Usage:\n\tano-dbg [options]"')
+
+    def test_programs_in_code(self):
+        # In C-family files a program name outside a string is an identifier
+        # (a debug channel): the case rule keeps it a valid C name.
+        code = ("WINE_DECLARE_DEBUG_CHANNEL(winedbg);\n"
+                "/* don't start winedbg */ static const char *cmd = \"winedbg --auto %ld\";\n"
+                "if (c == '\"') run(winecfg, L\"winecfg.exe\");\n")
+        self.assertEqual(rename_text(code, self.rules, code=True),
+                         "ANO_DECLARE_DEBUG_CHANNEL(anodbg);\n"
+                         "/* don't start anodbg */ static const char *cmd = \"ano-dbg --auto %ld\";\n"
+                         "if (c == '\"') run(anocfg, L\"ano-cfg.exe\");\n")
 
     def test_identity_and_urls(self):
         self.assertEqual(self.r("org.winehq.wine"), "io.github.highstormpvp.Ano.core")
@@ -101,6 +114,7 @@ class RenameTreeTests(unittest.TestCase):
                 "dlls/winemac.drv/cocoa_window.m": "@interface WineWindow\n",
                 "programs/winecfg/Makefile.in": "MODULE = winecfg.exe\n",
                 "include/wine/debug.h": "#include \"winerror.h\"\n",
+                "programs/winedbg/main.c": "WINE_DEFAULT_DEBUG_CHANNEL(winedbg);\nconst char *d = \"winedbg\";\n",
             }
             for rel, text in files.items():
                 (src / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -116,10 +130,12 @@ class RenameTreeTests(unittest.TestCase):
                              "MODULE = ano-cfg.exe\n")
             self.assertEqual((src / "include/ano/debug.h").read_text(encoding="utf-8"),
                              "#include \"winerror.h\"\n")
+            self.assertEqual((src / "programs/ano-dbg/main.c").read_text(encoding="utf-8"),
+                             "ANO_DEFAULT_DEBUG_CHANNEL(anodbg);\nconst char *d = \"ano-dbg\";\n")
             self.assertFalse((src / "dlls/winemac.drv").exists())
             self.assertIn("fonts/x.ttf", report.binary_with_wine)
-            self.assertEqual(report.renamed_paths, 3)
-            self.assertEqual(report.changed_files, 2)
+            self.assertEqual(report.renamed_paths, 4)
+            self.assertEqual(report.changed_files, 3)
 
             again = rename_tree(src, rules)
             self.assertEqual((again.renamed_paths, again.changed_files), (0, 0))
