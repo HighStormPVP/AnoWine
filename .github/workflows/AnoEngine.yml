@@ -1,0 +1,76 @@
+name: Ano Engine
+
+# Plan 3b: Ano builds upstream's GPTK engine itself and proves the result equals
+# upstream's v4.8.3. Job `check` compares runtimes with
+# scripts/anowine/compare_runtimes.py; first it checks the comparator on real
+# runtimes: upstream's engine must equal itself, and Ano 4.9.0 (a repack with
+# renamed files and rebuilt modules) must not equal it. Dispatch only.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REF_URL: https://github.com/frankea/Whisky/releases/download/v4.8.3/Libraries.tar.gz
+  REF_SHA: 08ffabd7b7c352470faee2b1d51061b341316e401439ca805c5302acc2fb8818
+  ANO490_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v4.9.0/Libraries.tar.gz
+  ANO490_SHA: 7951aa539c1e0f371b4f5083c31599e582f902c33f80617321d745cc164743e5
+
+jobs:
+  check:
+    name: Compare with upstream's v4.8.3
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Reference runtimes
+        run: |
+          fetch() { # fetch <dir> <url> <sha256>
+            curl -fsSL --retry 3 -o "$RUNNER_TEMP/$1.tar.gz" "$2"
+            echo "$3  $RUNNER_TEMP/$1.tar.gz" | shasum -a 256 -c -
+            mkdir -p "$RUNNER_TEMP/$1"
+            tar -xzf "$RUNNER_TEMP/$1.tar.gz" -C "$RUNNER_TEMP/$1"
+            rm "$RUNNER_TEMP/$1.tar.gz"
+          }
+          fetch ref "$REF_URL" "$REF_SHA"
+          fetch ano490 "$ANO490_URL" "$ANO490_SHA"
+          mkdir -p "$RUNNER_TEMP/reports"
+
+      - name: "Self-check 1: upstream's engine equals itself"
+        run: |
+          set +e
+          python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ref" "$RUNNER_TEMP/ref" \
+            --report "$RUNNER_TEMP/reports/self1.txt" > /dev/null
+          code=$?
+          set -e
+          head -1 "$RUNNER_TEMP/reports/self1.txt"
+          [ "$code" -eq 0 ] || { echo "::error::exit $code, expected 0"; exit 1; }
+          grep -q ' interface=0 different=0 ' "$RUNNER_TEMP/reports/self1.txt"
+
+      - name: "Self-check 2: Ano 4.9.0 is not upstream's engine"
+        run: |
+          set +e
+          python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ano490" "$RUNNER_TEMP/ref" \
+            --report "$RUNNER_TEMP/reports/self2.txt" > /dev/null
+          code=$?
+          set -e
+          head -1 "$RUNNER_TEMP/reports/self2.txt"
+          grep -v '^summary' "$RUNNER_TEMP/reports/self2.txt" | cut -f1 | sort | uniq -c
+          [ "$code" -eq 1 ] || { echo "::error::exit $code, expected 1"; exit 1; }
+          for line in $'different\tLibraries/Wine/lib/wine/x86_64-unix/ntdll.so\t' \
+                      $'only-in-ours\tLibraries/Wine/bin/ano-loader\t'; do
+            grep -qF "$line" "$RUNNER_TEMP/reports/self2.txt" \
+              || { echo "::error::missing report line: $line"; exit 1; }
+          done
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: engine-compare
+          path: ${{ runner.temp }}/reports
+          if-no-files-found: warn
