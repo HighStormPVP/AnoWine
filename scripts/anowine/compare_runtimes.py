@@ -2,6 +2,7 @@
 """Decide whether two runtime trees are the same build.
 
 Usage: compare_runtimes.py OURS REFERENCE [--report FILE] [--expect-different RELPATH]...
+                           [--explained-interface FILE]
 
 OURS and REFERENCE are folders that each hold a `Libraries/` tree (an extracted
 Libraries.tar.gz). Every path under `Libraries/` is compared:
@@ -16,7 +17,9 @@ Libraries.tar.gz). Every path under `Libraries/` is compared:
                      dependencies, signing identifier) is the same
   different          anything else
   only-in-ours / only-in-reference
-  expected           a path named with --expect-different that differs
+  expected           a path named with --expect-different that differs, or an
+                     interface row listed in the --explained-interface file
+                     (path<TAB>reason per line, # comments)
 
 Exit 0: reproduced (only identical, timestamps, expected). Exit 2: equivalent
 (some interface rows, nothing worse). Exit 1: different. Exit 3: usage error.
@@ -394,7 +397,9 @@ def classify(ours: Path, ref: Path, macho_interface=macho_interface) -> tuple:
     return ("different", f"content differs ({len(a)} vs {len(b)} bytes)")
 
 
-def compare(ours: Path, ref: Path, expected: set) -> Result:
+def compare(ours: Path, ref: Path, expected: set, explained: dict = None) -> Result:
+    """explained maps a path to the reason its interface-only difference is known."""
+    explained = explained or {}
     ours, ref = Path(ours), Path(ref)
     left, right = walk_tree(ours), walk_tree(ref)
     counts = {name: 0 for name in CLASSES}
@@ -419,6 +424,8 @@ def compare(ours: Path, ref: Path, expected: set) -> Result:
             cls, reason = "identical", ""
         if cls not in ("identical", "only-in-ours", "only-in-reference") and rel in expected:
             cls, reason = "expected", f"expected: {reason}"
+        elif cls == "interface" and rel in explained:
+            cls, reason = "expected", f"explained interface: {explained[rel]}"
         counts[cls] += 1
         if cls != "identical":
             rows.append((cls, rel, reason))
@@ -444,6 +451,7 @@ def main(argv: list) -> int:
     parser.add_argument("reference", type=Path)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--expect-different", action="append", default=[], metavar="RELPATH")
+    parser.add_argument("--explained-interface", type=Path, metavar="FILE")
     try:
         args = parser.parse_args(argv)
     except SystemExit as stop:
@@ -452,7 +460,19 @@ def main(argv: list) -> int:
         if not (root / "Libraries").is_dir():
             print(f"compare_runtimes.py: {root} has no Libraries folder", file=sys.stderr)
             return USAGE_ERROR
-    result = compare(args.ours, args.reference, set(args.expect_different))
+    explained = {}
+    if args.explained_interface:
+        lines = args.explained_interface.read_text(encoding="utf-8").splitlines()
+        for number, line in enumerate(lines, 1):
+            if not line.strip() or line.startswith("#"):
+                continue
+            fields = line.split("\t")
+            if len(fields) != 2 or not all(fields):
+                print(f"compare_runtimes.py: {args.explained_interface} line {number}: expected path<TAB>reason",
+                      file=sys.stderr)
+                return USAGE_ERROR
+            explained[fields[0]] = fields[1]
+    result = compare(args.ours, args.reference, set(args.expect_different), explained)
     summary = "summary: " + " ".join(f"{name}={result.counts[name]}" for name in CLASSES)
     lines = [summary] + ["\t".join(row) for row in result.rows]
     text = "\n".join(lines) + "\n"

@@ -219,7 +219,8 @@ jobs:
           set +e
           python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ours" "$RUNNER_TEMP/ref" \
             --report "$RUNNER_TEMP/reports/compare.txt" \
-            --expect-different Libraries/Wine/lib/external/README > /dev/null
+            --expect-different Libraries/Wine/lib/external/README \
+            --explained-interface scripts/anowine/engine-483-interface.txt > /dev/null
           code=$?
           set -e
           head -1 "$RUNNER_TEMP/reports/compare.txt"
@@ -230,8 +231,8 @@ jobs:
             cmp "$plist" "$RUNNER_TEMP/ref/Libraries/WhiskyWineVersion.plist"
           done
           case "$code" in
-            0) echo "reproduced: equal to upstream's v4.8.3" ;;
-            2) echo "::warning::equal to upstream's v4.8.3 only by interface; explain each file" ;;
+            0) echo "reproduced: equal to upstream's v4.8.3 (interface rows only where explained)" ;;
+            2) echo "::error::interface rows not in engine-483-interface.txt: explain each file"; exit 1 ;;
             *) echo "::error::compare_runtimes.py exit $code: not upstream's v4.8.3"; exit 1 ;;
           esac
 
