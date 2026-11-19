@@ -1,16 +1,24 @@
 name: Ano Engine
 
-# Plan 3b: Ano builds upstream's GPTK engine itself and proves the result equals
-# upstream's v4.8.3. Job `check` compares runtimes with
-# scripts/anowine/compare_runtimes.py; first it checks the comparator on real
-# runtimes: upstream's engine must equal itself, and Ano 4.9.0 (a repack with
-# renamed files and rebuilt modules) must not equal it. Dispatch only.
+# Plan 3b: Ano builds upstream's GPTK engine itself (scripts/anowine/build-engine.sh)
+# and proves the result equals upstream's v4.8.3. Job `check` compares runtimes
+# with scripts/anowine/compare_runtimes.py; first it checks the comparator on
+# real runtimes: upstream's engine must equal itself, and Ano 4.9.0 (a repack
+# with renamed files and rebuilt modules) must not equal it.
+# Dispatch only. A build holds a Mac runner for 1.5 to 2 hours; to work on
+# `check` alone, pass engine_run to reuse an earlier run's engine.
 
 on:
   workflow_dispatch:
+    inputs:
+      engine_run:
+        description: "Skip the build and compare the ano-engine artifact of this run ID"
+        type: string
+        default: ""
 
 permissions:
   contents: read
+  actions: read
 
 env:
   REF_URL: https://github.com/frankea/Whisky/releases/download/v4.8.3/Libraries.tar.gz
@@ -19,13 +27,89 @@ env:
   ANO490_SHA: 7951aa539c1e0f371b4f5083c31599e582f902c33f80617321d745cc164743e5
 
 jobs:
+  build:
+    name: Build the engine
+    if: inputs.engine_run == ''
+    runs-on: macos-15
+    timeout-minutes: 300
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      # The Xcode that built upstream's v4.8.3; build-engine.sh stops unless
+      # the SDK is macOS 15.
+      - name: Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
+        with:
+          xcode-version: "16.4"
+
+      # gcc for the Windows half, not llvm-mingw (see build-engine.sh).
+      - name: ccache and mingw-w64
+        run: |
+          for formula in ccache mingw-w64; do
+            brew list --versions "$formula" > /dev/null || brew install -q "$formula"
+          done
+
+      - name: Compiler cache key
+        id: key
+        run: echo "winecx=$(sed -n 's/^WINECX_COMMIT=//p' scripts/anowine/build-engine.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Compiler cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.ccache
+          key: ccache-${{ steps.key.outputs.winecx }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-${{ steps.key.outputs.winecx }}-
+            ccache-
+
+      - name: Nix
+        uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa
+        with:
+          determinate: false
+          extra-conf: |
+            extra-platforms = x86_64-darwin
+
+      - name: Build
+        env:
+          ANO_ENGINE_VERSION: "4.8.3"
+        run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
+
+      - name: Upload the engine
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-engine
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload the build logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-engine-logs
+          path: |
+            ${{ runner.temp }}/ano-engine/build-info.txt
+            ${{ runner.temp }}/ano-engine/logs/
+            ${{ runner.temp }}/ano-engine/build/config.log
+          if-no-files-found: warn
+          retention-days: 14
+
   check:
     name: Compare with upstream's v4.8.3
+    needs: build
+    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
 
       - name: Reference runtimes
         run: |
@@ -66,6 +150,47 @@ jobs:
             grep -qF "$line" "$RUNNER_TEMP/reports/self2.txt" \
               || { echo "::error::missing report line: $line"; exit 1; }
           done
+
+      - name: Our engine
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-engine
+          path: ${{ runner.temp }}/ours-download
+          run-id: ${{ inputs.engine_run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Unpack our engine
+        run: |
+          cd "$RUNNER_TEMP/ours-download"
+          shasum -a 256 -c Libraries.tar.gz.sha256
+          mkdir -p "$RUNNER_TEMP/ours"
+          tar -xzf Libraries.tar.gz -C "$RUNNER_TEMP/ours"
+          cp build-info.txt "$RUNNER_TEMP/reports/"
+          cat build-info.txt
+
+      # Exit 0: reproduced. Exit 2: equal only by interface; every such file
+      # must be explained by a toolchain difference in build-info.txt (Plan 3b
+      # records each in spikes/REPORT.md). Exit 1: a real difference.
+      - name: Compare with upstream's v4.8.3
+        run: |
+          set +e
+          python3 scripts/anowine/compare_runtimes.py "$RUNNER_TEMP/ours" "$RUNNER_TEMP/ref" \
+            --report "$RUNNER_TEMP/reports/compare.txt" \
+            --expect-different Libraries/Wine/lib/external/README > /dev/null
+          code=$?
+          set -e
+          head -1 "$RUNNER_TEMP/reports/compare.txt"
+          grep -v '^summary' "$RUNNER_TEMP/reports/compare.txt" | cut -f1 | sort | uniq -c
+          grep -v '^summary' "$RUNNER_TEMP/reports/compare.txt" | head -200
+          for plist in "$RUNNER_TEMP/ours/Libraries/WhiskyWineVersion.plist" \
+                       "$RUNNER_TEMP/ours-download/WhiskyWineVersion.plist"; do
+            cmp "$plist" "$RUNNER_TEMP/ref/Libraries/WhiskyWineVersion.plist"
+          done
+          case "$code" in
+            0) echo "reproduced: equal to upstream's v4.8.3" ;;
+            2) echo "::warning::equal to upstream's v4.8.3 only by interface; explain each file" ;;
+            *) echo "::error::compare_runtimes.py exit $code: not upstream's v4.8.3"; exit 1 ;;
+          esac
 
       - name: Upload reports
         if: always()
