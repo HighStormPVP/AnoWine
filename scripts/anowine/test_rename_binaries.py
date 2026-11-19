@@ -21,8 +21,10 @@ try:
 except ImportError:  # the Hygiene workflow installs it; skipped elsewhere
     FontBuilder = None
 
-COPYRIGHT = "WineSymbol © (Jon Parshall for CodeWeavers). 2009."
-LICENSE = "A copy of the LGPL is included in the Wine distribution in the file COPYING.LIB."
+COPYRIGHT_PHRASE = "WineSymbol © (Jon Parshall for CodeWeavers)"
+LICENSE_PHRASE = "Wine distribution in the file COPYING.LIB"
+COPYRIGHT = COPYRIGHT_PHRASE + ". 2009."
+LICENSE = f"A copy of the LGPL is included in the {LICENSE_PHRASE}."
 PROTECT = (
     "WineSymbol © (Jon Parshall for CodeWeavers)\tlicense\tthe Symbol font's copyright line\n"
     "Wine distribution in the file COPYING.LIB\tlicense\tLGPL notice\n"
@@ -71,7 +73,6 @@ class FontTests(unittest.TestCase):
                                 "licenseDescription": LICENSE}, mac=True)
         builder.setupOS2(achVendID="Wine")
         builder.setupPost()
-        builder.setupHead(created=1, modified=2)
         bdf = DefaultTable("BDF ")
         bdf.data = b"\x00\x01\x00\x00FONT_NAME\x00WineTahoma\x00FACE_NAME\x00Tahoma\x00"
         builder.font["BDF "] = bdf
@@ -82,6 +83,7 @@ class FontTests(unittest.TestCase):
             rules = rules_in(tmp)
             path = Path(tmp) / "tahoma.ttf"
             self.make_font(path)
+            modified = TTFont(path)["head"].modified
             rename_font(path, rules)
             font = TTFont(path)
             for platform in (1, 3):
@@ -95,10 +97,12 @@ class FontTests(unittest.TestCase):
                 self.assertEqual(names[13], LICENSE)
             self.assertEqual(font["OS/2"].achVendID, "Ano ")
             self.assertEqual(font["BDF "].data, b"\x00\x01\x00\x00FONT_NAME\x00AnoTahoma\x00\x00FACE_NAME\x00Tahoma\x00")
-            self.assertEqual(font["head"].modified, 2)
-            left = tokens_in_bytes(path.read_bytes(), phrases=("WineSymbol © (Jon Parshall for CodeWeavers)",
-                                                               "Wine distribution in the file COPYING.LIB"))
-            self.assertEqual(set(left), {"AnoWine"})
+            self.assertEqual(font["head"].modified, modified)
+            # Name records are stored back to back, so the repo URL runs into the
+            # next record's text; the allowlist names the URL, not the token.
+            left = tokens_in_bytes(path.read_bytes(), phrases=(COPYRIGHT_PHRASE, LICENSE_PHRASE,
+                                                               "github.com/HighStormPVP/AnoWine"))
+            self.assertEqual(left, Counter())
 
 
 if __name__ == "__main__":

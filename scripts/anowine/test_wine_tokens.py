@@ -117,6 +117,18 @@ class GateTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, r"line 2\b"):
                 load_allowlist(bad)
 
+    def test_repo_url_phrase(self):
+        # In a font's name table the URL runs straight into the next record.
+        url = "github.com/HighStormPVP/AnoWine"
+        data = b"\x01https://" + url.encode() + b"A copy\x00" + f"https://{url}B".encode("utf-16-le")
+        with tempfile.TemporaryDirectory() as tmp:
+            code, out = run_gate(tmp, {"x.ttf": data}, f"{url}\tcode-only\tthe repo URL\n")
+            self.assertEqual(code, 0, out)
+            bad = Path(tmp) / "bad.txt"
+            bad.write_text(f"{url}\tnot-wine\tnot the repo URL\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"line 1\b"):
+                load_allowlist(bad)
+
     def test_license_phrase_beyond_ascii(self):
         # A font's copyright record: Mac Roman (the copyright sign is 0xA9, as
         # in Latin-1), UTF-16, and UTF-8 in text files.
