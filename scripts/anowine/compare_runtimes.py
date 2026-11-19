@@ -7,8 +7,10 @@ OURS and REFERENCE are folders that each hold a `Libraries/` tree (an extracted
 Libraries.tar.gz). Every path under `Libraries/` is compared:
 
   identical          same kind, same bytes, same execute bit, same link target
-  timestamps         PE files that are equal once build timestamps and the
-                     checksum are zeroed
+  timestamps         files that are equal once build-time stamps and values
+                     derived from them are zeroed: PE timestamps, checksum and
+                     CodeView build ID; Mach-O object modification times
+                     (N_OSO), UUID and code signature
   interface          Mach-O or PE files whose bytes differ but whose interface
                      (architectures, minimum macOS, exports, imports,
                      dependencies, signing identifier) is the same
@@ -165,6 +167,12 @@ def pe_normalized(data: bytes) -> Optional[bytes]:
         for i in range(debug_size // 28):
             off = pe.offset(debug_rva + 28 * i)
             zero(off + 4 if off is not None else None)
+            # ld --build-id: a CodeView record whose GUID is a hash of the link
+            # output (export timestamp included), so it changes with the time.
+            if off is not None and off + 28 <= len(out) and struct.unpack_from("<I", data, off + 12)[0] == 2:
+                raw = struct.unpack_from("<I", data, off + 24)[0]
+                if data[raw:raw + 4] == b"RSDS" and raw + 20 <= len(out):
+                    out[raw + 4:raw + 20] = bytes(16)
     resource_rva, _ = pe.directory(2)
     if resource_rva:
         seen = set()
@@ -186,6 +194,54 @@ def pe_normalized(data: bytes) -> Optional[bytes]:
                 target = struct.unpack_from("<I", data, entry + 4)[0]
                 if target & 0x80000000:
                     pending.append(target & 0x7FFFFFFF)
+    return bytes(out)
+
+
+def _macho_slice_normalize(out: bytearray, base: int) -> None:
+    """Zero one thin 64-bit Mach-O's build-time stamps in place: the N_OSO
+    entries' object modification times, LC_UUID, and the code signature
+    (a hash of the pages, so of the stamps too)."""
+    if struct.unpack_from("<I", out, base)[0] != 0xFEEDFACF:
+        raise ValueError("not a 64-bit little-endian Mach-O")
+    ncmds, sizeofcmds = struct.unpack_from("<II", out, base + 16)
+    off, end, symtab = base + 32, base + 32 + sizeofcmds, None
+    for _ in range(ncmds):
+        cmd, size = struct.unpack_from("<II", out, off)
+        if size < 8 or off + size > end:
+            raise ValueError("bad load command")
+        if cmd == 0x1B:  # LC_UUID
+            out[off + 8:off + 24] = bytes(16)
+        elif cmd == 0x1D:  # LC_CODE_SIGNATURE
+            dataoff, datasize = struct.unpack_from("<II", out, off + 8)
+            if base + dataoff + datasize > len(out):
+                raise ValueError("bad signature")
+            out[base + dataoff:base + dataoff + datasize] = bytes(datasize)
+        elif cmd == 0x2:  # LC_SYMTAB
+            symtab = struct.unpack_from("<II", out, off + 8)
+        off += size
+    if symtab:
+        symoff, nsyms = symtab
+        if base + symoff + 16 * nsyms > len(out):
+            raise ValueError("bad symbol table")
+        for i in range(nsyms):
+            entry = base + symoff + 16 * i
+            if out[entry + 4] == 0x66:  # N_OSO: n_value is the object's mtime
+                out[entry + 8:entry + 16] = bytes(8)
+
+
+def macho_normalized(data: bytes) -> Optional[bytes]:
+    """The Mach-O file (thin or universal, 64-bit) with its build-time stamps
+    zeroed, or None if it cannot be read that way."""
+    out = bytearray(data)
+    try:
+        if data[:4] == b"\xca\xfe\xba\xbe":
+            for i in range(struct.unpack_from(">I", data, 4)[0]):
+                offset = struct.unpack_from(">I", data, 8 + 20 * i + 8)[0]
+                _macho_slice_normalize(out, offset)
+        else:
+            _macho_slice_normalize(out, 0)
+    except (ValueError, struct.error, IndexError):
+        return None
     return bytes(out)
 
 
@@ -328,6 +384,9 @@ def classify(ours: Path, ref: Path, macho_interface=macho_interface) -> tuple:
                 return ("interface", "PE code differs, same machine, exports and imports")
             return ("different", _difference(ia, ib))
     if a[:4] in MACHO_MAGICS and b[:4] in MACHO_MAGICS:
+        na, nb = macho_normalized(a), macho_normalized(b)
+        if na is not None and na == nb:
+            return ("timestamps", "Mach-O object times, UUID or signature only")
         ia, ib = macho_interface(Path(ours)), macho_interface(Path(ref))
         if ia == ib:
             return ("interface", "Mach-O bytes differ, same interface")
