@@ -1,0 +1,20 @@
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -420,7 +420,7 @@
+         if (!(dll_dir = remove_tail( ntdll_dir, get_so_dir(current_machine) ))) dll_dir = ntdll_dir;
+         bin_dir = build_relative_path( dll_dir, LIBDIR "/ano", BINDIR );
+         data_dir = build_relative_path( dll_dir, LIBDIR "/ano", DATADIR "/ano" );
+-        anoloader = build_path( ntdll_dir, "ano" );
++        anoloader = build_path( ntdll_dir, "ano-core" );
+     }
+ 
+     set_dll_path();
+@@ -451,7 +451,7 @@
+     }
+ 
+     if (!build_dir)
+-        asprintf( &ret, "%s%s/ano", dll_dir, get_so_dir( machine ));
++        asprintf( &ret, "%s%s/ano-core", dll_dir, get_so_dir( machine ));
+     else if (alt_build_dir)
+         asprintf( &ret, "%s/loader/ano", alt_build_dir );
+ 

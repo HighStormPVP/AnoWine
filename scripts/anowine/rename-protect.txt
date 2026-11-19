@@ -1,0 +1,19 @@
+# Text rename_sources.py leaves as it is (Plan 3c-1). One entry per line:
+#   text<TAB>kind<TAB>reason
+# Kinds: substring (matched inside any token), word (whole word only),
+# license (a whole phrase of a copyright notice, kept word for word).
+# Every entry must occur in the Wine tree; rename_sources.py fails on one that does not.
+winerror	substring	Windows header winerror.h and its names (Win + error)
+Winerror	substring	Windows header name in comments (Win + error)
+WINERROR	substring	Windows header guard __WINE_WINERROR_H (Win + error)
+winerr	substring	Windows message file names in winerror.mc (Win + err)
+winevt	substring	Windows header winevt.h (Win + evt)
+WINEVT	substring	Windows header guard __WINE_WINEVT_H (Win + evt)
+winefs	substring	Windows header winefs.h (Win + EFS)
+winevent	substring	Windows WinEvent hooks in lower case (Win + event)
+WINEVENT	substring	Windows API WINEVENT_*, WINEVENTPROC, HWINEVENTHOOK (Win + event)
+winexe	substring	.NET target type winexe (Win + exe)
+intertwine	word	English word
+intertwined	word	English word
+Intertwined	word	English word
+the Wine project authors	license	Wine's LGPL copyright line in every module's version resource

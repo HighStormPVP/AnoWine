@@ -1,0 +1,27 @@
+# Fixed renames rename_sources.py applies before the general rule (Plan 3c-1).
+# One entry per line: old<TAB>new<TAB>kind
+# program:  a program that runs as a process gets ano- plus the rest of its
+#           name (owner's rule); matched as a whole word, so C names such as
+#           winedbg_main fall to the general rule (anodbg_main).
+# identity: reverse-DNS names (bundle identifier, pasteboard types).
+# url:      a host Ano does not control must never appear (anohq.org);
+#           a whole URL on the host is replaced and its path dropped.
+wineboot	ano-boot	program
+winebrowser	ano-browser	program
+winecfg	ano-cfg	program
+wineconsole	ano-console	program
+winedbg	ano-dbg	program
+winedevice	ano-device	program
+winefile	ano-file	program
+winemenubuilder	ano-menubuilder	program
+winemine	ano-mine	program
+winemsibuilder	ano-msibuilder	program
+winepath	ano-path	program
+wineserver	ano-server	program
+winevdm	ano-vdm	program
+org.winehq.wine	io.github.highstormpvp.Ano.core	identity
+org.winehq.	io.github.highstormpvp.Ano.	identity
+org/winehq/wine	io/github/highstormpvp/Ano/core	identity
+org/winehq/	io/github/highstormpvp/Ano/	identity
+bugs.winehq.org	https://github.com/HighStormPVP/AnoWine/issues	url
+winehq.org	https://github.com/HighStormPVP/AnoWine	url

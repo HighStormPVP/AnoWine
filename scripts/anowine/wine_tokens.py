@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """List every "wine" token in a runtime tree or a bottle.
 
-Usage: wine_tokens.py ROOT... --out FILE.tsv [--allowlist FILE]
+Usage: wine_tokens.py ROOT... --out FILE.tsv [--allowlist FILE] [--gate]
 
 A token is a maximal run of [A-Za-z0-9_] that contains "wine" in any case.
 Tokens are taken from path names, symlink names and symlink targets, and from
@@ -13,9 +13,12 @@ class is `allowlisted:<category>` (from the allowlist), `not-wine-candidate`
 (every occurrence is spelled exactly "WinE", as in WinExec, or follows a
 letter other than the end of "lib", as in "twine") or `wine`.
 
-This is an inventory, not a gate: it exits 0 unless the allowlist is malformed
-(exit 1). The allowlist has one entry per line, `token<TAB>category<TAB>reason`,
-with `#` comments; categories are exactly CATEGORIES below.
+It exits 0 unless the allowlist is malformed (exit 1) or, with --gate, a token
+is not on the allowlist (exit 1, the tokens printed). The allowlist has one
+entry per line, `token<TAB>category<TAB>reason`, with `#` comments; categories
+are exactly CATEGORIES below. An entry with a space is a phrase of a license
+notice (category `license` only): its occurrences are blanked before tokens
+are taken, so its "Wine" is allowed there and nowhere else.
 """
 import argparse
 import os
@@ -71,8 +74,18 @@ def _utf16_tokens(buf: bytes) -> list:
     return tokens
 
 
-def tokens_in_bytes(data: bytes) -> Counter:
+def _blank(buf: bytes, phrases) -> bytes:
+    """Allowlisted phrases (license lines), ASCII and UTF-16LE, become spaces."""
+    for phrase in phrases:
+        for encoding, space in (("ascii", b" "), ("utf-16-le", b" \x00")):
+            encoded = phrase.encode(encoding)
+            buf = buf.replace(encoded, space * len(phrase))
+    return buf
+
+
+def tokens_in_bytes(data: bytes, phrases=()) -> Counter:
     """Tokens containing "wine" in ASCII and UTF-16LE text inside data."""
+    data = _blank(data, phrases)
     return Counter(_ascii_tokens(data)) + Counter(_utf16_tokens(data))
 
 
@@ -91,19 +104,21 @@ def _safe_cut(buf: bytes) -> int:
     return max(cut, len(buf) - MAX_CARRY)
 
 
-def tokens_in_file(path: Path, chunk: int = CHUNK) -> tuple:
+def tokens_in_file(path: Path, chunk: int = CHUNK, phrases=()) -> tuple:
     """(ASCII counts, UTF-16 counts) for one file, read in chunks; a token
-    that crosses a chunk edge is carried into the next chunk whole."""
+    that crosses a chunk edge is carried into the next chunk whole, and so is
+    the tail where an allowlisted phrase could still be incomplete."""
     ascii_counts, utf16_counts = Counter(), Counter()
+    hold = 2 * max((len(p) for p in phrases), default=0)
     carry = b""
     with open(path, "rb") as fh:
         while True:
             block = fh.read(chunk)
-            buf = carry + block
+            buf = _blank(carry + block, phrases)
             if not block:
                 cut = len(buf)
             else:
-                cut = _safe_cut(buf)
+                cut = _safe_cut(buf[:max(0, len(buf) - hold)])
             ascii_counts.update(_ascii_tokens(buf[:cut]))
             utf16_counts.update(_utf16_tokens(buf[:cut]))
             carry = buf[cut:]
@@ -138,7 +153,10 @@ def load_allowlist(path: Path) -> dict:
         if len(fields) != 3:
             raise ValueError(f"line {number}: want token<TAB>category<TAB>reason, got {len(fields)} field(s)")
         token, category, reason = (field.strip() for field in fields)
-        if not tokens_in_name(token) or tokens_in_name(token) != [token]:
+        if " " in token:
+            if category != "license" or not tokens_in_name(token):
+                raise ValueError(f"line {number}: a phrase must be a license line with a wine token: {token!r}")
+        elif not tokens_in_name(token) or tokens_in_name(token) != [token]:
             raise ValueError(f"line {number}: {token!r} is not a single wine token")
         if category not in CATEGORIES:
             raise ValueError(f"line {number}: unknown category {category!r} (allowed: {', '.join(CATEGORIES)})")
@@ -151,7 +169,8 @@ def load_allowlist(path: Path) -> dict:
 
 
 class _Inventory:
-    def __init__(self):
+    def __init__(self, phrases=()):
+        self.phrases = tuple(phrases)
         self.count = Counter()
         self.files = {}
         self.example = {}
@@ -181,7 +200,7 @@ class _Inventory:
                     else:
                         self.add(label, where, "names", names)
                         if entry.is_file(follow_symlinks=False):
-                            ascii_counts, utf16_counts = tokens_in_file(Path(entry.path))
+                            ascii_counts, utf16_counts = tokens_in_file(Path(entry.path), phrases=self.phrases)
                             self.add(label, where, "ascii", ascii_counts)
                             self.add(label, where, "utf16", utf16_counts)
 
@@ -193,13 +212,14 @@ def main(argv: list) -> int:
     parser.add_argument("roots", nargs="+", type=Path)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--allowlist", type=Path)
+    parser.add_argument("--gate", action="store_true", help="exit 1 if any token is not on the allowlist")
     args = parser.parse_args(argv)
     try:
         allow = load_allowlist(args.allowlist) if args.allowlist else {}
     except ValueError as error:
         print(f"wine_tokens.py: {args.allowlist}: {error}", file=sys.stderr)
         return 1
-    inventory = _Inventory()
+    inventory = _Inventory(phrases=[token for token in allow if " " in token])
     for root in args.roots:
         inventory.scan(root)
     rows = sorted(inventory.count.items(), key=lambda item: (-item[1], item[0]))
@@ -215,6 +235,14 @@ def main(argv: list) -> int:
         label = root.name or str(root)
         parts = [f"{source} {inventory.by_source[(label, source)]}" for source in ("names", "ascii", "utf16")]
         print(f"{label}: occurrences by source: {', '.join(parts)}")
+    if args.gate:
+        hits = [(token, n) for token, n in rows if not classify_token(token, allow).startswith("allowlisted")]
+        if hits:
+            print(f"gate: {len(hits)} tokens ({sum(n for _, n in hits)} occurrences) are not on the allowlist")
+            for token, n in hits[:200]:
+                print(f"{token}\t{n}\t{inventory.example[token]}")
+            return 1
+        print("gate: every token is on the allowlist")
     return 0
 
 
