@@ -29,6 +29,7 @@ Exit 1 when a string would grow, or would change where its length is fixed.
 import argparse
 import hashlib
 import re
+import shutil
 import struct
 import subprocess
 import sys
@@ -192,11 +193,16 @@ def rename_msi(msi: Path, rules) -> list:
                     old_path = msi.parent / new_name  # already renamed with its folder (--tree)
                 cabinet.update(_rename_cabinet(old_path, msi.parent / new_name, rules, work))
                 changes.append(f"cabinet {old_name} -> {new_name}: {len(cabinet)} file(s) renamed")
+        idts = []
         for name, text in tables.items():
             lines = text.splitlines()
-            if len(lines) < 3:
-                continue
-            columns = lines[0].split("\t")
+            if name == "_ForceCodepage":
+                if lines[0].split("\t")[0] != "0":
+                    raise ValueError(f"{msi.name}: codepage {lines[0].split()[0]} is not supported")
+                continue  # a new database's codepage is 0 too
+            columns, types = lines[0].split("\t"), lines[1].split("\t")
+            if any(kind[:1] in "vV" for kind in types):
+                raise ValueError(f"{msi.name}: table {name} has a binary column, which is not supported")
             rows = [line.split("\t") for line in lines[3:]]
             fresh = [[rename_text(cell, rules) for cell in row] for row in rows]
             for row in fresh:
@@ -205,12 +211,18 @@ def rename_msi(msi: Path, rules) -> list:
                     row[2:6] = [str(part) for part in struct.unpack("<4i", hashlib.md5(cabinet[key]).digest())]
                 if name == "File" and key in cabinet:
                     row[columns.index("FileSize")] = str(len(cabinet[key]))
-            if fresh == rows:
-                continue
+            if fresh != rows:
+                changes.append(f"table {name}: {sum(1 for a, b in zip(rows, fresh) if a != b)} row(s) renamed")
             idt = work / f"{name}.idt"
             idt.write_text("\n".join(lines[:3] + ["\t".join(row) for row in fresh]) + "\n", encoding="utf-8")
-            _run("msibuild", msi, "-i", idt.name, cwd=work)
-            changes.append(f"table {name}: {sum(1 for a, b in zip(rows, fresh) if a != b)} row(s) renamed")
+            idts.append(idt.name)
+        # A new database, not imports over the old one: those leave the old
+        # strings in its string pool. The summary information goes last.
+        imports = []
+        for idt in sorted(idts, key=lambda n: n == "_SummaryInformation.idt"):
+            imports += ["-i", idt]
+        _run("msibuild", work / "renamed.msi", *imports, cwd=work)
+        shutil.copyfile(work / "renamed.msi", msi)
     return changes
 
 

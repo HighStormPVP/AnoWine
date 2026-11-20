@@ -28,6 +28,23 @@ __wine_dbg_strdup	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt;
 __wine_unix_call_funcs	alias	the unix-call table ntdll.so looks up in libd3dshared.dylib (aliases.txt; provisional)
 __wine_unix_call_wow64_funcs	alias	the wow64 unix-call table ntdll.so looks up in libd3dshared.dylib (aliases.txt; provisional)
 
+# mono-internal and not-wine: what wine-mono 11.3.0 keeps after its rename (Plan 3c-2, payloads
+# run 44705330083), each read by hand.
+WineMono	mono-internal	wine-mono's internal assembly and namespace names (WineMono.*; decision 7)
+winexe	not-wine	the C# compiler's target kind winexe (Win + exe)
+Winexe	not-wine	MSBuild's OutputType Winexe (Win + exe)
+winEvent	not-wine	WinForms/WPF WinEvent fields (win + Event)
+_winEvent	not-wine	WPF WinEvent fields (win + Event)
+winEventHook	not-wine	WPF's WinEvent hook field (win + Event)
+_winEventProc	not-wine	WPF's WinEvent callback field (win + Event)
+_winEventTrackers	not-wine	UIAutomationClient's WinEvent trackers (win + Event)
+_winEventWrap	not-wine	UIAutomationClient's WinEvent wrapper (win + Event)
+WINEVENT_INCONTEXT	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
+WINEVENT_OUTOFCONTEXT	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
+WINEVENT_SKIPOWNPROCESS	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
+WINEVENT_SKIPOWNTHREAD	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
+N7dxlayer8winerrorE	not-wine	a mangled C++ name in WPF's wpfgfx: dxlayer::winerror (Win + error)
+
 # not-wine: Plan 3c-1's gate (Ano Engine run 44603973479), each read by hand. The last
 # three are phrases: ICU's Unicode names say WINE, and a bare WINE must stay a failure.
 _Winerror_map	not-wine	Microsoft's C++ library (msvcp): std::_Winerror_map (Win + error)
