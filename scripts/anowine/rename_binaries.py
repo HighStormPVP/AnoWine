@@ -16,12 +16,23 @@ the same rules, the ones that end up in the engine:
             string is renamed and padded with NULs; any other change is an
             error. A renamed export table is sorted again, because Wine finds
             exports by binary search.
+  --msi     an installer database (wine-mono's support MSI): every table and
+            the summary information are renamed by the rule and imported
+            again, and the cabinet Media names (next to the MSI) is unpacked,
+            its files renamed (--pe, or as text), packed again in the same
+            order, and their MsiFileHash and File rows updated. Needs msitools
+            and gcab.
+  --tree    a tree we cannot rebuild: rename_sources.py's pass, then --pe on
+            every PE file and --msi on every MSI it lists.
 Exit 1 when a string would grow, or would change where its length is fixed.
 """
 import argparse
+import hashlib
 import re
 import struct
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from rename_sources import CASE_RE, load_rules, rename_text, rename_tree
@@ -122,6 +133,87 @@ def rename_pe(data: bytes, rules) -> bytes:
     return bytes(out)
 
 
+def _run(*args, cwd=None) -> str:
+    result = subprocess.run([str(a) for a in args], capture_output=True, text=True, cwd=cwd)
+    if result.returncode:
+        raise ValueError(f"{args[0]} {args[1]}: {(result.stderr or result.stdout).strip()}")
+    return result.stdout
+
+
+def _rename_cabinet(old: Path, new: Path, rules, work: Path) -> dict:
+    """Rename the files of a cabinet; write it as new, in the same order.
+    Returns {name in the cabinet: new bytes} for the files that changed."""
+    names = [line.rsplit(" ", 4)[0] for line in _run("gcab", "-l", old).splitlines() if line.strip()]
+    folder = work / "cabinet"
+    folder.mkdir()
+    _run("gcab", "-x", "-C", folder, old)
+    changed = {}
+    for name in names:
+        path = folder / name.replace("\\", "/")
+        data = path.read_bytes()
+        if data[:2] == b"MZ":
+            fresh = rename_pe(data, rules)
+        elif b"\0" not in data[:8192]:
+            try:
+                fresh = rename_text(data.decode("utf-8"), rules).encode("utf-8")
+            except UnicodeDecodeError:
+                fresh = rename_text(data.decode("latin-1"), rules).encode("latin-1")
+        else:
+            fresh = data
+        if fresh != data:
+            path.write_bytes(fresh)
+            changed[name] = fresh
+    if new.exists():
+        new.unlink()
+    _run("gcab", "-c", "-z", new, *[name.replace("\\", "/") for name in names], cwd=folder)
+    if new != old and old.exists():
+        old.unlink()
+    return changed
+
+
+def rename_msi(msi: Path, rules) -> list:
+    """Rename an MSI and its cabinet in place (see --msi above); returns one line per change."""
+    msi = Path(msi).resolve()
+    changes = []
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        tables = {name: _run("msiinfo", "export", msi, name) for name in _run("msiinfo", "tables", msi).split()}
+        cabinet = {}
+        media = tables.get("Media", "").splitlines()
+        if media:
+            index = media[0].split("\t").index("Cabinet")
+            for row in media[3:]:
+                old_name = row.split("\t")[index]
+                if not old_name or old_name.startswith("#"):
+                    continue  # no cabinet, or one inside the MSI
+                new_name = rename_text(old_name, rules)
+                old_path = msi.parent / old_name
+                if not old_path.exists():
+                    old_path = msi.parent / new_name  # already renamed with its folder (--tree)
+                cabinet.update(_rename_cabinet(old_path, msi.parent / new_name, rules, work))
+                changes.append(f"cabinet {old_name} -> {new_name}: {len(cabinet)} file(s) renamed")
+        for name, text in tables.items():
+            lines = text.splitlines()
+            if len(lines) < 3:
+                continue
+            columns = lines[0].split("\t")
+            rows = [line.split("\t") for line in lines[3:]]
+            fresh = [[rename_text(cell, rules) for cell in row] for row in rows]
+            for row in fresh:
+                key = row[0]
+                if name == "MsiFileHash" and key in cabinet:
+                    row[2:6] = [str(part) for part in struct.unpack("<4i", hashlib.md5(cabinet[key]).digest())]
+                if name == "File" and key in cabinet:
+                    row[columns.index("FileSize")] = str(len(cabinet[key]))
+            if fresh == rows:
+                continue
+            idt = work / f"{name}.idt"
+            idt.write_text("\n".join(lines[:3] + ["\t".join(row) for row in fresh]) + "\n", encoding="utf-8")
+            _run("msibuild", msi, "-i", idt.name, cwd=work)
+            changes.append(f"table {name}: {sum(1 for a, b in zip(rows, fresh) if a != b)} row(s) renamed")
+    return changes
+
+
 def rename_font(path: Path, rules) -> list:
     """Rewrite a TrueType font in place; returns one line per change."""
     from fontTools.ttLib import TTFont
@@ -159,8 +251,9 @@ def main(argv=None) -> int:
     parser.add_argument("--font", type=Path, action="append", default=[])
     parser.add_argument("--padded", type=Path, action="append", default=[])
     parser.add_argument("--pe", type=Path, action="append", default=[])
+    parser.add_argument("--msi", type=Path, action="append", default=[])
     parser.add_argument("--tree", type=Path, help="a tree we cannot rebuild: rename_sources.py's pass, then --pe "
-                        "on every PE file it lists; each protected entry must be used by one of the two")
+                        "and --msi on every PE file and MSI it lists; each protected entry must be used by one")
     args = parser.parse_args(argv)
     rules = load_rules(args.protect, args.mapping)
     report = None
@@ -171,9 +264,14 @@ def main(argv=None) -> int:
             path = args.tree / rel
             if path.read_bytes()[:2] == b"MZ":
                 args.pe.append(path)
+            elif path.suffix.lower() == ".msi":
+                args.msi.append(path)
             else:
-                print(f"binary, not PE\t{rel}")
+                print(f"binary, not PE or MSI\t{rel}")
     try:
+        for path in args.msi:
+            for change in rename_msi(path, rules):
+                print(f"{path}: {change}")
         for path in args.font:
             for change in rename_font(path, rules):
                 print(f"{path}: {change}")
