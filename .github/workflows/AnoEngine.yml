@@ -424,7 +424,8 @@ jobs:
           "$A/bin/ano-server" -k 2> /dev/null || true
           tail -n 20 "$RUNNER_TEMP/gecko.log"
           if [ "$code" = 142 ]; then echo "::error::asking for Gecko waited 120 s (a download dialog)"; exit 1; fi
-          if [ -d "$ANOPREFIX/drive_c/windows/system32/gecko" ]; then echo "::error::Gecko was installed"; exit 1; fi
+          # Every bottle has system32\gecko\plugin (ano.inf); Gecko itself is xul.dll.
+          if find "$ANOPREFIX/drive_c" -iname xul.dll | grep -q .; then echo "::error::Gecko was installed"; exit 1; fi
           echo "asking for Gecko returned (exit $code); nothing installed"
 
       - name: Mono runs a .NET program

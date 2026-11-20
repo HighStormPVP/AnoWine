@@ -43,6 +43,7 @@ WINEVENT_INCONTEXT	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
 WINEVENT_OUTOFCONTEXT	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
 WINEVENT_SKIPOWNPROCESS	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
 WINEVENT_SKIPOWNTHREAD	not-wine	Windows API WINEVENT_* flags (Win + EVENT)
+winehprepare	not-wine	LLVM's WinEHPrepare pass name in DXMT's anometal.so (Win + EH prepare)
 N7dxlayer8winerrorE	not-wine	a mangled C++ name in WPF's wpfgfx: dxlayer::winerror (Win + error)
 
 # not-wine: Plan 3c-1's gate (Ano Engine run 44603973479), each read by hand. The last

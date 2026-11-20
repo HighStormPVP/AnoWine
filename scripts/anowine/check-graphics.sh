@@ -22,7 +22,7 @@ i686-w64-mingw32-gcc -O2 -o "$WORK/loadtest32.exe" "$HERE/tests/graphics/loadtes
 # Native first, as the app sets them for a bottle; the engine's dxgi stays the
 # fallback (64-bit DXVK ships none). ano-dbg is off: a crash dialog would wait.
 export ANOPREFIX=$BOTTLE DYLD_FALLBACK_LIBRARY_PATH=$ENGINE/lib ANODEBUG=warn+module
-export ANODLLOVERRIDES="d3d11,d3d10core,nvapi64,nvngx=n;dxgi=n,b;ano-dbg.exe=d;mscoree,mshtml=d"
+export ANODLLOVERRIDES="d3d11,d3d10core=n;dxgi=n,b;ano-dbg.exe=d;mscoree,mshtml=d"
 
 zpath() {  # the bottle's Z: path of a Mac path
   local mac
@@ -63,7 +63,9 @@ for set in $SETS; do
       run loadtest64.exe DXVK/x64 d3d10core.dll d3d11.dll
       run loadtest32.exe DXVK/x32 d3d10core.dll d3d11.dll dxgi.dll ;;
     DXMT)
-      run loadtest64.exe DXMT/x64 d3d10core.dll d3d11.dll dxgi.dll nvapi64.dll nvngx.dll
+      # The app puts DXMT's front ends in a bottle, never its nvapi64 or nvngx
+      # (they keep DXMT's builtin mark, as in runtime 4.9.0, and stay unused).
+      run loadtest64.exe DXMT/x64 d3d10core.dll d3d11.dll dxgi.dll
       run loadtest32.exe DXMT/x32 d3d10core.dll d3d11.dll dxgi.dll ;;
     *) echo "FAIL unknown set $set"; fail=1 ;;
   esac
