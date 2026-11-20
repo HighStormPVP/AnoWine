@@ -39,6 +39,17 @@ jobs:
       - name: Rebrand script tests
         run: python3 -m unittest discover -s "$GITHUB_WORKSPACE/scripts/anowine" -p 'test_*.py' -v
 
+      # Plan 3c-3: Libraries/ano-tricks is winetricks 20260125 renamed by
+      # make_ano_tricks.py; made again from the pinned upstream file, it must
+      # equal the committed one.
+      - name: ano-tricks is made from upstream
+        if: ${{ !cancelled() }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/anowine/make_ano_tricks.py" --check
+
+      - name: ano-tricks checks
+        if: ${{ !cancelled() }}
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-ano-tricks.sh" "$GITHUB_WORKSPACE"
+
       - name: D3DMetal names script test
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-list-gptk-wine-names.sh"
 
