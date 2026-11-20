@@ -243,14 +243,15 @@ find it.
 ## Plan 3c-2: DXVK, DXMT and mono
 
 Engine 5.0.0 now carries DXVK and DXMT rebuilt from source and wine-mono renamed in place;
-Gecko is not shipped and nothing offers to download it. Check run 44731014279 (engine of
-build 44714943718): the gate passes over engine and a new bottle (977 distinct tokens, all
-renamed or allowlisted), and every check below is green.
+Gecko is not shipped and nothing offers to download it. Run 44823000994: the gate passes over the engine (977
+distinct tokens) and over a bottle made the way the app makes one, with no DLL overrides (92),
+all renamed or allowlisted; every check below is green.
 
 **DXVK** is built on Linux (job `Payloads (Linux)`, `scripts/anowine/build-payloads.sh`,
 about 8 minutes with the package cache): Gcenx's DXVK-macOS `8f1e28de` (the
 v1.10.3-20230507 async repack: d3d10core and d3d11, 64- and 32-bit) and upstream DXVK
-v1.10.3 `e4fd5e9e` for the 32-bit dxgi only (d3d9 and d3d10 off). Both trees are renamed with
+v1.10.3 `e4fd5e9e` for the 32-bit dxgi only (d3d9 and d3d10 off), with mingw's posix thread
+model (winpthreads) as DXVK's releases use. Both trees are renamed with
 the engine's map before meson (`winevulkan.dll` becomes `anovulkan.dll`, and so on). Ubuntu's
 GCC 13 needed `<cstdint>` in two headers of upstream 1.10.3 (`patches/dxvk/`), the same two
 lines Gcenx's branch carries.
@@ -260,7 +261,8 @@ built on the Mac against the renamed engine's own build tree, with meson 1.10.0 
 15.0.7 `8dfdcc7b` built as DXMT's CI does (cold about 25 minutes, then cached by its commit:
 the DXMT phase takes 5 minutes). Homebrew's GCC 16 needed `<iomanip>` in one file
 (`patches/dxmt/`). Its bridge is `anometal.dll` and `anometal.so` (linked to `anomac.so`); its
-front ends go to `Libraries/DXMT` with the plain DOS stub, as in 4.9.0.
+front ends go to `Libraries/DXMT` with the plain DOS stub, as in 4.9.0, and the bridge goes there
+too, because the app copies the front ends and the bridge from that folder into a bottle.
 
 **Graphics in a bottle** (`check-graphics.sh`, every DLL loaded by path as itself, then a
 D3D11 device created; runner GPU: Apple Paravirtual device):
@@ -282,7 +284,8 @@ support installer rebuilt as a new MSI (msitools) with the feature `ano_mono`, p
 "Ano Mono Windows Support", manufacturer "The Ano Project", cabinet `anomono-support.cab`
 (its two `installutil.exe` renamed, their hashes recomputed). Its internal assembly names
 (`WineMono.*`) stay, as decision 7 says. A .NET program compiled against the engine's own
-mscorlib runs in the bottle.
+mscorlib runs in the bottle, and the support install leaves its files (from the renamed
+cabinet), the `AnoFakeDlls` fakes and "Ano Mono Windows Support" in the registry.
 
 **Gecko**: `patches/rename/0004` makes `appwiz.cpl` install an addon only from the engine, a
 registered folder or the cache; asking for Gecko as mshtml does returns at once (before:
@@ -294,4 +297,6 @@ a download dialog that waited). A bottle with no DLL overrides boots without a d
 
 **Open**: DXVK and DXMT are rebuilt with newer compilers than the originals (GCC 13 and 16):
 on the runner they behave as the prebuilt ones, but only a game on the owner's Mac proves
-them. The app (3c-4) still names DXMT's bridge `winemetal.dll`.
+them. The app (3c-4) still asks for DXMT's bridge as `winemetal.dll`; the payload now holds it as
+`anometal.dll`. The final review (Opus) found the missing bridge, the ungated default bottle and
+the thread model; all three are fixed.
