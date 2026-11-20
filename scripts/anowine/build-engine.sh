@@ -502,16 +502,18 @@ EOF
   mkdir -p "$TOP/share/$MOD/mono"
   cp -R "$ANO_PAYLOADS/mono/ano-mono-$mono" "$TOP/share/$MOD/mono/"
   # DXMT (build_dxmt): the anometal bridge is a builtin; the front ends go to
-  # the per-bottle payload, like DXVK, with the ordinary DOS stub.
+  # the per-bottle payload, like DXVK, with the ordinary DOS stub. The app copies
+  # the front ends and the bridge from Libraries/DXMT into a bottle (as in 4.x,
+  # whose payload was DXMT's whole Windows folder), so the bridge is there too.
   local dxmt="$WORK/dxmt/install" arch dll
   cp "$dxmt/x86_64-windows/anometal.dll" "$TOP/lib/$MOD/x86_64-windows/"
   cp "$dxmt/i386-windows/anometal.dll" "$TOP/lib/$MOD/i386-windows/"
   cp "$dxmt/x86_64-unix/anometal.so" "$TOP/lib/$MOD/x86_64-unix/"
   mkdir -p Libraries/DXMT/x64 Libraries/DXMT/x32
-  for dll in d3d11 d3d10core dxgi nvapi64 nvngx; do
+  for dll in d3d11 d3d10core dxgi anometal nvapi64 nvngx; do
     cp "$dxmt/x86_64-windows/$dll.dll" Libraries/DXMT/x64/
   done
-  for dll in d3d11 d3d10core dxgi; do
+  for dll in d3d11 d3d10core dxgi anometal; do
     cp "$dxmt/i386-windows/$dll.dll" Libraries/DXMT/x32/
   done
   for arch in x64 x32; do
@@ -954,7 +956,8 @@ PY
     for dll in x64/d3d10core x64/d3d11 x32/d3d10core x32/d3d11 x32/dxgi; do
       [ -f "Libraries/DXVK/$dll.dll" ] || die "no DXVK $dll.dll"
     done
-    for dll in x64/d3d10core x64/d3d11 x64/dxgi x64/nvapi64 x64/nvngx x32/d3d10core x32/d3d11 x32/dxgi; do
+    for dll in x64/d3d10core x64/d3d11 x64/dxgi x64/anometal x64/nvapi64 x64/nvngx \
+               x32/d3d10core x32/d3d11 x32/dxgi x32/anometal; do
       [ -f "Libraries/DXMT/$dll.dll" ] || die "no DXMT $dll.dll"
     done
     [ -f "$m/x86_64-windows/anometal.dll" ] && [ -f "$m/i386-windows/anometal.dll" ] || die "no anometal.dll"
