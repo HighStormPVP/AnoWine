@@ -14,6 +14,7 @@
 # Usage: ANO_ENGINE_VERSION=4.8.3 build-engine.sh <out-dir>
 #   ANO_ENGINE_VERSION  major.minor.patch stamped into the version plist
 #   ANO_ENGINE_WORK     work folder (default $RUNNER_TEMP/ano-engine)
+#   ANO_PAYLOADS        5.x: build-payloads.sh's output (DXVK built from source)
 # Writes <out-dir>/Libraries.tar.gz, Libraries.tar.gz.sha256, the version plist
 # (WhiskyWineVersion.plist, or AnoRuntimeVersion.plist from 5.0) and
 # build-info.txt. Logs go to <work>/logs.
@@ -479,6 +480,10 @@ Ano renamed its files, programs and settings and changed how it is built.
 The source of this engine and the scripts that build it:
 https://github.com/HighStormPVP/AnoWine
 EOF
+  # Plan 3c-2: DXVK, renamed and built from source on Linux (build-payloads.sh).
+  [ -d "${ANO_PAYLOADS:-}/DXVK" ] || die "no DXVK in ANO_PAYLOADS='${ANO_PAYLOADS:-}' (run build-payloads.sh)"
+  mkdir -p Libraries/DXVK
+  cp -R "$ANO_PAYLOADS/DXVK/." Libraries/DXVK/
   info "bin: $(ls "$TOP/bin" | tr '\n' ' ')"
   info "ano-loader --version: $("$TOP/bin/ano-loader" --version)"
 }
@@ -838,6 +843,11 @@ PY
     [ -f Libraries/DXVK/x64/d3d11.dll ] || die "no DXVK payload"
     [ -f Libraries/DXVK/x32/dxgi.dll ] || die "no 32-bit DXVK dxgi"
     [ -f "$m/x86_64-unix/winemetal.so" ] || die "no DXMT winemetal bridge"
+  else
+    # Plan 3c-2: the layout of build-payloads.sh's output.
+    for dll in x64/d3d10core x64/d3d11 x32/d3d10core x32/d3d11 x32/dxgi; do
+      [ -f "Libraries/DXVK/$dll.dll" ] || die "no DXVK $dll.dll"
+    done
   fi
   [ -d "$w/lib/external" ] || die "no lib/external for the Game Porting Toolkit"
   for dll in d3d11 dxgi d3d10core; do

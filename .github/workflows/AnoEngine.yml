@@ -34,9 +34,33 @@ env:
   ANO490_SHA: 7951aa539c1e0f371b4f5083c31599e582f902c33f80617321d745cc164743e5
 
 jobs:
+  # Plan 3c-2: what the 5.x engine takes from outside Wine and can build without
+  # it (DXVK from source, renamed) is made on Linux, where runners are plentiful.
+  payloads:
+    name: Payloads (Linux)
+    if: inputs.engine_run == '' && !startsWith(inputs.version, '4.')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q mingw-w64 meson ninja-build glslang-tools
+      - name: Build
+        run: scripts/anowine/build-payloads.sh "$RUNNER_TEMP/payloads"
+      - name: Upload the payloads
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-payloads
+          path: ${{ runner.temp }}/payloads
+          if-no-files-found: error
+
   build:
     name: Build the engine
-    if: inputs.engine_run == ''
+    needs: payloads
+    if: inputs.engine_run == '' && !cancelled() && (needs.payloads.result == 'success' || needs.payloads.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 300
     steps:
@@ -103,9 +127,16 @@ jobs:
           extra-conf: |
             extra-platforms = x86_64-darwin
 
+      - name: Payloads
+        if: "!startsWith(inputs.version, '4.')"
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-payloads
+          path: ${{ runner.temp }}/payloads
       - name: Build
         env:
           ANO_ENGINE_VERSION: ${{ inputs.version }}
+          ANO_PAYLOADS: ${{ runner.temp }}/payloads
         run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
 
       - name: Save the compiler cache
