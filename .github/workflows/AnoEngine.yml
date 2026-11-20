@@ -44,10 +44,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      # The runner's Ubuntu mirror has served the 157 MB of packages at 100 kB/s
+      # (24 minutes): keep the downloaded packages between runs.
+      - name: Package cache
+        uses: actions/cache@v5
+        with:
+          path: ~/apt-cache
+          key: payloads-apt-noble-${{ hashFiles('.github/workflows/AnoEngine.yml') }}
+          restore-keys: payloads-apt-noble-
       - name: Tools
         run: |
+          mkdir -p ~/apt-cache/partial
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32 meson ninja-build glslang-tools
+          sudo apt-get install -y -q --no-install-recommends -o Dir::Cache::archives="$HOME/apt-cache" \
+            g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32 meson ninja-build glslang-tools
+          sudo chmod -R a+rX ~/apt-cache
       - name: Build
         run: scripts/anowine/build-payloads.sh "$RUNNER_TEMP/payloads"
       - name: Upload the payloads

@@ -79,7 +79,7 @@ rename "$WORK/dxvk"
 for bits in 64 32; do
   dxvk "$WORK/dxvk-macos" "$bits" "$WORK/install-macos" -Denable_d3d9=false -Denable_dxgi=false
 done
-dxvk "$WORK/dxvk" 32 "$WORK/install-up"
+dxvk "$WORK/dxvk" 32 "$WORK/install-up" -Denable_d3d9=false -Denable_d3d10=false
 
 rm -rf "$OUT/DXVK"
 mkdir -p "$OUT/DXVK/x64" "$OUT/DXVK/x32"

@@ -1,6 +1,6 @@
 GCC 13's libstdc++ no longer includes <cstdint> through other headers, so
 DXVK 1.10.3 does not build with it ("uint32_t was not declared"). Gcenx's
-DXVK-macOS branch carries the same one-line fix.
+DXVK-macOS branch carries the same two lines (util_bit.h, config.h).
 --- a/src/util/util_bit.h
 +++ b/src/util/util_bit.h
 @@ -16,6 +16,7 @@
@@ -11,3 +11,12 @@ DXVK-macOS branch carries the same one-line fix.
  #include <cstring>
  #include <iterator>
  #include <type_traits>
+--- a/src/util/config/config.h
++++ b/src/util/config/config.h
+@@ -1,5 +1,6 @@
+ #pragma once
+
++#include <cstdint>
+ #include <string>
+ #include <unordered_map>
+
