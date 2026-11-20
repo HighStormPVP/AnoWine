@@ -1,0 +1,63 @@
+name: Ano MSI Spike
+
+# Throwaway (Plan 3c-2 Task 4): what msitools can do with wine-mono's support
+# MSI before rename_binaries.py --msi is written. Dispatch only; removed after.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  spike:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends msitools gcab
+      - name: Probe
+        run: |
+          set -x
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o mono.tar.xz https://dl.winehq.org/wine/wine-mono/11.3.0/wine-mono-11.3.0-x86.tar.xz
+          echo "54a1b0111c3fe4b785eae688af94d27e64995707ad648b6fee8000381b80d298  mono.tar.xz" | sha256sum -c -
+          tar -xJf mono.tar.xz wine-mono-11.3.0/support
+          M=wine-mono-11.3.0/support/winemono-support.msi
+          C=wine-mono-11.3.0/support/winemono-support.cab
+          msiinfo --version || true
+          msibuild --help || true
+          msidump --help || true
+          gcab --version || true
+          msiinfo suminfo "$M" || true
+          msiinfo tables "$M" || true
+          msiinfo export "$M" _SummaryInformation || echo "NO _SummaryInformation EXPORT"
+          msiinfo export "$M" _ForceCodepage || echo "NO _ForceCodepage EXPORT"
+          msiinfo export "$M" Feature || true
+          msiinfo export "$M" FeatureComponents | head -5 || true
+          msiinfo export "$M" Media || true
+          msiinfo export "$M" MsiFileHash | head -6 || true
+          msiinfo export "$M" File | head -8 || true
+          mkdir -p dump && msidump -d dump -s "$M" || true
+          ls -laR dump | head -40
+          # A whole round trip into a new database.
+          (cd dump && msibuild ../new.msi -i *.idt) || echo "ROUND TRIP FAILED"
+          msiinfo suminfo new.msi || true
+          msiinfo export new.msi Feature || true
+          # Does re-importing a table into an existing database replace its rows?
+          cp "$M" copy.msi
+          msiinfo export copy.msi Property > Property.idt
+          sed -i 's/Wine Mono Windows Support/Ano Mono Windows Support/' Property.idt
+          msibuild copy.msi -i Property.idt || echo "IMPORT INTO EXISTING FAILED"
+          msiinfo export copy.msi Property || true
+          # Summary information setter.
+          cp "$M" s.msi
+          msibuild s.msi -s "Ano Mono Windows Support" "The Ano Project" || echo "SUMMARY SET FAILED"
+          msiinfo suminfo s.msi || true
+          # SQL on a key column.
+          cp "$M" q.msi
+          msibuild q.msi -q "DELETE FROM \`Feature\` WHERE \`Feature\` = 'wine_mono'" || echo "DELETE FAILED"
+          msiinfo export q.msi Feature || true
+          gcab -l "$C" | head -12 || true
+          gcab -l "$C" | wc -l || true
