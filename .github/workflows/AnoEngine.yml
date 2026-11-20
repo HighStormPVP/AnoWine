@@ -409,6 +409,24 @@ jobs:
           fi
           echo "system32: $(ls "$ANOPREFIX/drive_c/windows/system32" | wc -l) files"
 
+      # Plan 3c-2: Gecko is not shipped and nothing offers to download it: asking
+      # for it, as mshtml does, must return instead of opening a dialog that waits.
+      - name: No Gecko download dialog
+        if: always() && steps.default_bottle.outcome == 'success'
+        timeout-minutes: 10
+        run: |
+          A="$RUNNER_TEMP/ours/Libraries/Ano"
+          export ANOPREFIX="$RUNNER_TEMP/bottle-default" DYLD_FALLBACK_LIBRARY_PATH="$A/lib" ANODEBUG=-all
+          export ANODLLOVERRIDES="ano-dbg.exe=d"
+          code=0
+          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 120 "$A/bin/ano-loader" control.exe appwiz.cpl \
+            install_gecko > "$RUNNER_TEMP/gecko.log" 2>&1 || code=$?
+          "$A/bin/ano-server" -k 2> /dev/null || true
+          tail -n 20 "$RUNNER_TEMP/gecko.log"
+          if [ "$code" = 142 ]; then echo "::error::asking for Gecko waited 120 s (a download dialog)"; exit 1; fi
+          if [ -d "$ANOPREFIX/drive_c/windows/system32/gecko" ]; then echo "::error::Gecko was installed"; exit 1; fi
+          echo "asking for Gecko returned (exit $code); nothing installed"
+
       - name: Mono runs a .NET program
         if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
         timeout-minutes: 15
