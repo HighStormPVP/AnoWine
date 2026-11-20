@@ -57,8 +57,14 @@ jobs:
           mkdir -p ~/apt-cache/partial
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends -o Dir::Cache::archives="$HOME/apt-cache" \
-            g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32 meson ninja-build glslang-tools msitools gcab
+            g++-mingw-w64-x86-64-posix g++-mingw-w64-i686-posix meson ninja-build glslang-tools msitools gcab
           sudo chmod -R a+rX ~/apt-cache
+          # DXVK's releases use the posix thread model (winpthreads).
+          for triplet in x86_64-w64-mingw32 i686-w64-mingw32; do
+            for tool in gcc g++; do
+              sudo update-alternatives --set "$triplet-$tool" "/usr/bin/$triplet-$tool-posix"
+            done
+          done
       - name: Build
         run: scripts/anowine/build-payloads.sh "$RUNNER_TEMP/payloads"
       - name: Upload the payloads
