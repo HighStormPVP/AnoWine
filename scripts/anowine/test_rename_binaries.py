@@ -1,8 +1,11 @@
 """Tests for rename_binaries.py. Run: python3 -m unittest discover -s scripts/anowine -p 'test_*.py'"""
 import contextlib
+import hashlib
 import io
 import os
+import shutil
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -12,7 +15,7 @@ from pathlib import Path
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from rename_binaries import main, rename_font, rename_padded, rename_pe  # noqa: E402
+from rename_binaries import main, rename_font, rename_msi, rename_padded, rename_pe  # noqa: E402
 from rename_sources import load_rules  # noqa: E402
 from wine_tokens import tokens_in_bytes  # noqa: E402
 
@@ -254,6 +257,93 @@ class TreeTests(unittest.TestCase):
             code, out, _ = self.run_tree(tmp, MONO_PROTECT + "swine\tword\tEnglish word\n")
             self.assertEqual(code, 1, out)
             self.assertIn("unused protected text\tswine", out)
+
+
+HAVE_MSITOOLS = all(shutil.which(tool) for tool in ("msibuild", "msiinfo", "gcab"))
+IDT = {  # a small installer shaped like wine-mono's support MSI
+    "Property": "Property\tValue\ns72\tl0\nProperty\tProperty\n"
+                "ProductName\tWine Mono Windows Support\nManufacturer\tThe Wine Project\nProductVersion\t1.0\n",
+    "Feature": "Feature\tFeature_Parent\tTitle\tDescription\tDisplay\tLevel\tDirectory_\tAttributes\n"
+               "s38\tS38\tL64\tL255\tI2\ti2\tS72\ti2\nFeature\tFeature\nwine_mono\t\t\t\t\t1\t\t0\n",
+    "FeatureComponents": "Feature_\tComponent_\ns38\ts72\nFeatureComponents\tFeature_\tComponent_\n"
+                         "wine_mono\tnet\n",
+    "InstallExecuteSequence": "Action\tCondition\tSequence\ns72\tS255\tI2\nInstallExecuteSequence\tAction\n"
+                              "SetX\t(&wine_mono=3)\t100\n",
+    "Media": "DiskId\tLastSequence\tDiskPrompt\tCabinet\tVolumeLabel\tSource\ni2\ti4\tL64\tS255\tS32\tS72\n"
+             "Media\tDiskId\n1\t2\t\twinemono-support.cab\t\t\n",
+    "File": "File\tComponent_\tFileName\tFileSize\tVersion\tLanguage\tAttributes\tSequence\n"
+            "s72\ts72\tl255\ti4\tS72\tS20\tI2\ti2\nFile\tFile\n"
+            "Microsoft.NET\\Framework\\installutil.exe\tnet\tinstallutil.exe\t{size}\t\t\t\t1\n"
+            "Microsoft.NET\\Framework\\machine.config\tnet\tmachine.config\t{csize}\t\t\t\t2\n",
+    "MsiFileHash": "File_\tOptions\tHashPart1\tHashPart2\tHashPart3\tHashPart4\ns72\ti2\ti4\ti4\ti4\ti4\n"
+                   "MsiFileHash\tFile_\n"
+                   "Microsoft.NET\\Framework\\installutil.exe\t0\t1\t2\t3\t4\n"
+                   "Microsoft.NET\\Framework\\machine.config\t0\t{c1}\t{c2}\t{c3}\t{c4}\n",
+    "_SummaryInformation": "PropertyId\tValue\ni2\tl255\n_SummaryInformation\tPropertyId\n"
+                           "2\tWine Mono Windows Support Installation Database\n4\tThe Wine Project\n"
+                           "5\tInstaller, Wine, Mono\n18\twinemsibuilder\n",
+}
+
+
+def md5_parts(data):
+    return struct.unpack("<4i", hashlib.md5(data).digest())
+
+
+def msi_rows(msi, table):
+    out = subprocess.run(["msiinfo", "export", str(msi), table], capture_output=True, text=True, check=True).stdout
+    return [line.split("\t") for line in out.splitlines()[3:]]
+
+
+@unittest.skipUnless(HAVE_MSITOOLS, "needs msitools and gcab (the Hygiene workflow installs them)")
+class MsiTests(unittest.TestCase):
+    def test_msi_and_cabinet_renamed(self):
+        exe = make_pe(["main"], b"/builds/mono/wine-mono/wine-mono-11.3.0/mono/x.cs\x00")
+        config = b'<add name="md2" type="Mono.MD2, WineMono.Security, Version=4.0.0.0"/>\n'
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "protect.txt").write_text(MONO_PROTECT, encoding="utf-8")
+            (root / "map.txt").write_text("winemsibuilder\tano-msibuilder\tprogram\n", encoding="utf-8")
+            rules = load_rules(root / "protect.txt", root / "map.txt")
+            files = root / "files"
+            (files / "Microsoft.NET/Framework").mkdir(parents=True)
+            (files / "Microsoft.NET/Framework/installutil.exe").write_bytes(exe)
+            (files / "Microsoft.NET/Framework/machine.config").write_bytes(config)
+            support = root / "support"
+            support.mkdir()
+            subprocess.run(["gcab", "-c", "-z", str(support / "anomono-support.cab"),
+                            "Microsoft.NET/Framework/installutil.exe", "Microsoft.NET/Framework/machine.config"],
+                           cwd=files, check=True)
+            c1, c2, c3, c4 = md5_parts(config)
+            for table, text in IDT.items():
+                (root / f"{table}.idt").write_text(text.format(size=len(exe), csize=len(config),
+                                                               c1=c1, c2=c2, c3=c3, c4=c4), encoding="utf-8")
+            msi = support / "anomono-support.msi"
+            for table in IDT:
+                subprocess.run(["msibuild", str(msi), "-i", f"{table}.idt"], cwd=root, check=True)
+
+            changes = rename_msi(msi, rules)
+
+            self.assertTrue(changes)
+            self.assertEqual(msi_rows(msi, "Feature")[0][0], "ano_mono")
+            self.assertEqual(msi_rows(msi, "FeatureComponents")[0][0], "ano_mono")
+            self.assertEqual(msi_rows(msi, "InstallExecuteSequence")[0][1], "(&ano_mono=3)")
+            self.assertEqual(msi_rows(msi, "Media")[0][3], "anomono-support.cab")
+            self.assertIn(["ProductName", "Ano Mono Windows Support"], msi_rows(msi, "Property"))
+            self.assertIn(["Manufacturer", "The Ano Project"], msi_rows(msi, "Property"))
+            summary = subprocess.run(["msiinfo", "suminfo", str(msi)], capture_output=True, text=True).stdout
+            self.assertNotRegex(summary.lower(), "wine")
+            # The cabinet: installutil.exe renamed at the same length, its hash
+            # recomputed; machine.config's assembly name is mono-internal.
+            out = root / "out"
+            out.mkdir()
+            subprocess.run(["gcab", "-x", "-C", str(out), str(support / "anomono-support.cab")], check=True)
+            new_exe = (out / "Microsoft.NET/Framework/installutil.exe").read_bytes()
+            self.assertEqual(len(new_exe), len(exe))
+            self.assertIn(b"/builds/mono/ano-mono//ano-mono-11.3.0//mono/x.cs\x00", new_exe)
+            self.assertEqual((out / "Microsoft.NET/Framework/machine.config").read_bytes(), config)
+            hashes = {row[0]: tuple(int(x) for x in row[2:6]) for row in msi_rows(msi, "MsiFileHash")}
+            self.assertEqual(hashes["Microsoft.NET\\Framework\\installutil.exe"], md5_parts(new_exe))
+            self.assertEqual(hashes["Microsoft.NET\\Framework\\machine.config"], md5_parts(config))
 
 
 if __name__ == "__main__":
