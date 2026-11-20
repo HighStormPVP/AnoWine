@@ -429,9 +429,41 @@ jobs:
           echo "asking for Gecko returned (exit $code); nothing installed"
 
       - name: Mono runs a .NET program
-        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        if: always() && steps.default_bottle.outcome == 'success'
         timeout-minutes: 15
         run: scripts/anowine/check-mono.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle-default"
+
+      # Plan 3c-2: mono's support installer ran in the default bottle (a broken one
+      # now fails silently: no download dialog to fall back to), and that bottle,
+      # the kind the app makes, passes the gate too.
+      - name: Mono's support install and the default bottle's gate
+        if: always() && steps.default_bottle.outcome == 'success'
+        run: |
+          B="$RUNNER_TEMP/bottle-default"
+          missing=0
+          for file in Microsoft.NET/Framework64/v4.0.30319/installutil.exe \
+                      Microsoft.NET/Framework64/v1.1.4322/aspnet_regiis.exe; do
+            [ -f "$B/drive_c/windows/$file" ] || { echo "::error::no windows/$file: the support install did not run"; missing=1; }
+          done
+          grep -q 'Ano Mono Windows Support' "$B/system.reg" \
+            || { echo "::error::system.reg does not name Ano Mono Windows Support"; missing=1; }
+          python3 scripts/anowine/wine_tokens.py "$B" --allowlist scripts/anowine/wine-allowlist.txt \
+            --out "$RUNNER_TEMP/default-tokens.tsv" --gate || missing=1
+          exit $missing
+
+      # Plan 3c-2: what the app copies from Libraries/DXMT into a bottle
+      # (Wine.swift, dxmtPrefixDLLs: the three front ends and the bridge).
+      - name: DXMT payload as the app deploys it
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        run: |
+          missing=0
+          for arch in x64 x32; do
+            for dll in d3d11 dxgi d3d10core anometal; do
+              file="$RUNNER_TEMP/ours/Libraries/DXMT/$arch/$dll.dll"
+              [ -f "$file" ] || { echo "::error::no Libraries/DXMT/$arch/$dll.dll"; missing=1; }
+            done
+          done
+          exit $missing
 
       - name: Upload the inventory
         if: always() && steps.unpack.outcome == 'success'

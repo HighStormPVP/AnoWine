@@ -42,6 +42,12 @@ for tool in git python3 meson ninja glslangValidator x86_64-w64-mingw32-g++ i686
   command -v "$tool" > /dev/null || die "missing tool: $tool"
 done
 info "meson $(meson --version), $(x86_64-w64-mingw32-g++ --version | head -n 1)"
+# DXVK's releases are built with the posix thread model (winpthreads; its README
+# says so for Debian and Ubuntu): its mutexes and condition variables are std::.
+for cc in x86_64-w64-mingw32-g++ i686-w64-mingw32-g++; do
+  "$cc" -v 2>&1 | grep -qx 'Thread model: posix' || die "$cc does not use the posix thread model"
+done
+info "thread model: posix"
 
 # fetch <url> <commit> <dir>: exactly that commit, nothing else.
 fetch() {
