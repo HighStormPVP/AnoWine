@@ -59,7 +59,7 @@ dxvk() {
   local src=$1 bits=$2 prefix=$3
   shift 3
   meson setup --cross-file "$src/build-win$bits.txt" --buildtype release --prefix "$prefix" --strip \
-    --bindir "x$bits" --libdir "x$bits" -Dbuild_id=false "$@" "$src/build.$bits" > "$WORK/meson-$bits.log" 2>&1 \
+    --bindir "x$bits" --libdir "x$bits" -Dbuild_id=false "$@" "$src/build.$bits" "$src" > "$WORK/meson-$bits.log" 2>&1 \
     || { tail -n 40 "$WORK/meson-$bits.log" >&2; die "meson setup failed for $(basename "$src") $bits-bit"; }
   ninja -C "$src/build.$bits" install > "$WORK/ninja-$bits.log" 2>&1 \
     || { tail -n 60 "$WORK/ninja-$bits.log" >&2; die "ninja failed for $(basename "$src") $bits-bit"; }

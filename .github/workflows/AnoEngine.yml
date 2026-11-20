@@ -169,7 +169,7 @@ jobs:
   check:
     name: Compare with upstream's v4.8.3
     needs: build
-    if: always() && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    if: always() && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.engine_run != ''))
     runs-on: macos-15
     timeout-minutes: 60
     steps:
