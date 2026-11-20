@@ -567,6 +567,11 @@ build_dxmt() {
     [ "$(git -C "$dxmt/external/nvapi" rev-parse HEAD)" = "$DXMT_NVAPI_COMMIT" ] || die "DXMT's nvapi is not at its pin"
     [ "$(git -C "$dxmt/include/native/directx" rev-parse HEAD)" = "$DXMT_DIRECTX_COMMIT" ] \
       || die "DXMT's directx headers are not at their pin"
+    # v0.80 predates Homebrew's GCC 16 (patches/dxmt).
+    for patch in "$HERE"/patches/dxmt/*.patch; do
+      git -C "$dxmt" apply "$patch"
+      info "dxmt patch: $(basename "$patch")"
+    done
     python3 "$HERE/rename_sources.py" "$dxmt" --map "$HERE/rename-map.txt" --report "$LOGS/dxmt-rename.txt" \
       > /dev/null || { cat "$LOGS/dxmt-rename.txt" >&2; die "the rename of DXMT failed"; }
     info "dxmt: $(head -n 2 "$LOGS/dxmt-rename.txt" | tr '\n' ' ')"

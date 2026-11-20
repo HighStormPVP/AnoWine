@@ -1,0 +1,12 @@
+DXMT v0.80 uses std::setw and std::setfill without <iomanip>; older mingw
+GCCs pulled it in through other headers, Homebrew's GCC 16 does not.
+--- a/src/util/com/com_guid.cpp
++++ b/src/util/com/com_guid.cpp
+@@ -8,6 +8,7 @@
+  * See <https://github.com/doitsujin/dxvk/blob/master/LICENSE>
+  */
+
++#include <iomanip>
+ #include <mutex>
+ #include <unordered_set>
+
