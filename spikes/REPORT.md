@@ -215,13 +215,22 @@ as phrases so a bare WINE still fails), 8 `alias`, 3 `license`, 1 `code-only` (t
 **Aliases** (`scripts/anowine/aliases.txt`, `patches/rename/0002-ano-aliases.patch`), all
 provisional until the owner's `ano-gptk-wine-names.txt`: the "Wine builtin DLL" mark is
 accepted beside Ano's (ntdll's loader, the server, setupapi), ntdll.dll exports
+`__wine_unix_call` (CrossOver's own note: "Needed by D3DMetal PE DLLs"),
 `__wine_unix_call_dispatcher` and four `__wine_dbg_*` names, and ntdll.so falls back to
 `__wine_unix_call_funcs` and its wow64 table. `check-aliases.sh` proves it with a stand-in
 for D3DMetal (a DLL with the old mark and imports, a Mac half with the old table):
 `alias_call(21) = 42`. The mark is read through a volatile pointer, or the compiler folds
 it into instructions (`xor eax,'Wine'`) where the gate cannot tell it from a real "Wine".
 
-**Build**: 2,034 s on a warm compiler cache (build 7; make 740 s in build 3). Plan 3b's 4.8.3 still reproduces
+**Shorter names**: wine -> ano makes a string one letter shorter, and Wine spells some
+lengths as numbers (`wcsncmp(p, L"WINEDEBUG=", 10)`, then a `memmove` 10 past it).
+`patches/rename/0003-ano-lengths.patch` fixes the 11 such sites, the minidump marker and
+the font vendor compares; `check_lengths.py` runs after the patches and stops the build on
+a new one. `rename_sources.py` also stops on `anohq` (a domain Ano does not own) in
+anything that ships, matches URLs in any case, and joins gettext's wrapped strings so a
+URL split over two lines is one URL. Found by the final review (Opus).
+
+**Build**: 1,914 s on a warm compiler cache (build 44674369437, every check green); make 740 s in build 3. Plan 3b's 4.8.3 still reproduces
 (re-run 44643236968: 0 different, 0 unexplained interface).
 
 **For Plan 3c-2 and later**: the bottle is booted with `mscoree` and `mshtml` disabled until
