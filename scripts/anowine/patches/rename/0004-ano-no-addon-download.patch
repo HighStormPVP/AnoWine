@@ -1,0 +1,23 @@
+diff --git a/dlls/appwiz.cpl/addons.c b/dlls/appwiz.cpl/addons.c
+index e6ebe9d..6389705 100644
+--- a/dlls/appwiz.cpl/addons.c
++++ b/dlls/appwiz.cpl/addons.c
+@@ -772,13 +772,14 @@ BOOL install_addon(addon_t addon_type)
+      * - $INSTALL_DATADIR/ano/$addon_subdir/
+      * - /usr/share/ano/$addon_subdir/
+      * - /opt/ano/$addon_subdir/
+-     * - download from URL stored in $url_config_key value of HKCU/Software/Ano/$config_key key
++     *
++     * Ano never downloads an addon: Gecko is not shipped (programs that need
++     * it get it through ano-tricks) and no host the download would use is Ano's.
+      */
+     if (install_from_registered_dir() == INSTALL_NEXT
+         && install_from_default_dir() == INSTALL_NEXT
+-        && install_from_cache() == INSTALL_NEXT
+-        && (url = get_url()))
+-        DialogBoxW(hInst, addon->dialog_template, 0, installer_proc);
++        && install_from_cache() == INSTALL_NEXT)
++        WARN("%s is not installed, and Ano does not download it\n", debugstr_w(addon->file_name));
+ 
+     free(url);
+     url = NULL;
