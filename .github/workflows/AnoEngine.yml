@@ -144,11 +144,39 @@ jobs:
         with:
           name: ano-payloads
           path: ${{ runner.temp }}/payloads
+
+      # Plan 3c-2: DXMT builds with LLVM 15, about 25 minutes cold. Its key is the
+      # pin line in build-engine.sh; saved as soon as it exists, whatever follows.
+      - name: LLVM key
+        id: llvm
+        if: "!startsWith(inputs.version, '4.')"
+        run: echo "key=llvm-$(sed -n 's/^LLVM_COMMIT=//p' scripts/anowine/build-engine.sh)-x86_64-darwin" >> "$GITHUB_OUTPUT"
+      - name: LLVM cache
+        id: llvm_cache
+        if: "!startsWith(inputs.version, '4.')"
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}/llvm-15
+          key: ${{ steps.llvm.outputs.key }}
+
       - name: Build
         env:
           ANO_ENGINE_VERSION: ${{ inputs.version }}
           ANO_PAYLOADS: ${{ runner.temp }}/payloads
+          ANO_LLVM_DIR: ${{ runner.temp }}/llvm-15
         run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
+
+      - name: LLVM built
+        id: llvm_built
+        if: always() && !startsWith(inputs.version, '4.') && steps.llvm_cache.outputs.cache-hit != 'true'
+        run: |
+          if [ -f "$RUNNER_TEMP/llvm-15/lib/libLLVMCore.a" ]; then echo "yes=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Save LLVM
+        if: always() && steps.llvm_built.outputs.yes == 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}/llvm-15
+          key: ${{ steps.llvm.outputs.key }}
 
       - name: Save the compiler cache
         if: always()

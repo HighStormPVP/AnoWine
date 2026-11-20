@@ -49,6 +49,16 @@ DXVK_UP_SHA=8d1a3c912761b450c879f98478ae64f6f6639e40ce6848170a0f6b8596fd53c6
 DXMT_VERSION=0.80
 DXMT_URL=https://github.com/3Shain/dxmt/releases/download/v0.80/dxmt-v0.80-builtin.tar.gz
 DXMT_SHA=8f260e36b5739e68f3bad613381441385c4dc7b85b78ba8de653d5a6a264529d
+# 5.x builds DXMT from source (Plan 3c-2), with the LLVM and meson DXMT's own CI
+# uses; the workflow caches LLVM (ANO_LLVM_DIR).
+DXMT_GIT=https://github.com/3Shain/dxmt.git
+DXMT_COMMIT=589adb780354b461645b29999cefaf533594ee99   # v0.80
+DXMT_NVAPI_COMMIT=d08488fcc82eef313b0464db37d2955709691e94
+DXMT_DIRECTX_COMMIT=9df86f2341616ef1888ae59919feaa6d4fad693d
+DXMT_MESON=1.10.0
+LLVM_GIT=https://github.com/llvm/llvm-project.git
+LLVM_TAG=llvmorg-15.0.7
+LLVM_COMMIT=8dfdcc7b7bf66834a761bd8de445840ef68e4d1a
 MOLTENVK_URL=https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2/MoltenVK-macos.tar
 MOLTENVK_SHA=f95765a6229cb7b915990a2890ce12ebe36a730b021545d3d52ae69ce4c4024e
 # rename_binaries.py rewrites the engine's fonts with it (5.x only).
@@ -484,6 +494,24 @@ EOF
   [ -d "${ANO_PAYLOADS:-}/DXVK" ] || die "no DXVK in ANO_PAYLOADS='${ANO_PAYLOADS:-}' (run build-payloads.sh)"
   mkdir -p Libraries/DXVK
   cp -R "$ANO_PAYLOADS/DXVK/." Libraries/DXVK/
+  # DXMT (build_dxmt): the anometal bridge is a builtin; the front ends go to
+  # the per-bottle payload, like DXVK, with the ordinary DOS stub.
+  local dxmt="$WORK/dxmt/install" arch dll
+  cp "$dxmt/x86_64-windows/anometal.dll" "$TOP/lib/$MOD/x86_64-windows/"
+  cp "$dxmt/i386-windows/anometal.dll" "$TOP/lib/$MOD/i386-windows/"
+  cp "$dxmt/x86_64-unix/anometal.so" "$TOP/lib/$MOD/x86_64-unix/"
+  mkdir -p Libraries/DXMT/x64 Libraries/DXMT/x32
+  for dll in d3d11 d3d10core dxgi nvapi64 nvngx; do
+    cp "$dxmt/x86_64-windows/$dll.dll" Libraries/DXMT/x64/
+  done
+  for dll in d3d11 d3d10core dxgi; do
+    cp "$dxmt/i386-windows/$dll.dll" Libraries/DXMT/x32/
+  done
+  for arch in x64 x32; do
+    for dll in d3d11 d3d10core dxgi; do
+      plain_dos_stub "Libraries/DXMT/$arch/$dll.dll"
+    done
+  done
   info "bin: $(ls "$TOP/bin" | tr '\n' ' ')"
   info "ano-loader --version: $("$TOP/bin/ano-loader" --version)"
 }
@@ -491,6 +519,77 @@ EOF
 # ---------------------------------------------------------------------------
 # install_tree: lay out Libraries/ the way the app expects it.
 # ---------------------------------------------------------------------------
+# build_llvm <prefix>: LLVM 15 as DXMT's CI builds it (no targets, no tools,
+# x86_64), unless the workflow's cache already holds it.
+build_llvm() {
+  local llvm=$1
+  if [ -f "$llvm/lib/libLLVMCore.a" ]; then
+    info "dxmt: LLVM ${LLVM_TAG#llvmorg-} from the cache"
+    return
+  fi
+  command -v cmake > /dev/null || die "no cmake for LLVM"
+  rm -rf "$WORK/llvm-project" "$WORK/llvm-build" "$llvm"
+  git clone -q --depth 1 --branch "$LLVM_TAG" "$LLVM_GIT" "$WORK/llvm-project"
+  [ "$(git -C "$WORK/llvm-project" rev-parse HEAD)" = "$LLVM_COMMIT" ] || die "$LLVM_TAG is not $LLVM_COMMIT"
+  logged llvm-configure cmake -S "$WORK/llvm-project/llvm" -B "$WORK/llvm-build" -G Ninja \
+    -DCMAKE_OSX_ARCHITECTURES=x86_64 -DLLVM_HOST_TRIPLE=x86_64-apple-darwin -DLLVM_ENABLE_ASSERTIONS=On \
+    -DLLVM_ENABLE_ZSTD=Off -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD="" -DLLVM_BUILD_TOOLS=Off \
+    -DCMAKE_INSTALL_PREFIX="$llvm"
+  logged llvm-build ninja -C "$WORK/llvm-build" install
+  rm -rf "$WORK/llvm-project" "$WORK/llvm-build"
+  info "dxmt: LLVM ${LLVM_TAG#llvmorg-} built"
+}
+
+# ---------------------------------------------------------------------------
+# build_dxmt (5.x): DXMT from source (Plan 3c-2), renamed by the owner's rule
+# like the engine, and built against the engine's own build tree: its bridge
+# (anometal.dll, anometal.so) imports the renamed ntdll and links anomac.so.
+# ---------------------------------------------------------------------------
+build_dxmt() {
+  [ "$RENAME" = 1 ] || return 0
+  local dxmt="$WORK/dxmt" llvm=${ANO_LLVM_DIR:-$WORK/llvm-15} bits
+  (
+    export PATH="$WORK/venv/bin:$PATH"
+    pip install -q "meson==$DXMT_MESON" ninja
+    build_llvm "$llvm"
+    rm -rf "$dxmt"
+    git init -q "$dxmt"
+    git -C "$dxmt" fetch -q --depth 1 "$DXMT_GIT" "$DXMT_COMMIT"
+    git -C "$dxmt" checkout -q FETCH_HEAD
+    git -C "$dxmt" submodule -q update --init
+    [ "$(git -C "$dxmt/external/nvapi" rev-parse HEAD)" = "$DXMT_NVAPI_COMMIT" ] || die "DXMT's nvapi is not at its pin"
+    [ "$(git -C "$dxmt/include/native/directx" rev-parse HEAD)" = "$DXMT_DIRECTX_COMMIT" ] \
+      || die "DXMT's directx headers are not at their pin"
+    python3 "$HERE/rename_sources.py" "$dxmt" --map "$HERE/rename-map.txt" --report "$LOGS/dxmt-rename.txt" \
+      > /dev/null || { cat "$LOGS/dxmt-rename.txt" >&2; die "the rename of DXMT failed"; }
+    info "dxmt: $(head -n 2 "$LOGS/dxmt-rename.txt" | tr '\n' ' ')"
+    # The engine's tools are built in their own tree; DXMT looks in the build tree.
+    if [ ! -x build/tools/anobuild/anobuild ]; then
+      mkdir -p build/tools/anobuild
+      ln -sf "$WORK/build-tools/tools/anobuild/anobuild" build/tools/anobuild/anobuild
+    fi
+    cd "$dxmt"
+    for bits in 64 32; do
+      local args=(--cross-file "build-win$bits.txt" --buildtype release --strip --prefix "$dxmt/install"
+                  "-Dano_build_path=$WORK/build")
+      [ "$bits" = 32 ] || args+=(-Denable_nvapi=true -Denable_nvngx=true "-Dnative_llvm_path=$llvm")
+      logged "dxmt-setup-$bits" meson setup "${args[@]}" "build$bits"
+      logged "dxmt-build-$bits" meson compile -C "build$bits"
+      logged "dxmt-install-$bits" meson install -C "build$bits"
+    done
+  )
+  info "dxmt: $(cd "$dxmt/install" && find . -type f | sort | tr '\n' ' ')"
+}
+
+# plain_dos_stub <dll>: the app treats a DLL marked "<name> builtin DLL" at 0x40
+# as not native and skips it; DXMT's three front ends carry that mark, so they
+# get the ordinary DOS stub there.
+plain_dos_stub() {
+  printf '\016\037\272\016\000\264\011\315\041\270\001\114\315\041\220\220' \
+    | dd of="$1" bs=1 seek=64 conv=notrunc status=none
+  ! dd if="$1" bs=1 skip=64 count=16 status=none | grep -aq 'builtin' || die "$1 still carries the builtin mark"
+}
+
 install_tree() {
   local staging="$WORK/staging" root=$PREFIX dxmt="payload/v$DXMT_VERSION"
   local dxvk="payload/dxvk-macOS-async-v$DXVK_VERSION-20230507-repack" arch dll file loader name
@@ -531,12 +630,7 @@ install_tree() {
   for arch in x64 x32; do
     for dll in d3d11 d3d10core dxgi; do
       file="Libraries/DXMT/$arch/$dll.dll"
-      [ -f "$file" ] || continue
-      printf '\016\037\272\016\000\264\011\315\041\270\001\114\315\041\220\220' \
-        | dd of="$file" bs=1 seek=64 conv=notrunc status=none
-      if dd if="$file" bs=1 skip=64 count=16 status=none | grep -aq 'Wine builtin'; then
-        die "$file still carries the builtin mark"
-      fi
+      [ ! -f "$file" ] || plain_dos_stub "$file"
     done
   done
 
@@ -844,10 +938,16 @@ PY
     [ -f Libraries/DXVK/x32/dxgi.dll ] || die "no 32-bit DXVK dxgi"
     [ -f "$m/x86_64-unix/winemetal.so" ] || die "no DXMT winemetal bridge"
   else
-    # Plan 3c-2: the layout of build-payloads.sh's output.
+    # Plan 3c-2: the layout of build-payloads.sh's output and of build_dxmt.
     for dll in x64/d3d10core x64/d3d11 x32/d3d10core x32/d3d11 x32/dxgi; do
       [ -f "Libraries/DXVK/$dll.dll" ] || die "no DXVK $dll.dll"
     done
+    for dll in x64/d3d10core x64/d3d11 x64/dxgi x64/nvapi64 x64/nvngx x32/d3d10core x32/d3d11 x32/dxgi; do
+      [ -f "Libraries/DXMT/$dll.dll" ] || die "no DXMT $dll.dll"
+    done
+    [ -f "$m/x86_64-windows/anometal.dll" ] && [ -f "$m/i386-windows/anometal.dll" ] || die "no anometal.dll"
+    deps=$(otool -L "$m/x86_64-unix/anometal.so")
+    grep -q '@rpath/anomac.so' <<< "$deps" || die "anometal.so does not link anomac.so"
   fi
   [ -d "$w/lib/external" ] || die "no lib/external for the Game Porting Toolkit"
   for dll in d3d11 dxgi d3d10core; do
@@ -943,7 +1043,7 @@ package() {
   info "tarball: $(wc -c < "$OUT/Libraries.tar.gz" | tr -d ' ') bytes, sha256 $(cut -d' ' -f1 < "$OUT/Libraries.tar.gz.sha256")"
 }
 
-PHASES="check_host fetch_sources apply_patches rename_sources nix_inputs build_tools build_sdl2 configure_wine make_wine
+PHASES="check_host fetch_sources apply_patches rename_sources nix_inputs build_tools build_sdl2 configure_wine make_wine build_dxmt
   fetch_payloads install_tree bundle_libraries build_shims write_version verify_tree smoke_test package"
 
 total=$SECONDS
