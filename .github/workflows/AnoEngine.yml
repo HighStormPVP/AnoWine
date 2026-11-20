@@ -285,6 +285,42 @@ jobs:
           brew list --versions mingw-w64 > /dev/null || brew install -q mingw-w64
           scripts/anowine/check-aliases.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle"
 
+      # Plan 3c-2: DXVK and DXMT, rebuilt from source, load as themselves.
+      - name: DXVK and DXMT load
+        if: always() && steps.bottle.outcome == 'success'
+        timeout-minutes: 15
+        run: |
+          brew list --versions mingw-w64 > /dev/null || brew install -q mingw-w64
+          scripts/anowine/check-graphics.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/ours/Libraries" \
+            "$RUNNER_TEMP/bottle"
+
+      # Plan 3c-2: a bottle as the app makes one, with no DLL overrides: wine-mono
+      # installs from the engine and nothing offers a download (a dialog would hang
+      # the boot, so it is stopped after ten minutes).
+      - name: Default bottle from Ano's engine
+        id: default_bottle
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 15
+        run: |
+          A="$RUNNER_TEMP/ours/Libraries/Ano"
+          export ANOPREFIX="$RUNNER_TEMP/bottle-default" DYLD_FALLBACK_LIBRARY_PATH="$A/lib" ANODEBUG=-all
+          export ANODLLOVERRIDES="ano-dbg.exe=d"
+          code=0
+          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 600 "$A/bin/ano-loader" ano-boot --init \
+            > "$RUNNER_TEMP/default-boot.log" 2>&1 || code=$?
+          "$A/bin/ano-server" -k 2> /dev/null || true
+          tail -n 40 "$RUNNER_TEMP/default-boot.log"
+          if [ "$code" != 0 ]; then
+            echo "::error::ano-boot --init exit $code$([ "$code" != 142 ] || echo ': stopped after 600 s (a dialog?)')"
+            exit 1
+          fi
+          echo "system32: $(ls "$ANOPREFIX/drive_c/windows/system32" | wc -l) files"
+
+      - name: Mono runs a .NET program
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 15
+        run: scripts/anowine/check-mono.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle-default"
+
       - name: Upload the inventory
         if: always() && steps.unpack.outcome == 'success'
         uses: actions/upload-artifact@v7
