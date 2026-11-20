@@ -1,0 +1,4 @@
+# Sites check_lengths.py reports that are not lengths (path<TAB>literal<TAB>why).
+# The real stale lengths are fixed by patches/rename/0003-ano-lengths.patch.
+dlls/kernelbase/locale.c	L"ANOUNIXCP"	10 is the number base of the wcstoul on the next line
+programs/services/services.c	L"Anodevice"	10 is the width of a 32-bit number appended to the name

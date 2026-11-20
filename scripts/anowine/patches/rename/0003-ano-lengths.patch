@@ -1,0 +1,195 @@
+diff --git a/dlls/dbghelp/macho_module.c b/dlls/dbghelp/macho_module.c
+index 9030dcc..f64a509 100644
+--- a/dlls/dbghelp/macho_module.c
++++ b/dlls/dbghelp/macho_module.c
+@@ -672,7 +672,7 @@ static int macho_load_section_info(struct image_file_map* ifm, const struct mach
+        so ignore them. */
+     ignore = (info->split_segs && strcmp(segname, "__TEXT"));
+ 
+-    if (!strncmp(segname, "ANO_", 5))
++    if (!strncmp(segname, "ANO_", 4))
+         TRACE("Ignoring special Ano segment %s\n", debugstr_an(segname, sizeof(segname)));
+     else if (!strncmp(segname, "__PAGEZERO", 10))
+         TRACE("Ignoring __PAGEZERO segment\n");
+diff --git a/dlls/dbghelp/minidump.c b/dlls/dbghelp/minidump.c
+index ad3ce3b..6714b96 100644
+--- a/dlls/dbghelp/minidump.c
++++ b/dlls/dbghelp/minidump.c
+@@ -611,7 +611,7 @@ static  unsigned        dump_system_info(struct dump_context* dc)
+     /* write Ano specific system information just behind the structure, and before any string */
+     if (ano_extra)
+     {
+-        static const char code[] = {'A','N','O'};
++        static const char code[] = {'A','N','O',0};
+ 
+         WriteFile(dc->hFile, code, 4, &written, NULL);
+         /* number of sub-info, so that we can extend structure if needed */
+diff --git a/dlls/kernelbase/debug.c b/dlls/kernelbase/debug.c
+index 6fb7097..978bb0b 100644
+--- a/dlls/kernelbase/debug.c
++++ b/dlls/kernelbase/debug.c
+@@ -560,12 +560,12 @@ static BOOL start_debugger( EXCEPTION_POINTERS *epointers, HANDLE event )
+     {
+         for (p = env; *p; p += lstrlenW(p) + 1)
+         {
+-            if (!wcsncmp( p, L"ANODEBUG=", 10 ))
++            if (!wcsncmp( p, L"ANODEBUG=", 9 ))
+             {
+                 WCHAR *next = p + lstrlenW(p);
+                 WCHAR *end = next + 1;
+                 while (*end) end += lstrlenW(end) + 1;
+-                memmove( p + 10, next, end + 1 - next );
++                memmove( p + 9, next, end + 1 - next );
+                 break;
+             }
+         }
+diff --git a/dlls/mshtml/nsio.c b/dlls/mshtml/nsio.c
+index b766c84..f82f79a 100644
+--- a/dlls/mshtml/nsio.c
++++ b/dlls/mshtml/nsio.c
+@@ -3894,8 +3894,8 @@ static nsresult NSAPI nsIOServiceHook_NewURI(nsIIOServiceHook *iface, const nsAC
+     if(is_gecko_special_uri(spec))
+         return NS_SUCCESS_DEFAULT_ACTION;
+ 
+-    if(!strncmp(spec, "ano:", 5))
+-        spec += 5;
++    if(!strncmp(spec, "ano:", 4))
++        spec += 4;
+ 
+     if(aOriginCharset && *aOriginCharset && _strnicmp(aOriginCharset, "utf", 3)) {
+         BSTR charset;
+diff --git a/dlls/ntdll/locale.c b/dlls/ntdll/locale.c
+index 4704e99..38105ec 100644
+--- a/dlls/ntdll/locale.c
++++ b/dlls/ntdll/locale.c
+@@ -432,7 +432,7 @@ void locale_init(void)
+     user_ui_languages = dup_ui_languages( langs, len );
+     if (user_langid == LOCALE_CUSTOM_UNSPECIFIED)
+     {
+-        if (!RtlQueryEnvironmentVariable( NULL, L"ANOUSERLOCALE", 14, locale, ARRAY_SIZE(locale), &size ))
++        if (!RtlQueryEnvironmentVariable( NULL, L"ANOUSERLOCALE", 13, locale, ARRAY_SIZE(locale), &size ))
+             append_ui_lang_lcname( langs, &len, locale );
+     }
+     else append_ui_lang_lcid( langs, &len, user_langid );
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index b5e5fdf..459726f 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -848,7 +848,7 @@ static BOOL host_var_exists( const char *name )
+     for (char **e = environ; *e; e++)
+     {
+         if (!STARTS_WITH( *e, "ANO_HOST_" )) continue;
+-        if (!strncmp( *e + 10, name, end + 1 - name )) return TRUE;
++        if (!strncmp( *e + 9, name, end + 1 - name )) return TRUE;
+     }
+     return FALSE;
+ }
+diff --git a/dlls/setupapi/fakedll.c b/dlls/setupapi/fakedll.c
+index d41904e..f7efb8d 100644
+--- a/dlls/setupapi/fakedll.c
++++ b/dlls/setupapi/fakedll.c
+@@ -790,7 +790,7 @@ static BOOL CALLBACK register_manifest( HMODULE module, const WCHAR *type, WCHAR
+     SIZE_T len;
+     HRSRC rsrc;
+ 
+-    if (IS_INTRESOURCE( res_name ) || wcsncmp( res_name, L"ANO_MANIFEST", 13 )) return TRUE;
++    if (IS_INTRESOURCE( res_name ) || wcsncmp( res_name, L"ANO_MANIFEST", 12 )) return TRUE;
+ 
+     rsrc = FindResourceW( module, res_name, type );
+     manifest = LoadResource( module, rsrc );
+diff --git a/dlls/win32u/freetype.c b/dlls/win32u/freetype.c
+index be970f3..3559631 100644
+--- a/dlls/win32u/freetype.c
++++ b/dlls/win32u/freetype.c
+@@ -770,7 +770,7 @@ static FT_Face new_ft_face( const char *file, void *font_data_ptr, UINT font_dat
+ 
+         /* Ano uses ttfs as an intermediate step in building its bitmap fonts;
+            we don't want to load these. */
+-        if (!memcmp( pOS2->achVendID, "Ano", sizeof(pOS2->achVendID) ))
++        if (!memcmp( pOS2->achVendID, "Ano ", sizeof(pOS2->achVendID) ))
+         {
+             FT_ULong len = 0;
+ 
+diff --git a/dlls/win32u/opentype.c b/dlls/win32u/opentype.c
+index 1e57419..f90c6f0 100644
+--- a/dlls/win32u/opentype.c
++++ b/dlls/win32u/opentype.c
+@@ -666,7 +666,7 @@ BOOL opentype_get_ttc_sfnt_v1( const void *data, size_t size, DWORD index, DWORD
+ 
+     /* Ano uses ttfs as an intermediate step in building its bitmap fonts;
+        we don't want to load these. */
+-    if (!memcmp( tt_os2_v1->achVendID, "Ano", sizeof(tt_os2_v1->achVendID) ) &&
++    if (!memcmp( tt_os2_v1->achVendID, "Ano ", sizeof(tt_os2_v1->achVendID) ) &&
+         opentype_get_table_ptr( data, size, *ttc_sfnt_v1, MS_EBSC_TAG, NULL, NULL ))
+     {
+         TRACE( "ignoring ano bitmap-only sfnt font.\n" );
+diff --git a/programs/ano-boot/ano-boot.c b/programs/ano-boot/ano-boot.c
+index 735f4ca..88e060b 100644
+--- a/programs/ano-boot/ano-boot.c
++++ b/programs/ano-boot/ano-boot.c
+@@ -1627,7 +1627,7 @@ static char* setup_dll_overrides(void)
+         char buf[0x40+20];
+         if (ReadFile(hFile, buf, sizeof(buf), NULL, NULL))
+         {
+-            if (strncmp(buf+0x40, "Ano placeholder DLL", 20) != 0)
++            if (strncmp(buf+0x40, "Ano placeholder DLL", 19) != 0)
+                 overrides[8] = 'd';
+         }
+         CloseHandle(hFile);
+diff --git a/programs/ano-cfg/libraries.c b/programs/ano-cfg/libraries.c
+index a908905..b29b28a 100644
+--- a/programs/ano-cfg/libraries.c
++++ b/programs/ano-cfg/libraries.c
+@@ -205,7 +205,7 @@ static inline BOOL is_builtin_only( const WCHAR *name )
+             !wcscmp( ext, L".tlb" ))
+             return TRUE;
+     }
+-    if (!wcsncmp( name, L"ano", 4 )) return TRUE;
++    if (!wcsncmp( name, L"ano", 3 )) return TRUE;
+     return bsearch( &name, builtin_only, ARRAY_SIZE(builtin_only),
+                     sizeof(builtin_only[0]), compare_dll ) != NULL;
+ }
+diff --git a/programs/ano-dbg/tgt_minidump.c b/programs/ano-dbg/tgt_minidump.c
+index d76a462..17b780a 100644
+--- a/programs/ano-dbg/tgt_minidump.c
++++ b/programs/ano-dbg/tgt_minidump.c
+@@ -475,7 +475,7 @@ static enum dbg_start minidump_do_reload(struct tgt_process_minidump_data* data)
+             const char*     code = (const char*)stream + sizeof(MINIDUMP_SYSTEM_INFO);
+             const DWORD*    wes;
+ 
+-            if (code[0] == 'W' && code[1] == 'I' && code[2] == 'N' && code[3] == 'E' &&
++            if (code[0] == 'A' && code[1] == 'N' && code[2] == 'O' && code[3] == 0 &&
+                 *(wes = (const DWORD*)(code += 4)) >= 3)
+             {
+                 /* assume we have ano extensions */
+diff --git a/tools/makedep.c b/tools/makedep.c
+index 264399e..9f3e5dd 100644
+--- a/tools/makedep.c
++++ b/tools/makedep.c
+@@ -2103,7 +2103,7 @@ static void add_generated_sources( struct makefile *make )
+         }
+         if (!source->file->flags && strendswith( source->name, ".idl" ))
+         {
+-            if (!strncmp( source->name, "ano/", 5 )) continue;
++            if (!strncmp( source->name, "ano/", 4 )) continue;
+             source->file->flags = FLAG_IDL_HEADER | FLAG_INSTALL;
+             add_generated_source( make, replace_extension( source->name, ".idl", ".h" ), NULL, 0 );
+         }
+@@ -2631,7 +2631,7 @@ static void install_header( struct makefile *make, const char *target, const cha
+     bool is_obj = !!obj;
+ 
+     if (!obj) obj = target;
+-    if (!strncmp( obj, "ano/", 5 )) dir = "$(includedir)";
++    if (!strncmp( obj, "ano/", 4 )) dir = "$(includedir)";
+     else if (!strncmp( obj, "msvcrt/", 7 )) dir = "$(includedir)/ano";
+     else dir = "$(includedir)/ano/windows";
+     if ((end = strrchr( obj, '/' ))) dir = strmake( "%s/%.*s", dir, (int)(end - obj), obj );
+@@ -3123,7 +3123,7 @@ static void output_source_h( struct makefile *make, struct incl_file *source, co
+ {
+     if (source->file->flags & FLAG_GENERATED)
+         strarray_add( &make->all_targets[0], source->name );
+-    else if ((source->file->flags & FLAG_INSTALL) || strncmp( source->name, "ano/", 5 ))
++    else if ((source->file->flags & FLAG_INSTALL) || strncmp( source->name, "ano/", 4 ))
+         install_header( make, source->name, NULL );
+ }
+ 

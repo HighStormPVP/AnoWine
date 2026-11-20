@@ -5,6 +5,7 @@
 # scripts/anowine/wine-allowlist.txt as category alias.
 Wine builtin DLL	Ano builtin DLL	PE mark at 0x40: ntdll.dll (loader.c), ano-server (mapping.c), setupapi.dll (fakedll.c)	D3DMetal's PE DLLs (d3d11, d3d12, dxgi)	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
 __wine_unix_call_dispatcher	__ano_unix_call_dispatcher	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_unix_call	__ano_unix_call	ntdll.dll export (ntdll.spec; CW HACK 22435 "Needed by D3DMetal PE DLLs")	D3DMetal's PE DLLs	the engine's own source (ntdll/loader.c, CW HACK 22435); confirm with ano-gptk-wine-names.txt
 __wine_dbg_get_channel_flags	__ano_dbg_get_channel_flags	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
 __wine_dbg_header	__ano_dbg_header	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
 __wine_dbg_output	__ano_dbg_output	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt

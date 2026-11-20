@@ -13,9 +13,12 @@ It renames path names and the contents of every text file. In C-family
 files (CODE_SUFFIXES) a program name is mapped inside string literals and
 where it names a file (winecfg.ico); elsewhere it is an identifier (a debug
 channel such as winedbg) and follows the case rule, so it stays a valid C name.
-A character array ({'w','i','n','e',0}) is renamed as a string. Binary files
-that still say "wine" are listed, not changed. Exit 1 when two paths would
-get the same name or a protected entry never occurs in the tree.
+A character array ({'w','i','n','e',0}) is renamed as a string. URL rules
+ignore case; a gettext string wrapped over lines is joined first, so a URL
+is seen whole. Binary files that still say "wine" are listed, not changed.
+Exit 1 when two paths would get the same name, a protected entry never
+occurs in the tree, or anohq (a host Ano does not own) is left anywhere but
+tests and docs that are not built.
 """
 import argparse
 import os
@@ -40,6 +43,12 @@ CHAR = r"""'(?:\\[\\'"ntr0]|[^'\\\n])'"""
 CHAR_RUN = re.compile(CHAR + r"(?:\s*,\s*" + CHAR + r")+")
 CHAR_ESCAPES = {"\\": "\\", "'": "'", '"': '"', "n": "\n", "t": "\t", "r": "\r", "0": "\0"}
 CHAR_SPELL = {value: "\\" + key for key, value in CHAR_ESCAPES.items() if key != '"'}
+# A gettext string and its continuation lines.
+PO_STRING = re.compile(r'^((?:msgctxt|msgid|msgid_plural|msgstr(?:\[\d+\])?) )"(.*)"\n((?:".*"\n)+)', re.M)
+# anohq would be a host Ano does not own; tests and docs that are not built may say it.
+FOREIGN_HOST = re.compile("anohq", re.I)
+NOT_SHIPPED = re.compile(r"(^|/)(tests|documentation)/|^tools/gitlab/|\.man\.in$|"
+                         r"(^|/)(README[^/]*|MAINTAINERS|\.mailmap|ANNOUNCE[^/]*|AUTHORS)$")
 BINARY_WINE = re.compile(
     b"|".join(re.escape(w.encode(enc)) for w in CASES for enc in ("ascii", "utf-16-le", "utf-16-be")))
 
@@ -108,7 +117,8 @@ def load_rules(protect, mapping: Path) -> Rules:
             pattern = f"(?:https?://)?(?:[A-Za-z0-9-]+\\.)*{escaped}{URL_TAIL}"
         # In code, outside strings, only a file name counts (winecfg.ico).
         file_name = re.compile(pattern + r"(?=\.[A-Za-z])") if kind == "program" else None
-        stages.append((re.compile(pattern), new, file_name))
+        # A host name has no case: WINEHQ.ORG and WineHQ.org are the same host.
+        stages.append((re.compile(pattern, re.I if kind == "url" else 0), new, file_name))
     return Rules(protect=protect_re, protect_texts=texts, stages=stages)
 
 
@@ -187,7 +197,8 @@ def rename_tree(src: Path, rules: Rules) -> Report:
                     report.binary_with_wine.append(rename_path(rel, rules))
                 continue
             text, encoding = _decode(data)
-            new = rename_text(text, rules, code=os.path.splitext(name)[1] in CODE_SUFFIXES)
+            source = join_po_strings(text) if name.endswith((".po", ".pot")) else text
+            new = rename_text(source, rules, code=os.path.splitext(name)[1] in CODE_SUFFIXES)
             if new != text:
                 Path(path).write_bytes(new.encode(encoding))
                 report.changed_files += 1
@@ -212,6 +223,33 @@ def rename_tree(src: Path, rules: Rules) -> Report:
     return report
 
 
+def join_po_strings(text: str) -> str:
+    """Put each gettext string on one line: gettext wraps long strings, and a
+    URL split over two lines would escape the URL rule."""
+    return PO_STRING.sub(lambda m: m.group(1) + '"' + m.group(2)
+                         + "".join(line[1:-1] for line in m.group(3).splitlines()) + '"\n', text)
+
+
+def foreign_hosts(src: Path) -> list:
+    """Lines outside tests and unbuilt docs that name anohq ("rel:line")."""
+    src = Path(src)
+    found = []
+    for dirpath, dirnames, filenames in os.walk(src):
+        dirnames[:] = sorted(d for d in dirnames if d != ".git")
+        for name in sorted(filenames):
+            path = Path(dirpath) / name
+            rel = path.relative_to(src).as_posix()
+            if NOT_SHIPPED.search(rel) or path.is_symlink():
+                continue
+            data = path.read_bytes()
+            if b"\0" in data[:8192]:
+                continue
+            for number, line in enumerate(_decode(data)[0].splitlines(), 1):
+                if FOREIGN_HOST.search(line):
+                    found.append(f"{rel}:{number}")
+    return found
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Rename a Wine source tree by the owner's naming rule.")
     parser.add_argument("src", type=Path)
@@ -227,11 +265,13 @@ def main(argv=None) -> int:
     lines += [f"binary\t{rel}" for rel in report.binary_with_wine]
     lines += [f"conflict\t{c}" for c in report.conflicts]
     lines += [f"unused protected text\t{t}" for t in unused]
+    hosts = foreign_hosts(args.src)
+    lines += [f"foreign host\t{h}" for h in hosts]
     output = "\n".join(lines) + "\n"
     if args.report:
         args.report.write_text(output, encoding="utf-8")
     sys.stdout.write(output)
-    return 1 if report.conflicts or unused else 0
+    return 1 if report.conflicts or unused or hosts else 0
 
 
 if __name__ == "__main__":

@@ -243,11 +243,16 @@ rename_sources() {
     --report "$LOGS/rename.txt" > /dev/null || code=$?
   { grep -v $'^binary\t' "$LOGS/rename.txt" || true; } | sed 's/^/rename: /' | tee -a "$INFO"
   { grep $'^binary\t' "$LOGS/rename.txt" || true; } | cut -f2 | sed 's/^/rename: binary with wine: /'
-  [ "$code" = 0 ] || die "rename_sources.py exit $code: a rule conflicts (see above)"
+  [ "$code" = 0 ] || die "rename_sources.py exit $code: a rule conflict, unused protect entry or foreign host (see above)"
   for patch in "$HERE"/patches/rename/*.patch; do
     git -C "$SRC" apply --verbose "$patch"
     info "rename patch: $(basename "$patch")"
   done
+  # A literal that lost a letter must not keep its old length (0003 fixes the
+  # real ones; length-known.txt lists the numbers that are not lengths).
+  python3 "$HERE/check_lengths.py" "$SRC" --known "$HERE/length-known.txt" > "$LOGS/lengths.txt" \
+    || { cat "$LOGS/lengths.txt" >&2; die "a renamed literal keeps its old length (see above)"; }
+  info "rename: $(tail -n 1 "$LOGS/lengths.txt")"
   rm -rf "$WORK/venv"
   python3 -m venv "$WORK/venv"
   logged fonttools "$WORK/venv/bin/pip" install --quiet "fonttools==$FONTTOOLS_VERSION"

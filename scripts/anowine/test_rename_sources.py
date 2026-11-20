@@ -204,9 +204,9 @@ class RenameTreeTests(unittest.TestCase):
             rules = rules_in(tmp)
             src = Path(tmp) / "src"
             (src / "po").mkdir(parents=True)
-            (src / "po/de.po").write_text(po, encoding="utf-8")
+            (src / "po/de.po").write_bytes(po.encode("utf-8"))  # LF, as in the real tree
             rename_tree(src, rules)
-            self.assertEqual((src / "po/de.po").read_text(encoding="utf-8"),
+            self.assertEqual((src / "po/de.po").read_bytes().decode("utf-8"),
                              '# a comment\n'
                              'msgid "Ano could not find a Gecko package. See https://github.com/HighStormPVP/AnoWine'
                              ' for details."\n'

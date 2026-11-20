@@ -20,6 +20,7 @@ github.com/HighStormPVP/AnoWine	code-only	the repo URL, where Wine's winehq.org 
 # patches/rename/0002-ano-aliases.patch). Provisional until the owner's ano-gptk-wine-names.txt.
 Wine builtin DLL	alias	the PE mark Apple's D3DMetal DLLs carry, accepted beside Ano builtin DLL (aliases.txt; provisional)
 __wine_unix_call_dispatcher	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
+__wine_unix_call	alias	ntdll.dll export D3DMetal's PE DLLs import (CW HACK 22435; aliases.txt)
 __wine_dbg_get_channel_flags	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
 __wine_dbg_header	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
 __wine_dbg_output	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)

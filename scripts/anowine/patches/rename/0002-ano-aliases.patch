@@ -96,6 +96,12 @@
  
  # Version
  @ cdecl ano_get_version()
+@@ -1791,3 +1797,5 @@
+ 
+ # CW HACK 22435
+ @ stdcall __ano_unix_call(int64 long ptr) __ano_unix_call_exported
++# Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt
++@ stdcall __wine_unix_call(int64 long ptr) __ano_unix_call_exported
 --- a/dlls/ntdll/unix/virtual.c
 +++ b/dlls/ntdll/unix/virtual.c
 @@ -844,6 +844,8 @@

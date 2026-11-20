@@ -27,3 +27,4 @@ org/winehq/	io/github/highstormpvp/Ano/	identity
 bugs.winehq.org	https://github.com/HighStormPVP/AnoWine/issues	url
 winehq.org	https://github.com/HighStormPVP/AnoWine	url
 WIne	Ano	text
+WineHQ	Ano	text
