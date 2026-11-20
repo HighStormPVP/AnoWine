@@ -1,0 +1,9 @@
+# Protected text for wine-mono (Plan 3c-2): text<TAB>kind<TAB>reason. See rename-protect.txt.
+WineMono	substring	wine-mono's internal assembly names (decision 7: allowlisted as mono-internal)
+winexe	substring	the C# target kind winexe (Win + exe)
+Winexe	substring	the C# target kind in messages (Win + exe)
+WINEVENT	substring	Windows API WINEVENT_* (Win + event)
+winevent	substring	Windows API winevent names (Win + event)
+winerror	substring	Windows header winerror.h (Win + error)
+Twine	substring	LLVM's Twine class (JRTwine)
+swine	word	English word
