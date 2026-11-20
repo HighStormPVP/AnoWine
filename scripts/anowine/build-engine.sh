@@ -988,7 +988,17 @@ verify_no_wine() {
   local version paths file id ids=""
   version=$("$TOP/bin/ano-loader" --version)
   [[ "$version" == ano-11.19* ]] || die "ano-loader --version says '$version', not ano-11.19"
-  paths=$(find Libraries | grep -i wine || true)
+  # A path may say wine only where the gate's allowlist says so (wine-mono's
+  # assembly files, WineMono.*: decision 7).
+  paths=$( { find Libraries | grep -i wine || true; } | python3 -c '
+import sys
+sys.path.insert(0, sys.argv[1])
+from wine_tokens import load_allowlist, tokens_in_name
+allow = load_allowlist(sys.argv[2])
+for path in sys.stdin.read().splitlines():
+    if any(token not in allow for part in path.split("/") for token in tokens_in_name(part)):
+        print(path)
+' "$HERE" "$HERE/wine-allowlist.txt")
   [ -z "$paths" ] || die "paths with wine: $(head -n 20 <<< "$paths" | tr '\n' ' ')"
   while read -r file; do
     id=$(codesign -dv "$file" 2>&1 | sed -n 's/^Identifier=//p' || true)  # unsigned: no identifier
