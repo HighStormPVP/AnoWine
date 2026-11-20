@@ -1,13 +1,18 @@
 #!/bin/bash
 # check-graphics.sh <Libraries/Ano> <Libraries> <bottle> (Plan 3c-2): every DXVK
 # and DXMT DLL the engine ships loads in the bottle as itself (not the builtin
-# of the same name). tests/graphics/loadtest.c prints LOADED or FAIL per DLL
-# and CREATE <hr> for D3D11CreateDevice, which is reported, not required: a CI
-# runner promises no GPU. One process per folder, so two d3d11.dll never meet.
+# of the same name). tests/graphics/loadtest.c loads them all, then creates a
+# D3D11 device with each d3d11.dll; it prints LOADED or FAIL per DLL and CREATE
+# <hr> (or CRASH) per device. Only loading decides: a CI runner promises no GPU,
+# so devices are reported, and a crash while creating one is a warning. One
+# process per folder, so two d3d11.dll never meet.
+# ANO_GRAPHICS_SETS picks the sets (default "DXVK DXMT"); the check job runs
+# it on the prebuilt DXVK runtime 4.9.0 shipped too, for comparison.
 set -euo pipefail
 ENGINE=$1
 LIBS=$2
 BOTTLE=$3
+SETS=${ANO_GRAPHICS_SETS:-DXVK DXMT}
 HERE=$(cd "$(dirname "$0")" && pwd)
 WORK=$(mktemp -d)
 
@@ -27,7 +32,7 @@ zpath() {  # the bottle's Z: path of a Mac path
 
 fail=0
 run() {  # run <exe> <folder under Libraries> <dll>...
-  local exe=$1 dir=$2 dll code=0
+  local exe=$1 dir=$2 dll path code=0
   local args=()
   shift 2
   for dll in "$@"; do
@@ -43,15 +48,24 @@ run() {  # run <exe> <folder under Libraries> <dll>...
   perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 180 "$ENGINE/bin/ano-loader" "$WORK/$exe" "${args[@]}" \
     > "$WORK/out.txt" 2>&1 || code=$?
   "$ENGINE/bin/ano-server" -k 2> /dev/null || true
-  grep -E '^(LOADED|FAIL|CREATE)|err:|warn:module' "$WORK/out.txt" || true
+  grep -E '^(LOADED|FAIL|CREATE|CRASH) |err:|warn:module:import' "$WORK/out.txt" || true
+  for path in "${args[@]}"; do
+    grep -qxF "LOADED $path" <(tr -d '\r' < "$WORK/out.txt") || { echo "FAIL $path (no LOADED line)"; fail=1; }
+  done
   if [ "$code" != 0 ]; then
-    echo "FAIL $exe in $dir: exit $code$([ "$code" != 142 ] || echo ' (stopped after 180 s)')"
-    fail=1
+    echo "::warning::$exe in $dir: exit $code$([ "$code" != 142 ] || echo ' (stopped after 180 s)') after loading"
   fi
 }
 
-run loadtest64.exe DXVK/x64 d3d10core.dll d3d11.dll
-run loadtest64.exe DXMT/x64 d3d10core.dll d3d11.dll dxgi.dll nvapi64.dll nvngx.dll
-run loadtest32.exe DXVK/x32 d3d10core.dll d3d11.dll dxgi.dll
-run loadtest32.exe DXMT/x32 d3d10core.dll d3d11.dll dxgi.dll
+for set in $SETS; do
+  case $set in
+    DXVK)
+      run loadtest64.exe DXVK/x64 d3d10core.dll d3d11.dll
+      run loadtest32.exe DXVK/x32 d3d10core.dll d3d11.dll dxgi.dll ;;
+    DXMT)
+      run loadtest64.exe DXMT/x64 d3d10core.dll d3d11.dll dxgi.dll nvapi64.dll nvngx.dll
+      run loadtest32.exe DXMT/x32 d3d10core.dll d3d11.dll dxgi.dll ;;
+    *) echo "FAIL unknown set $set"; fail=1 ;;
+  esac
+done
 exit $fail

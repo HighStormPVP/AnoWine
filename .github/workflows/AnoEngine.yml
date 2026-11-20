@@ -336,6 +336,29 @@ jobs:
           scripts/anowine/check-graphics.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/ours/Libraries" \
             "$RUNNER_TEMP/bottle"
 
+      # Plan 3c-2, for comparison only: the prebuilt DXVK runtime 4.9.0 shipped, in
+      # the same bottle (pins from build-engine.sh). A device that fails with both
+      # is the runner, not the rebuild. (The prebuilt one still looks for Wine's
+      # winevulkan.dll by name.)
+      - name: Reference DXVK (prebuilt, as in 4.9.0)
+        if: always() && steps.bottle.outcome == 'success' && !startsWith(inputs.version, '4.')
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          eval "$(grep -E '^DXVK_(VERSION|MAC_URL|MAC_SHA|UP_URL|UP_SHA)=' scripts/anowine/build-engine.sh)"
+          R="$RUNNER_TEMP/refdxvk"
+          mkdir -p "$R/dl" "$R/Libraries/DXVK"
+          curl -fsSL --retry 3 -o "$R/dl/mac.tar.gz" "$DXVK_MAC_URL"
+          curl -fsSL --retry 3 -o "$R/dl/up.tar.gz" "$DXVK_UP_URL"
+          echo "$DXVK_MAC_SHA  $R/dl/mac.tar.gz" | shasum -a 256 -c -
+          echo "$DXVK_UP_SHA  $R/dl/up.tar.gz" | shasum -a 256 -c -
+          tar -xzf "$R/dl/mac.tar.gz" -C "$R/dl"
+          tar -xzf "$R/dl/up.tar.gz" -C "$R/dl"
+          cp -R "$R/dl/dxvk-macOS-async-v$DXVK_VERSION-20230507-repack/." "$R/Libraries/DXVK/"
+          cp "$R/dl/dxvk-$DXVK_VERSION/x32/dxgi.dll" "$R/Libraries/DXVK/x32/dxgi.dll"
+          ANO_GRAPHICS_SETS=DXVK scripts/anowine/check-graphics.sh "$RUNNER_TEMP/ours/Libraries/Ano" \
+            "$R/Libraries" "$RUNNER_TEMP/bottle"
+
       # Plan 3c-2: a bottle as the app makes one, with no DLL overrides: wine-mono
       # installs from the engine and nothing offers a download (a dialog would hang
       # the boot, so it is stopped after ten minutes).
