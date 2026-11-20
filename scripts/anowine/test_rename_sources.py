@@ -33,6 +33,7 @@ MAP = (
     "bugs.winehq.org\thttps://github.com/HighStormPVP/AnoWine/issues\turl\n"
     "winehq.org\thttps://github.com/HighStormPVP/AnoWine\turl\n"
     "WIne\tAno\ttext\n"
+    "WineHQ\tAno\ttext\n"
 )
 
 
@@ -108,6 +109,15 @@ class RenameTextTests(unittest.TestCase):
                          "static const char q[] = {'\\'','A','N','O','D','E','B','U','G','=',0};\n"
                          "static const WCHAR kept[] = {'K','e','r',\n    'n','e','l',0}; switch (c) { case 'w': case 'i': break; }\n")
 
+    def test_urls_in_any_case(self):
+        out = self.r("See WineHQ.org, HTTPS://WWW.WINEHQ.ORG/x and Bugs.WineHQ.org/1")
+        self.assertEqual(out, "See https://github.com/HighStormPVP/AnoWine, https://github.com/HighStormPVP/AnoWine"
+                              " and https://github.com/HighStormPVP/AnoWine/issues")
+
+    def test_winehq_name(self):
+        # The name, not a host: "the WineHQ Wiki" in translations.
+        self.assertEqual(self.r("the WineHQ Wiki"), "the Ano Wiki")
+
     def test_misspelling(self):
         # Translations spell Wine as "WIne" twice; a text entry renames it anywhere.
         self.assertEqual(self.r("mas WIneDbg nun; prefixo do WIne.\\n"), "mas AnoDbg nun; prefixo do Ano.\\n")
@@ -179,6 +189,51 @@ class RenameTreeTests(unittest.TestCase):
             self.assertEqual((src / "src/vulkan/presenter.cpp").read_text(encoding="utf-8"),
                              'GetModuleHandleA("anovulkan.dll");\n')
             self.assertEqual(report.changed_files, 1)
+
+    def test_po_strings_are_renamed_whole(self):
+        # gettext wraps long strings; a URL split over two lines must still be
+        # one URL, and the msgid must stay equal to the renamed resource string.
+        po = ('# a comment\n'
+              'msgid ""\n'
+              '"Wine could not find a Gecko package. See https://"\n'
+              '"gitlab.winehq.org/wine/wine/-/wikis/Gecko for details."\n'
+              'msgstr ""\n'
+              '"Wine konnte kein Gecko finden. Siehe https://gitlab.winehq.org/wine/wine/-/"\n'
+              '"wikis/Gecko für Details."\n')
+        with tempfile.TemporaryDirectory() as tmp:
+            rules = rules_in(tmp)
+            src = Path(tmp) / "src"
+            (src / "po").mkdir(parents=True)
+            (src / "po/de.po").write_text(po, encoding="utf-8")
+            rename_tree(src, rules)
+            self.assertEqual((src / "po/de.po").read_text(encoding="utf-8"),
+                             '# a comment\n'
+                             'msgid "Ano could not find a Gecko package. See https://github.com/HighStormPVP/AnoWine'
+                             ' for details."\n'
+                             'msgstr "Ano konnte kein Gecko finden. Siehe https://github.com/HighStormPVP/AnoWine'
+                             ' für Details."\n')
+
+    def test_foreign_host_fails(self):
+        # Nothing that ships may name anohq, a host Ano does not own. Tests and
+        # docs that are not built (READMEs, man pages) may.
+        with tempfile.TemporaryDirectory() as tmp:
+            rules_in(tmp)
+            src = Path(tmp) / "src"
+            files = {"dlls/x/x.c": 'const char *host = "winehq";\n',
+                     "dlls/x/tests/t.c": 'const char *host = "winehq";\n',
+                     "README.md": "see winehq\n",
+                     "programs/x/x.man.in": "see winehq\n"}
+            for rel, text in files.items():
+                (src / rel).parent.mkdir(parents=True, exist_ok=True)
+                (src / rel).write_text(text, encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, os.path.join(HERE, "rename_sources.py"), str(src),
+                 "--map", str(Path(tmp) / "map.txt")], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("foreign host\tdlls/x/x.c:1", result.stdout)
+            self.assertNotIn("tests/t.c", result.stdout)
+            self.assertNotIn("README", result.stdout)
+            self.assertNotIn("man.in", result.stdout)
 
     def test_collision_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
