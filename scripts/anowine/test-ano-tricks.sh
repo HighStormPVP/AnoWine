@@ -23,12 +23,13 @@ for tool in curl wget aria2c fetch; do
 done
 run() { env -i HOME="$work/home" PATH="$work/bin:/usr/bin:/bin" LANG=C "$@"; }
 
-# 1. The version is upstream's.
+# 1. The version is upstream's (after an "Executing cd" line of its own).
 out=$(run bash "$T" --version 2>&1) || fail "--version exited non-zero: $out"
-case $out in
-  "20260125 - sha256sum: "*) echo "version: $out" ;;
-  *) fail "--version printed: $out" ;;
-esac
+if line=$(printf '%s\n' "$out" | grep '^20260125 - sha256sum: '); then
+  echo "version: $line"
+else
+  fail "--version printed: $out"
+fi
 
 # 2. The verbs the app uses are there; the dropped ones are not.
 run bash "$T" list-all > "$work/list.txt" 2>&1 || fail "list-all exited non-zero: $(tail -5 "$work/list.txt")"
@@ -42,6 +43,8 @@ done
 echo "list-all: $(grep -c '^[a-z0-9_]* ' "$work/list.txt") verbs"
 
 # 3. Sourced as a library: the default cache, and the network paths do nothing.
+# (Read as a library, each verb's metadata has no folder to go to yet: that
+# noise goes to lib.err, shown only if a check fails.)
 cat > "$work/lib.sh" << 'EOF'
 . "$1"
 _W_ano_not_needed=1
@@ -54,9 +57,9 @@ ANOTRICKS_STATS_REPORT=1 anotricks_stats_report
 (anotricks_selfupdate_rollback) > /dev/null 2>&1 && echo "rollback returned 0"
 echo "library: done"
 EOF
-run ANOTRICKS_LIB=1 bash "$work/lib.sh" "$T" > "$work/lib.out" 2>&1 || true
+run ANOTRICKS_LIB=1 bash "$work/lib.sh" "$T" > "$work/lib.out" 2> "$work/lib.err" || true
 cat "$work/lib.out"
-grep -qx "library: done" "$work/lib.out" || fail "sourcing ano-tricks as a library did not finish"
+grep -qx "library: done" "$work/lib.out" || fail "sourcing ano-tricks as a library did not finish: $(tail -5 "$work/lib.err")"
 grep -qx "cache=$work/home/Library/Caches/io.github.highstormpvp.Ano/ano-tricks" "$work/lib.out" \
   || fail "the default cache is not Ano's cache folder"
 if grep -q "returned 0" "$work/lib.out"; then fail "self-update or rollback did not refuse"; fi

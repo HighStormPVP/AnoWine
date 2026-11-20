@@ -28,3 +28,6 @@ bugs.winehq.org	https://github.com/HighStormPVP/AnoWine/issues	url
 winehq.org	https://github.com/HighStormPVP/AnoWine	url
 WIne	Ano	text
 WineHQ	Ano	text
+winetricks	ano-tricks	program
+Winetricks	Ano-tricks	program
+github.com/Winetricks/winetricks	https://github.com/HighStormPVP/AnoWine	url

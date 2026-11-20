@@ -1,0 +1,4 @@
+# Protected text for winetricks (Plan 3c-3): text<TAB>kind<TAB>reason. See rename-protect.txt.
+ifwinexist	word	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist)
+ifWinExist	word	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist)
+winevent	substring	Windows API set api-ms-win-rtcore-ntuser-winevent (Win + event)

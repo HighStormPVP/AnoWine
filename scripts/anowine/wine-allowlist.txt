@@ -1018,3 +1018,7 @@ __imp__WinExec16	not-wine	Windows API WinExec (Win + Exec)
 WinEnterpriseReadonlyControllersSid	not-wine	Windows well-known SID type (Win + Enterprise)
 JRTwine	not-wine	a web crawler's name in mono's browscap.ini (JR + Twine)
 UnsupportedQueryViewInEntityContainerMapping	not-wine	mono System.Data.Entity: View + InEntity
+
+# not-wine: what ano-tricks keeps (Plan 3c-3, make_ano_tricks.py), read by hand.
+ifwinexist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
+ifWinExist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
