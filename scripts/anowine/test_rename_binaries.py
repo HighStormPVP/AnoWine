@@ -332,6 +332,9 @@ class MsiTests(unittest.TestCase):
             self.assertIn(["Manufacturer", "The Ano Project"], msi_rows(msi, "Property"))
             summary = subprocess.run(["msiinfo", "suminfo", str(msi)], capture_output=True, text=True).stdout
             self.assertNotRegex(summary.lower(), "wine")
+            # No stale string either: the database's string pool keeps the old
+            # strings when a table is imported over the old one.
+            self.assertEqual(tokens_in_bytes(msi.read_bytes()), Counter())
             # The cabinet: installutil.exe renamed at the same length, its hash
             # recomputed; machine.config's assembly name is mono-internal.
             out = root / "out"
