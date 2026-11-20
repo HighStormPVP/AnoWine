@@ -47,7 +47,7 @@ jobs:
       - name: Tools
         run: |
           sudo apt-get update -q
-          sudo apt-get install -y -q mingw-w64 meson ninja-build glslang-tools
+          sudo apt-get install -y -q --no-install-recommends g++-mingw-w64-x86-64-win32 g++-mingw-w64-i686-win32 meson ninja-build glslang-tools
       - name: Build
         run: scripts/anowine/build-payloads.sh "$RUNNER_TEMP/payloads"
       - name: Upload the payloads

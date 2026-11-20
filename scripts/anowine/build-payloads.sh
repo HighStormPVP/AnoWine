@@ -67,6 +67,11 @@ dxvk() {
 
 fetch "$DXVK_MAC_URL" "$DXVK_MAC_COMMIT" "$WORK/dxvk-macos"
 fetch "$DXVK_UP_URL" "$DXVK_UP_COMMIT" "$WORK/dxvk"
+# Upstream 1.10.3 predates GCC 13 (patches/dxvk; the macOS branch has the fix).
+for patch in "$HERE"/patches/dxvk/*.patch; do
+  git -C "$WORK/dxvk" apply "$patch"
+  info "dxvk patch: $(basename "$patch")"
+done
 rename "$WORK/dxvk-macos"
 rename "$WORK/dxvk"
 
