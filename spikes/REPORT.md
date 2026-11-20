@@ -239,3 +239,59 @@ rebuilt or renamed. On CI the bottle log warns that `anobth.sys` cannot start (n
 Bluetooth) and that `cxcompatdb.so` is missing; both to be compared with upstream's 4.8.3.
 Risk carried: programs that look for Wine (`wine_get_version`, `Software\Wine`) no longer
 find it.
+
+## Plan 3c-2: DXVK, DXMT and mono
+
+Engine 5.0.0 now carries DXVK and DXMT rebuilt from source and wine-mono renamed in place;
+Gecko is not shipped and nothing offers to download it. Check run 44731014279 (engine of
+build 44714943718): the gate passes over engine and a new bottle (977 distinct tokens, all
+renamed or allowlisted), and every check below is green.
+
+**DXVK** is built on Linux (job `Payloads (Linux)`, `scripts/anowine/build-payloads.sh`,
+about 8 minutes with the package cache): Gcenx's DXVK-macOS `8f1e28de` (the
+v1.10.3-20230507 async repack: d3d10core and d3d11, 64- and 32-bit) and upstream DXVK
+v1.10.3 `e4fd5e9e` for the 32-bit dxgi only (d3d9 and d3d10 off). Both trees are renamed with
+the engine's map before meson (`winevulkan.dll` becomes `anovulkan.dll`, and so on). Ubuntu's
+GCC 13 needed `<cstdint>` in two headers of upstream 1.10.3 (`patches/dxvk/`), the same two
+lines Gcenx's branch carries.
+
+**DXMT** v0.80 `589adb78` (with its nvapi and directx-headers submodules at their pins) is
+built on the Mac against the renamed engine's own build tree, with meson 1.10.0 and LLVM
+15.0.7 `8dfdcc7b` built as DXMT's CI does (cold about 25 minutes, then cached by its commit:
+the DXMT phase takes 5 minutes). Homebrew's GCC 16 needed `<iomanip>` in one file
+(`patches/dxmt/`). Its bridge is `anometal.dll` and `anometal.so` (linked to `anomac.so`); its
+front ends go to `Libraries/DXMT` with the plain DOS stub, as in 4.9.0.
+
+**Graphics in a bottle** (`check-graphics.sh`, every DLL loaded by path as itself, then a
+D3D11 device created; runner GPU: Apple Paravirtual device):
+
+| | 64-bit | 32-bit |
+|---|---|---|
+| DXVK | loads; device created (S_OK) | loads; device creation crashes in Vulkan |
+| DXMT | loads; device created (S_OK) | loads; device created (S_OK) |
+
+The 32-bit DXVK crash is the runner's: the prebuilt DXVK that 4.9.0 ships crashes the same way
+in the same bottle (an A/B step in the check job). DXMT's nvapi64 and nvngx keep DXMT's
+builtin mark, as in 4.9.0, and the app never deploys them.
+
+**wine-mono** 11.3.0 cannot be rebuilt, so it is renamed in place (`rename_binaries.py
+--tree`): the folder `ano-mono-11.3.0`, 238 PE files with every length kept (a path part
+repeats its separator, `wine-mono/` → `ano-mono//`; a NUL-terminated string is padded;
+renamed export tables are sorted again, since Wine finds exports by binary search), and the
+support installer rebuilt as a new MSI (msitools) with the feature `ano_mono`, product
+"Ano Mono Windows Support", manufacturer "The Ano Project", cabinet `anomono-support.cab`
+(its two `installutil.exe` renamed, their hashes recomputed). Its internal assembly names
+(`WineMono.*`) stay, as decision 7 says. A .NET program compiled against the engine's own
+mscorlib runs in the bottle.
+
+**Gecko**: `patches/rename/0004` makes `appwiz.cpl` install an addon only from the engine, a
+registered folder or the cache; asking for Gecko as mshtml does returns at once (before:
+a download dialog that waited). A bottle with no DLL overrides boots without a dialog.
+
+**Allowlist**: 995 entries: not-wine 981, alias 9, license 3, code-only 1, mono-internal 1
+(`WineMono`). Added here: 13 Windows names wine-mono carries (`WinEvent` fields,
+`WINEVENT_*`, `winexe`, `winerror`) and LLVM's `winehprepare`.
+
+**Open**: DXVK and DXMT are rebuilt with newer compilers than the originals (GCC 13 and 16):
+on the runner they behave as the prebuilt ones, but only a game on the owner's Mac proves
+them. The app (3c-4) still names DXMT's bridge `winemetal.dll`.
