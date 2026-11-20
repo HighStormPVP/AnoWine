@@ -8,10 +8,11 @@
 #   DXVK/x32/{d3d10core,d3d11}.dll        the same, 32-bit
 #   DXVK/x32/dxgi.dll                     upstream DXVK 1.10.3: the repack has no
 #                                         dxgi, and 32-bit bottles need DXVK's
+#   mono/ano-mono-11.3.0                  wine-mono, renamed in place
 #
 # Usage: build-payloads.sh <out-dir>
 # Needs (Ubuntu 24.04): git, python3, meson, ninja, mingw-w64 (x86_64 and i686
-# g++, win32 threads), glslangValidator.
+# g++, win32 threads), glslangValidator, msitools, gcab, curl, xz.
 set -Eeuo pipefail
 FAILED=
 trap 'FAILED="line $LINENO: $BASH_COMMAND"' ERR
@@ -23,6 +24,10 @@ DXVK_MAC_URL=https://github.com/Gcenx/DXVK-macOS.git
 DXVK_MAC_COMMIT=8f1e28deed3ad30802f7e1bdff428ec14e6e7817   # v1.10.3-20230507-repack
 DXVK_UP_URL=https://github.com/doitsujin/dxvk.git
 DXVK_UP_COMMIT=e4fd5e9e8d335e8a2c0814829207cbd421f7e40e    # v1.10.3
+# The wine-mono Wine 11.19 asks for (dlls/appwiz.cpl/addons.c), as in build-engine.sh.
+MONO_VERSION=11.3.0
+MONO_SHA=54a1b0111c3fe4b785eae688af94d27e64995707ad648b6fee8000381b80d298
+MONO_URL=https://dl.winehq.org/wine/wine-mono/$MONO_VERSION/wine-mono-$MONO_VERSION-x86.tar.xz
 
 [ -n "${1:-}" ] || die "usage: build-payloads.sh <out-dir>"
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -33,7 +38,7 @@ INFO=$OUT/payloads-info.txt
 : > "$INFO"
 info() { echo "$*" | tee -a "$INFO"; }
 
-for tool in git python3 meson ninja glslangValidator x86_64-w64-mingw32-g++ i686-w64-mingw32-g++; do
+for tool in git python3 meson ninja glslangValidator x86_64-w64-mingw32-g++ i686-w64-mingw32-g++ msiinfo msibuild gcab curl; do
   command -v "$tool" > /dev/null || die "missing tool: $tool"
 done
 info "meson $(meson --version), $(x86_64-w64-mingw32-g++ --version | head -n 1)"
@@ -90,7 +95,25 @@ done
 cp "$WORK/install-up/x32/dxgi.dll" "$OUT/DXVK/x32/"
 info "DXVK: $(cd "$OUT/DXVK" && find . -name '*.dll' | sort | tr '\n' ' ')"
 
+# wine-mono cannot be rebuilt here (decision 7: names only): its tree is
+# renamed in place, PE files at the same length and its support MSI and cabinet
+# repacked (rename_binaries.py --tree).
+curl -fsSL --retry 3 -o "$WORK/mono.tar.xz" "$MONO_URL"
+echo "$MONO_SHA  $WORK/mono.tar.xz" | sha256sum -c - > /dev/null || die "wine-mono does not match its SHA-256 pin"
+mkdir -p "$WORK/mono"
+tar -xJf "$WORK/mono.tar.xz" -C "$WORK/mono"
+python3 "$HERE/rename_binaries.py" --protect "$HERE/rename-protect-mono.txt" --map "$HERE/rename-map.txt" \
+  --tree "$WORK/mono" > "$WORK/mono-rename.txt" 2>&1 || { tail -n 40 "$WORK/mono-rename.txt" >&2; die "the rename of wine-mono failed"; }
+[ -d "$WORK/mono/ano-mono-$MONO_VERSION" ] || die "no ano-mono-$MONO_VERSION after the rename"
+rm -rf "$OUT/mono"
+mkdir -p "$OUT/mono"
+mv "$WORK/mono/ano-mono-$MONO_VERSION" "$OUT/mono/"
+info "mono: $(head -n 2 "$WORK/mono-rename.txt" | tr '\n' ' ')$(grep -c 'renamed in place' "$WORK/mono-rename.txt") PE files in place"
+grep -E 'table |cabinet ' "$WORK/mono-rename.txt" | sed 's/^.*: /mono: /' | tee -a "$INFO"
+
 # Nothing that says wine may leave this script (the engine's gate checks again).
-python3 "$HERE/wine_tokens.py" "$OUT/DXVK" --allowlist "$HERE/wine-allowlist.txt" --out "$WORK/tokens.tsv" --gate \
-  > "$WORK/gate.txt" || { cat "$WORK/gate.txt" >&2; die "DXVK still says wine (above)"; }
-info "DXVK: $(tail -n 1 "$WORK/gate.txt")"
+for part in DXVK mono; do
+  python3 "$HERE/wine_tokens.py" "$OUT/$part" --allowlist "$HERE/wine-allowlist.txt" --out "$WORK/$part-tokens.tsv" \
+    --gate > "$WORK/$part-gate.txt" || { cat "$WORK/$part-gate.txt" >&2; die "$part still says wine (above)"; }
+  info "$part: $(tail -n 1 "$WORK/$part-gate.txt")"
+done

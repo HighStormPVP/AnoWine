@@ -494,6 +494,13 @@ EOF
   [ -d "${ANO_PAYLOADS:-}/DXVK" ] || die "no DXVK in ANO_PAYLOADS='${ANO_PAYLOADS:-}' (run build-payloads.sh)"
   mkdir -p Libraries/DXVK
   cp -R "$ANO_PAYLOADS/DXVK/." Libraries/DXVK/
+  # wine-mono, renamed in place (build-payloads.sh): mscoree looks for
+  # share/ano/mono/ano-mono-<the version addons.c names>.
+  local mono
+  mono=$(sed -n 's/^#define MONO_VERSION "\(.*\)"/\1/p' "$SRC/dlls/appwiz.cpl/addons.c")
+  [ -d "$ANO_PAYLOADS/mono/ano-mono-$mono" ] || die "no ano-mono-$mono in ANO_PAYLOADS (the engine asks for $mono)"
+  mkdir -p "$TOP/share/$MOD/mono"
+  cp -R "$ANO_PAYLOADS/mono/ano-mono-$mono" "$TOP/share/$MOD/mono/"
   # DXMT (build_dxmt): the anometal bridge is a builtin; the front ends go to
   # the per-bottle payload, like DXVK, with the ordinary DOS stub.
   local dxmt="$WORK/dxmt/install" arch dll
@@ -948,6 +955,8 @@ PY
     [ -f "$m/x86_64-windows/anometal.dll" ] && [ -f "$m/i386-windows/anometal.dll" ] || die "no anometal.dll"
     deps=$(otool -L "$m/x86_64-unix/anometal.so")
     grep -q '@rpath/anomac.so' <<< "$deps" || die "anometal.so does not link anomac.so"
+    ls "$w"/share/$MOD/mono/ano-mono-*/lib/mono/4.5/mscorlib.dll > /dev/null 2>&1 \
+      || die "no renamed wine-mono in share/$MOD/mono (a .NET program would ask for a download)"
   fi
   [ -d "$w/lib/external" ] || die "no lib/external for the Game Porting Toolkit"
   for dll in d3d11 dxgi d3d10core; do
