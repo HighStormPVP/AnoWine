@@ -197,8 +197,9 @@ def rename_msi(msi: Path, rules) -> list:
         for name, text in tables.items():
             lines = text.splitlines()
             if name == "_ForceCodepage":
-                if lines[0].split("\t")[0] != "0":
-                    raise ValueError(f"{msi.name}: codepage {lines[0].split()[0]} is not supported")
+                codepage = (lines[0].split("\t")[0] if lines else "").strip() or "0"
+                if codepage != "0":
+                    raise ValueError(f"{msi.name}: codepage {codepage} is not supported")
                 continue  # a new database's codepage is 0 too
             columns, types = lines[0].split("\t"), lines[1].split("\t")
             if any(kind[:1] in "vV" for kind in types):
