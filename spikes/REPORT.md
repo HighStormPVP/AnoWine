@@ -185,3 +185,48 @@ Wine's Windows half 316,716 (1,579 files), Gecko 9,600, wine-mono 3,799, Wine's 
 allowlisted (`not-wine`: 811 LLVM `Twine` symbols in DXMT, 91 Windows `WinE…` names, 28
 words) and 289 refer to Wine. For Plan 3c: `winecx` is the source folder, baked into 1,033
 files through `__FILE__`, so the renamed tree is built in a folder without "wine".
+
+## Plan 3c-1: the engine without wine
+
+Engine 5.0.0 (`build-engine.sh`, `version` 5.0.0) is Wine 11.19 + CrossOver (the tree Plan 3b
+reproduced) renamed by `scripts/anowine/rename_sources.py` after the patches and before
+configure, built in `$RUNNER_TEMP/ano-engine/ano-src` with prefix `/opt/ano`, laid out as
+`Libraries/Ano` (`bin/ano-loader` → `lib/ano/x86_64-unix/ano-core`, `bin/ano-server`,
+`lib/ano`, `share/ano` with an LGPL `NOTICES`) and `Libraries/AnoRuntimeVersion.plist`.
+DXVK, DXMT and wine-mono are not in it yet (Plan 3c-2); Gecko is dropped.
+
+**The rename** of the pinned tree: 183 paths, 4,917 text files, 34 binary files listed (30
+fonts, ICU data, pidgen's `bink.bin`, two test scripts). Rules: 16 protected entries (10
+Windows names such as `winerror` matched anywhere, 3 English words, 3 license phrases), 20
+map entries (13 programs `ano-…`, 4 reverse-DNS identities, 2 URL rules to the repo, 1
+misspelling). Fonts and `bink.bin` are renamed in place by `rename_binaries.py` (fontTools
+4.57.0); MoltenVK's copy of the SPIR-V tool table ("Wine VKD3D Shader Compiler") is renamed
+in place too. Things the plain text rule missed, each found by a build: a program name used
+as a C identifier (`WINE_DECLARE_DEBUG_CHANNEL(winedbg)` must become `anodbg`, not
+`ano-dbg`); strings Wine spells as character arrays (`{'w','i','n','e','b','o','o','t',…}`:
+48, among them the boot program ntdll starts); two translations that write "WIne".
+
+**The gate** (`wine_tokens.py --gate` over the engine and a new bottle): before the rename
+41,653 distinct tokens (Plan 3b); after it 123 distinct tokens (726 occurrences), every one renamed or allowlisted (build
+run 44649189634, gate green). The allowlist has 979 entries: 967
+`not-wine` (Windows and LLVM names, English words, ICU's Unicode names such as "B131 WINE"
+as phrases so a bare WINE still fails), 8 `alias`, 3 `license`, 1 `code-only` (the repo URL).
+
+**Aliases** (`scripts/anowine/aliases.txt`, `patches/rename/0002-ano-aliases.patch`), all
+provisional until the owner's `ano-gptk-wine-names.txt`: the "Wine builtin DLL" mark is
+accepted beside Ano's (ntdll's loader, the server, setupapi), ntdll.dll exports
+`__wine_unix_call_dispatcher` and four `__wine_dbg_*` names, and ntdll.so falls back to
+`__wine_unix_call_funcs` and its wow64 table. `check-aliases.sh` proves it with a stand-in
+for D3DMetal (a DLL with the old mark and imports, a Mac half with the old table):
+`alias_call(21) = 42`. The mark is read through a volatile pointer, or the compiler folds
+it into instructions (`xor eax,'Wine'`) where the gate cannot tell it from a real "Wine".
+
+**Build**: 2,034 s on a warm compiler cache (build 7; make 740 s in build 3). Plan 3b's 4.8.3 still reproduces
+(re-run 44643236968: 0 different, 0 unexplained interface).
+
+**For Plan 3c-2 and later**: the bottle is booted with `mscoree` and `mshtml` disabled until
+mono is renamed and Gecko's download dialog is gone; DXVK, DXMT and wine-mono come back
+rebuilt or renamed. On CI the bottle log warns that `anobth.sys` cannot start (no
+Bluetooth) and that `cxcompatdb.so` is missing; both to be compared with upstream's 4.8.3.
+Risk carried: programs that look for Wine (`wine_get_version`, `Software\Wine`) no longer
+find it.
