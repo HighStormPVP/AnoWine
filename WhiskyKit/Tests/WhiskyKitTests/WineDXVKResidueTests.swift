@@ -30,9 +30,9 @@ final class WineDXVKResidueTests: XCTestCase {
         Data(count: 0x40) + Data(tag.utf8) + Data(count: 16)
     }
 
-    /// A PE stub carrying winebuild's "Wine builtin DLL" signature at 0x40.
+    /// A PE stub carrying the engine's builtin mark at 0x40.
     private func builtinFake(_ tag: String) -> Data {
-        Data(count: 0x40) + Data("Wine builtin DLL".utf8) + Data(tag.utf8)
+        Data(count: 0x40) + anoBuiltinMark + Data(tag.utf8)
     }
 
     override func setUpWithError() throws {
@@ -132,7 +132,7 @@ final class WineDXVKResidueTests: XCTestCase {
         )
 
         XCTAssertTrue(exists(dxgi("system32")))
-        XCTAssertNotEqual(try markerWindow(dxgi("system32")), Data("Wine builtin DLL".utf8))
+        XCTAssertNotEqual(try markerWindow(dxgi("system32")), anoBuiltinMark)
         XCTAssertTrue(try Wine.isNativePE(dxgi("system32")))
     }
 
@@ -335,7 +335,7 @@ final class WineDXVKResidueTests: XCTestCase {
     private func makeRuntime() throws -> URL {
         let root = tempDir.appending(path: "runtime")
         for arch in ["x86_64-windows", "i386-windows"] {
-            let dir = root.appending(path: "Wine/lib/wine/\(arch)")
+            let dir = root.appending(path: "Ano/lib/ano/\(arch)")
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try builtinFake("builtin-\(arch)").write(to: dir.appending(path: "dxgi.dll"))
         }
@@ -352,11 +352,11 @@ final class WineDXVKResidueTests: XCTestCase {
     /// this runtime, so `WineD3DSource` resolves dxgi to the stored original.
     private func makeGPTKRuntime() throws -> URL {
         let root = try makeRuntime()
-        let forwarder = builtinFake("gptk-forwarder")
-        let storePE = store.appending(path: "lib/wine/x86_64-windows")
+        let forwarder = fakePE(builtin: true) + Data("gptk-forwarder".utf8)
+        let storePE = store.appending(path: "lib/ano/x86_64-windows")
         try FileManager.default.createDirectory(at: storePE, withIntermediateDirectories: true)
         try forwarder.write(to: storePE.appending(path: "dxgi.dll"))
-        try forwarder.write(to: root.appending(path: "Wine/lib/wine/x86_64-windows/dxgi.dll"))
+        try forwarder.write(to: root.appending(path: "Ano/lib/ano/x86_64-windows/dxgi.dll"))
         try writeRuntimeVersion(at: root, 11, 19, 0)
         try FileManager.default.createDirectory(
             at: store.appending(path: "originals"), withIntermediateDirectories: true

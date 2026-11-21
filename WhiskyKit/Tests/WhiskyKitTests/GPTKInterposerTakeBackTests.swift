@@ -170,7 +170,7 @@ struct GPTKInterposerTakeBackTests {
         let expected: Data?
         if storeDeployed {
             (store, runtime) = try fixture.makePreGateDeploy(version: "3.0")
-            expected = try Data(contentsOf: store.appending(path: "lib").appending(path: "wine")
+            expected = try Data(contentsOf: store.appending(path: "lib").appending(path: "ano")
                 .appending(path: "x86_64-windows").appending(path: videoProcessor.slotName))
         } else {
             store = fixture.tempDir.appending(path: "empty-store")

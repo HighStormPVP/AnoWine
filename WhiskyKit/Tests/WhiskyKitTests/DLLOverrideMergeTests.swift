@@ -100,7 +100,7 @@ struct DLLOverrideMergeTests {
         #expect(overrides["d3d11"] == "b")
         #expect(overrides["xaudio2_7"] == "n")
         #expect(overrides["dinput8"] == "n")
-        #expect(overrides["winemetal"] == "b", "the rest of the DXMT preset is untouched")
+        #expect(overrides["anometal"] == "b", "the rest of the DXMT preset is untouched")
     }
 
     @Test("A program's value beats its own backend override and its structured overrides")

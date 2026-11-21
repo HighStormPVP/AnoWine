@@ -33,9 +33,9 @@ final class ManagedPresetTests: XCTestCase {
     /// none of them.
     func testDXMTBackendContributesTheDXMTPreset() {
         let stock = DLLOverrideResolver.managedPreset(for: .dxmt, builtinD3D12IsD3DMetal: false)
-        XCTAssertEqual(stock.map(\.dllName).sorted(), ["d3d10core", "d3d11", "dxgi", "winemetal"])
+        XCTAssertEqual(stock.map(\.dllName).sorted(), ["d3d10core", "d3d11", "dxgi", "anometal"])
         let gptk = DLLOverrideResolver.managedPreset(for: .dxmt, builtinD3D12IsD3DMetal: true)
-        XCTAssertEqual(gptk.map(\.dllName).sorted(), ["d3d10core", "d3d11", "d3d12", "dxgi", "winemetal"])
+        XCTAssertEqual(gptk.map(\.dllName).sorted(), ["d3d10core", "d3d11", "d3d12", "dxgi", "anometal"])
     }
 
     /// D3DMetal and WineD3D both run on Wine's builtin D3D and pick between

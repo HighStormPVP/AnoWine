@@ -56,7 +56,7 @@ struct GPTKMetalFXTests {
 
         #expect(GPTKImporter.isMetalFXBridgeInstalled(inLibraryFolder: runtime, usingStore: store))
         // the filename Apple ships is not the name the loader will accept
-        let shipped = runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        let shipped = runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-windows").appending(path: GPTKImporter.metalFXBridgeSourceName)
         #expect(!FileManager.default.fileExists(atPath: shipped.path(percentEncoded: false)))
 

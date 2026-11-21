@@ -205,6 +205,6 @@ struct D3DMetalReadinessTests {
             "gptkCapable": true
         ]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
-        try data.write(to: libraryFolder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist"))
+        try data.write(to: libraryFolder.appending(path: "AnoRuntimeVersion").appendingPathExtension("plist"))
     }
 }

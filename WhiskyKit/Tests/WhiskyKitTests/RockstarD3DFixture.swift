@@ -101,9 +101,9 @@ final class RockstarD3DFixture {
         }
     }
 
-    /// Wine's own builtin of `dll`: marked, importing wined3d, tagged.
+    /// The engine's own builtin of `dll`: marked, importing anod3d, tagged.
     static func wineBytes(_ dll: String, tag: String = "") -> Data {
-        var data = fakePE(builtin: true)
+        var data = fakePE(builtin: true, mark: anoBuiltinMark)
         data.append(wined3dImport)
         data.append(Data("wine \(dll)\(tag)".utf8))
         return data
@@ -113,12 +113,12 @@ final class RockstarD3DFixture {
     /// `d3d11` and `dxgi` slots, Wine's own in the store's `originals/`,
     /// stamped for ``engine``.
     func makeRuntime(originalsTag: String = "") throws {
-        let wineLib = library.appending(path: "Wine/lib")
-        let peDir = wineLib.appending(path: "wine/x86_64-windows")
-        for dir in [peDir, wineLib.appending(path: "wine/x86_64-unix"), wineLib.appending(path: "external")] {
+        let wineLib = library.appending(path: "Ano/lib")
+        let peDir = wineLib.appending(path: "ano/x86_64-windows")
+        for dir in [peDir, wineLib.appending(path: "ano/x86_64-unix"), wineLib.appending(path: "external")] {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         }
-        try Data("bridge".utf8).write(to: wineLib.appending(path: "wine/x86_64-unix/dxgi.so"))
+        try Data("bridge".utf8).write(to: wineLib.appending(path: "ano/x86_64-unix/dxgi.so"))
         try Data("dylib".utf8).write(to: wineLib.appending(path: "external/libd3dshared.dylib"))
         for dll in ["d3d11.dll", "dxgi.dll"] {
             var forwarder = fakePE(builtin: true)
@@ -154,8 +154,8 @@ final class RockstarD3DFixture {
     /// The prefix's Wine placeholders, which DXVK's files go over.
     private func makePrefix() throws {
         for dll in ["d3d11.dll", "dxgi.dll", "d3d10core.dll", "d3d9.dll"] {
-            try fakePE(builtin: true).write(to: system32(dll))
-            try fakePE(builtin: true).write(to: syswow64(dll))
+            try fakePE(builtin: true, mark: anoBuiltinMark).write(to: system32(dll))
+            try fakePE(builtin: true, mark: anoBuiltinMark).write(to: syswow64(dll))
         }
     }
 

@@ -36,15 +36,15 @@ final class NVAPIBridgeTests: XCTestCase {
     /// A store holding Apple's NVAPI, and a library tree holding Wine's placeholder.
     private func makeTree(placeholder: String = "wine placeholder") throws -> (store: URL, folder: URL) {
         let store = root.appending(path: "store")
-        let storePE = store.appending(path: "lib").appending(path: "wine").appending(path: "x86_64-windows")
+        let storePE = store.appending(path: "lib").appending(path: "ano").appending(path: "x86_64-windows")
         try FileManager.default.createDirectory(at: storePE, withIntermediateDirectories: true)
         try "apple nvapi".write(
             to: storePE.appending(path: GPTKImporter.nvapiBridgeName), atomically: true, encoding: .utf8
         )
 
         let folder = root.appending(path: "Libraries")
-        let treePE = folder.appending(path: "Wine").appending(path: "lib")
-            .appending(path: "wine").appending(path: "x86_64-windows")
+        let treePE = folder.appending(path: "Ano").appending(path: "lib")
+            .appending(path: "ano").appending(path: "x86_64-windows")
         try FileManager.default.createDirectory(at: treePE, withIntermediateDirectories: true)
         try placeholder.write(
             to: treePE.appending(path: GPTKImporter.nvapiBridgeName), atomically: true, encoding: .utf8

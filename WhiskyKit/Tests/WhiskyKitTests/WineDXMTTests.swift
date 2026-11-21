@@ -26,9 +26,9 @@ final class WineDXMTTests: XCTestCase {
 
     private let trio = ["d3d11.dll", "dxgi.dll", "d3d10core.dll"]
     /// Everything DXMT deploys into the prefix: the native trio + the
-    /// builtin-marked `winemetal.dll` redirect.
+    /// builtin-marked `anometal.dll` redirect.
     private var deployed: [String] {
-        trio + ["winemetal.dll"]
+        trio + ["anometal.dll"]
     }
 
     /// A markerless (native) PE stub whose 16-byte window at 0x40 is *not* the
@@ -40,9 +40,9 @@ final class WineDXMTTests: XCTestCase {
         Data(count: 0x40) + Data(tag.utf8) + Data(count: 16)
     }
 
-    /// A PE stub carrying winebuild's "Wine builtin DLL" signature at 0x40.
+    /// A PE stub carrying the engine's builtin mark at 0x40.
     private func builtinFake(_ tag: String) -> Data {
-        Data(count: 0x40) + Data("Wine builtin DLL".utf8) + Data(tag.utf8)
+        Data(count: 0x40) + anoBuiltinMark + Data(tag.utf8)
     }
 
     override func setUpWithError() throws {
@@ -51,14 +51,14 @@ final class WineDXMTTests: XCTestCase {
         prefixRoot = tempDir.appending(path: "bottle")
 
         // DXMT payload as shipped by the native-variant runtime: native trio +
-        // builtin-marked winemetal in both arches; NVIDIA extras in x64.
+        // builtin-marked anometal in both arches; NVIDIA extras in x64.
         for (arch, extras) in [("x64", ["nvapi64.dll", "nvngx.dll"]), ("x32", [])] {
             let dir = payloadRoot.appending(path: arch)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             for name in trio + extras {
                 try nativeFake("dxmt-\(arch)-\(name)").write(to: dir.appending(path: name))
             }
-            try builtinFake("dxmt-\(arch)-winemetal.dll").write(to: dir.appending(path: "winemetal.dll"))
+            try builtinFake("dxmt-\(arch)-anometal.dll").write(to: dir.appending(path: "anometal.dll"))
         }
 
         // Prefix with fakedlls in system32 and an existing (empty) syswow64.
@@ -92,11 +92,11 @@ final class WineDXMTTests: XCTestCase {
         FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
     }
 
-    func testTrioAndWinemetalDeployedNativeIntoBothArches() throws {
+    func testTrioAndAnometalDeployedNativeIntoBothArches() throws {
         try Wine.enableDXMT(payloadRoot: payloadRoot, prefixRoot: prefixRoot)
 
         for name in deployed {
-            // 64-bit: replaces the fakedll trio / copies winemetal in.
+            // 64-bit: replaces the fakedll trio / copies anometal in.
             XCTAssertEqual(
                 try data(system32(name)), try data(payloadRoot.appending(path: "x64").appending(path: name)),
                 "\(name) should be deployed from the x64 payload into system32"
@@ -113,7 +113,7 @@ final class WineDXMTTests: XCTestCase {
     func testNvidiaExtrasNeverEnterThePrefix() throws {
         try Wine.enableDXMT(payloadRoot: payloadRoot, prefixRoot: prefixRoot)
 
-        // winemetal IS deployed (it backs the trio's import); nvapi64/nvngx are
+        // anometal IS deployed (it backs the trio's import); nvapi64/nvngx are
         // deliberately quarantined — DXMT's NVIDIA spoofing is out of scope.
         for name in ["nvapi64.dll", "nvngx.dll"] {
             XCTAssertFalse(exists(system32(name)), "\(name) must not be installed into system32")
@@ -121,15 +121,15 @@ final class WineDXMTTests: XCTestCase {
         }
     }
 
-    func testWinemetalIsDeployedIntoThePrefix() throws {
-        // The trio imports winemetal.dll by name; the prefix needs the
-        // builtin-marked redirect so that import resolves to the lib/wine builtin.
+    func testAnometalIsDeployedIntoThePrefix() throws {
+        // The trio imports anometal.dll by name; the prefix needs the
+        // builtin-marked redirect so that import resolves to the lib/ano builtin.
         try Wine.enableDXMT(payloadRoot: payloadRoot, prefixRoot: prefixRoot)
 
-        XCTAssertTrue(exists(system32("winemetal.dll")), "winemetal.dll must be present in system32")
+        XCTAssertTrue(exists(system32("anometal.dll")), "anometal.dll must be present in system32")
         XCTAssertEqual(
-            try data(system32("winemetal.dll")),
-            try data(payloadRoot.appending(path: "x64").appending(path: "winemetal.dll"))
+            try data(system32("anometal.dll")),
+            try data(payloadRoot.appending(path: "x64").appending(path: "anometal.dll"))
         )
     }
 
@@ -144,8 +144,8 @@ final class WineDXMTTests: XCTestCase {
     }
 
     func testBuiltinMarkedTrioRejectedAndPrefixUntouched() throws {
-        // An older (builtin-variant) runtime: the trio carries the "Wine builtin
-        // DLL" marker. Deploying it would be silently ignored by the loader in
+        // An older (builtin-variant) runtime: the trio carries the builtin
+        // marker. Deploying it would be silently ignored by the loader in
         // favor of wined3d, so enable must refuse and leave the prefix untouched
         // rather than launch a bottle that isn't really using DXMT.
         try builtinFake("builtin-x64-d3d11.dll")
@@ -200,6 +200,32 @@ final class WineDXMTTests: XCTestCase {
 
         XCTAssertTrue(try Wine.isNativePE(native))
         XCTAssertFalse(try Wine.isNativePE(builtin))
+    }
+
+    /// The engine marks its own DLLs "Ano builtin DLL" (and a NUL); Apple's
+    /// D3DMetal DLLs keep Wine's mark, which the engine still loads as builtin.
+    /// Either is a builtin, and nothing else in those 16 bytes is.
+    func testEitherBuiltinMarkIsBuiltin() throws {
+        var unterminated = Data("Ano builtin DLL".utf8)
+        unterminated.append(Data("x".utf8))
+        var other = Data("Foo builtin DLL".utf8)
+        other.append(Data(count: 1))
+        let marks: [String: (mark: Data, isBuiltin: Bool)] = [
+            "ano": (anoBuiltinMark, true),
+            "apple": (appleBuiltinMark, true),
+            "ano-unterminated": (unterminated, false),
+            "other": (other, false)
+        ]
+        for (name, entry) in marks {
+            var file = Data(count: 0x40)
+            file.append(entry.mark)
+            file.append(Data("tail".utf8))
+            let url = tempDir.appending(path: "\(name).dll")
+            try file.write(to: url)
+
+            XCTAssertEqual(try Wine.isNativePE(url), !entry.isBuiltin, name)
+            XCTAssertEqual(Wine.carriesBuiltinMarker(url), entry.isBuiltin, name)
+        }
     }
 
     func testShortFileIsTreatedAsNotNative() throws {

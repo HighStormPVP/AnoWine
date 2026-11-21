@@ -159,13 +159,13 @@ final class DLLOverrideTests: XCTestCase {
     // MARK: - DXMT Preset
 
     func testDXMTPresetReturnsCorrectEntries() {
-        // The D3D translation trio loads native from the prefix; winemetal must
+        // The D3D translation trio loads native from the prefix; anometal must
         // stay builtin because its unixlib half only binds for builtin loads.
         let translation: [String: DLLOverrideMode] = [
             "dxgi": .nativeThenBuiltin,
             "d3d10core": .nativeThenBuiltin,
             "d3d11": .nativeThenBuiltin,
-            "winemetal": .builtin
+            "anometal": .builtin
         ]
         for builtinD3D12IsD3DMetal in [false, true] {
             let preset = DLLOverrideResolver.dxmtPreset(builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal)
@@ -177,8 +177,8 @@ final class DLLOverrideTests: XCTestCase {
 
     func testDXMTPresetResolvesToPinnedOverrideString() {
         for (builtinD3D12IsD3DMetal, expected) in [
-            (false, "d3d10core=n,b;d3d11=n,b;dxgi=n,b;winemetal=b"),
-            (true, "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;winemetal=b")
+            (false, "d3d10core=n,b;d3d11=n,b;dxgi=n,b;anometal=b"),
+            (true, "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;anometal=b")
         ] {
             let preset = DLLOverrideResolver.dxmtPreset(builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal)
             let resolver = DLLOverrideResolver(
@@ -296,10 +296,10 @@ final class DLLOverrideTests: XCTestCase {
         bottle.settings.graphicsBackend = .dxmt
 
         let stock = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: false)
-        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;dxgi=n,b;anometal=b")
 
         let gptk = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: true)
-        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;anometal=b")
     }
 
     /// The launch composition `runProgram` uses. A bottle on DXMT, which is what
@@ -318,12 +318,12 @@ final class DLLOverrideTests: XCTestCase {
         let stock = Wine.constructWineEnvironment(
             for: bottle, programOverrides: steamPin, builtinD3D12IsD3DMetal: false
         )
-        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b;anometal=b")
 
         let gptk = Wine.constructWineEnvironment(
             for: bottle, programOverrides: steamPin, builtinD3D12IsD3DMetal: true
         )
-        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b;anometal=b")
     }
 
     /// Custom entries keep the precedence they had: the bottle's beats the
@@ -337,7 +337,7 @@ final class DLLOverrideTests: XCTestCase {
 
         bottle.settings.dllOverrides = [DLLOverrideEntry(dllName: "d3d12", mode: .builtin)]
         let direct = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: true)
-        XCTAssertEqual(direct["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(direct["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=b;dxgi=n,b;anometal=b")
 
         bottle.settings.dllOverrides = []
         var gameUnderSteam = ProgramOverrides()
@@ -346,7 +346,7 @@ final class DLLOverrideTests: XCTestCase {
         let steam = Wine.constructWineEnvironment(
             for: bottle, programOverrides: gameUnderSteam, builtinD3D12IsD3DMetal: true
         )
-        XCTAssertEqual(steam["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=b;d3d9=n,b;dxgi=n,b;winemetal=b")
+        XCTAssertEqual(steam["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=b;d3d9=n,b;dxgi=n,b;anometal=b")
     }
 
     @MainActor

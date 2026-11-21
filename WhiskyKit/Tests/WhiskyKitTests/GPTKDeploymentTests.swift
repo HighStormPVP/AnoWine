@@ -42,18 +42,45 @@ struct GPTKDeploymentTests {
         let backupData = try Data(contentsOf: backup)
         #expect(backupData.suffix(13) == Data("wine original".utf8))
 
-        let wineLib = runtime.appending(path: "Wine").appending(path: "lib")
-        let deployed = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
+        let wineLib = runtime.appending(path: "Ano").appending(path: "lib")
+        let deployed = wineLib.appending(path: "ano").appending(path: "x86_64-windows")
             .appending(path: "dxgi.dll")
         #expect(FileManager.default.fileExists(atPath: deployed.path(percentEncoded: false)))
         #expect(GPTKImporter.isDeployed(inLibraryFolder: runtime))
 
-        let link = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+        let link = wineLib.appending(path: "ano").appending(path: "x86_64-unix")
             .appending(path: "d3d12.so")
         let destination = try FileManager.default.destinationOfSymbolicLink(
             atPath: link.path(percentEncoded: false)
         )
         #expect(destination == GPTKImporter.unixLinkDestination)
+    }
+
+    @Test("Deploy writes into the engine's folders, none named after Wine")
+    func deployUsesTheEnginesLayout() throws {
+        let store = try makeImportedStore(in: tempDir)
+        try makeStoreMetalFXBridge(inStore: store)
+        let runtime = tempDir.appending(path: "Libraries")
+        try makeRuntime(at: runtime)
+
+        try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
+
+        func path(_ url: URL) -> String {
+            url.path(percentEncoded: false)
+        }
+        let lib = runtime.appending(path: "Ano").appending(path: "lib")
+        let fileManager = FileManager.default
+        #expect(fileManager.fileExists(atPath: path(lib.appending(path: "external/libd3dshared.dylib"))))
+        #expect(fileManager.fileExists(atPath: path(runtimeModuleDir(runtime).appending(path: "nvngx.dll"))))
+        #expect(path(GPTKImporter.metalFXBridgePE(inLibraryFolder: runtime))
+            == path(runtimeModuleDir(runtime).appending(path: "nvngx.dll")))
+        #expect(path(GPTKImporter.nvapiBridgePE(inLibraryFolder: runtime))
+            == path(runtimeModuleDir(runtime).appending(path: "nvapi64.dll")))
+        #expect(path(GPTKImporter.shim(for: GPTKImporter.dxgiVersionInterposer, inLibraryFolder: runtime))
+            == path(lib.appending(path: "gptk-video/dxgishim.dll")))
+        #expect(path(GPTKImporter.videoProcessorShim(inLibraryFolder: runtime))
+            == path(lib.appending(path: "gptk-video/d3d12shim.dll")))
+        #expect(!fileManager.fileExists(atPath: path(runtime.appending(path: "Wine"))))
     }
 
     @Test("Redeploying never overwrites the backed-up originals")
@@ -91,8 +118,8 @@ struct GPTKDeploymentTests {
 
         try GPTKImporter.remove(fromLibraryFolder: runtime, usingStore: store)
 
-        let wineLib = runtime.appending(path: "Wine").appending(path: "lib")
-        let restored = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
+        let wineLib = runtime.appending(path: "Ano").appending(path: "lib")
+        let restored = wineLib.appending(path: "ano").appending(path: "x86_64-windows")
             .appending(path: "d3d11.dll")
         let restoredData = try Data(contentsOf: restored)
         #expect(restoredData.suffix(13) == Data("wine original".utf8))
@@ -156,8 +183,8 @@ struct GPTKDeploymentTests {
 
         try GPTKImporter.remove(fromLibraryFolder: runtime, usingStore: store)
 
-        let current = runtime.appending(path: "Wine").appending(path: "lib")
-            .appending(path: "wine").appending(path: "x86_64-windows").appending(path: "d3d11.dll")
+        let current = runtime.appending(path: "Ano").appending(path: "lib")
+            .appending(path: "ano").appending(path: "x86_64-windows").appending(path: "d3d11.dll")
         let currentData = try Data(contentsOf: current)
         #expect(currentData.suffix(16) == Data("wine 11 original".utf8))
 

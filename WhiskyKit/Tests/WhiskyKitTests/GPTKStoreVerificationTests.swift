@@ -40,7 +40,7 @@ struct GPTKStoreVerificationTests {
     }
 
     private func storeForwarder(_ store: URL, _ name: String = "d3d11.dll") -> URL {
-        store.appending(path: "lib").appending(path: "wine").appending(path: "x86_64-windows").appending(path: name)
+        store.appending(path: "lib").appending(path: "ano").appending(path: "x86_64-windows").appending(path: name)
     }
 
     @Test("An unchecked store that passes is deployed and stamped")

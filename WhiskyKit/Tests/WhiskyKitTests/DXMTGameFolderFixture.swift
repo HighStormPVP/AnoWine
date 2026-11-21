@@ -130,7 +130,7 @@ struct DXMTGameFolderFixture {
         for arch in arches {
             let folder = payload.appending(path: arch)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            for dll in Self.trio + ["winemetal.dll"] {
+            for dll in Self.trio + ["anometal.dll"] {
                 try Self.dxmtFake(arch, dll, version: version).write(to: folder.appending(path: dll))
             }
         }

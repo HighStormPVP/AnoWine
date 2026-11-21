@@ -51,11 +51,11 @@ final class RockstarD3DLayoutTests {
     }
 
     private var storePE: URL {
-        store.appending(path: "lib/wine/x86_64-windows")
+        store.appending(path: "lib/ano/x86_64-windows")
     }
 
     private var runtimePE: URL {
-        library.appending(path: "Wine/lib/wine/x86_64-windows")
+        library.appending(path: "Ano/lib/ano/x86_64-windows")
     }
 
     private func write(_ text: String, to url: URL) throws {
@@ -101,7 +101,7 @@ final class RockstarD3DLayoutTests {
     @Test("The DXGI driver version shim in front of Apple's dxgi counts as D3DMetal")
     func dxgiShimCounts() throws {
         try runtime(d3d11Forwarder: false, dxgiForwarder: false)
-        try write("dxgi shim", to: library.appending(path: "Wine/lib/gptk-video/dxgishim.dll"))
+        try write("dxgi shim", to: library.appending(path: "Ano/lib/gptk-video/dxgishim.dll"))
         try write("dxgi shim", to: runtimePE.appending(path: "dxgi.dll"))
 
         #expect(RockstarD3DLayout.forwarders(libraryFolder: library, store: store).dxgi)
@@ -186,7 +186,7 @@ final class RockstarD3DLayoutTests {
         let system32 = bottle.url.appending(path: "drive_c/windows/system32")
         try write("dxvk d3d11", to: system32.appending(path: "d3d11.dll"))
         var placeholder = Data(count: 0x40)
-        placeholder.append(Data("Wine builtin DLL".utf8))
+        placeholder.append(anoBuiltinMark)
         try write(placeholder, to: system32.appending(path: "dxgi.dll"))
         let userReg = #"""
         WINE REGISTRY Version 2

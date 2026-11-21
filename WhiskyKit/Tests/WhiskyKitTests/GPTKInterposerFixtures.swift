@@ -33,17 +33,17 @@ struct GPTKInterposerFixture {
     }
 
     func peDir(of runtime: URL) -> URL {
-        runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-windows")
     }
 
     func unixDir(of runtime: URL) -> URL {
-        runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-unix")
     }
 
     func external(of runtime: URL) -> URL {
-        runtime.appending(path: "Wine").appending(path: "lib").appending(path: "external")
+        runtime.appending(path: "Ano").appending(path: "lib").appending(path: "external")
     }
 
     func exists(_ url: URL) -> Bool {

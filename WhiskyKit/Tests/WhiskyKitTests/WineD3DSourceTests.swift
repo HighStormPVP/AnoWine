@@ -26,21 +26,21 @@ struct WineD3DSourceTests {
     private let runtime: URL
     private let store: URL
 
-    /// A runtime holding Wine's own d3d builtins, stamped 11.19.0, and a store
-    /// holding an imported payload that has not been deployed yet.
+    /// A runtime holding the engine's own d3d builtins, stamped 11.19.0, and a
+    /// store holding an imported payload that has not been deployed yet.
     init() throws {
         tempDir = try makeGPTKTempDir()
         runtime = tempDir.appending(path: "Libraries")
         try makeRuntime(at: runtime)
         try writeRuntimeVersion(at: runtime, 11, 19, 0)
         store = try makeImportedStore(in: tempDir)
-        var d3d10core = fakePE(builtin: true)
+        var d3d10core = fakePE(builtin: true, mark: anoBuiltinMark)
         d3d10core.append(Data("wine d3d10core".utf8))
         try d3d10core.write(to: peDir.appending(path: "d3d10core.dll"))
     }
 
     private var peDir: URL {
-        runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-windows")
     }
 
@@ -56,9 +56,9 @@ struct WineD3DSourceTests {
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
     }
 
-    // MARK: - lib/wine
+    // MARK: - lib/ano
 
-    @Test("d3d10core always comes from lib/wine, GPTK deployed or not")
+    @Test("d3d10core always comes from lib/ano, GPTK deployed or not")
     func d3d10coreAlwaysLibWine() throws {
         let expected = WineD3DSource.libWine(peDir.appending(path: "d3d10core.dll"))
         #expect(resolve("d3d10core.dll") == expected)
@@ -68,7 +68,7 @@ struct WineD3DSourceTests {
         #expect(resolve("d3d10core.dll") == expected)
     }
 
-    @Test("Without GPTK, d3d11 and dxgi come straight from lib/wine")
+    @Test("Without GPTK, d3d11 and dxgi come straight from lib/ano")
     func nonForwarderUsesLibWine() {
         #expect(resolve("d3d11.dll") == .libWine(peDir.appending(path: "d3d11.dll")))
         #expect(resolve("dxgi.dll") == .libWine(peDir.appending(path: "dxgi.dll")))
@@ -80,7 +80,7 @@ struct WineD3DSourceTests {
         #expect(resolve("D3D10Core.DLL") == resolve("d3d10core.dll"))
     }
 
-    @Test("A native file in lib/wine is not Wine's build")
+    @Test("A native file in lib/ano is not the engine's build")
     func unmarkedLibWineIsRefused() throws {
         try fakePE(builtin: false).write(to: peDir.appending(path: "dxgi.dll"))
         try Data("stub".utf8).write(to: peDir.appending(path: "d3d10core.dll"))
@@ -89,7 +89,7 @@ struct WineD3DSourceTests {
         #expect(resolve("d3d10core.dll") == .unavailable(.notBuiltinMarked))
     }
 
-    @Test("A missing lib/wine file is reported, not guessed at")
+    @Test("A missing lib/ano file is reported, not guessed at")
     func missingLibWineFile() throws {
         try FileManager.default.removeItem(at: peDir.appending(path: "d3d10core.dll"))
 
@@ -113,12 +113,24 @@ struct WineD3DSourceTests {
         #expect(resolve("dxgi.dll") == .unavailable(.missingFile))
     }
 
-    @Test("Wine's builtin is told from Apple's forwarder by its wined3d import")
+    @Test("The engine's builtin is told from Apple's forwarder by its anod3d import")
     func wined3dImportTellsWineFromForwarder() throws {
-        #expect(WineD3DSource.importsWined3d(peDir.appending(path: "d3d11.dll")))
-        let forwarder = store.appending(path: "lib/wine/x86_64-windows/d3d11.dll")
+        let engines = peDir.appending(path: "d3d11.dll")
+        #expect(Wine.carriesBuiltinMarker(engines))
+        #expect(WineD3DSource.importsWined3d(engines))
+        let forwarder = store.appending(path: "lib/ano/x86_64-windows/d3d11.dll")
         #expect(Wine.carriesBuiltinMarker(forwarder))
         #expect(!WineD3DSource.importsWined3d(forwarder))
+    }
+
+    @Test("A DLL that names only wined3d is not the engine's build")
+    func oldImportNameIsNotTheEngines() throws {
+        var old = fakePE(builtin: true, mark: anoBuiltinMark)
+        old.append(Data("wined3d.dll\0".utf8))
+        let url = tempDir.appending(path: "old-d3d11.dll")
+        try old.write(to: url)
+
+        #expect(!WineD3DSource.importsWined3d(url))
     }
 
     @Test("A forwarder left behind with no bridges and no store match is never taken for Wine's")
@@ -134,7 +146,7 @@ struct WineD3DSourceTests {
         for name in ["d3d11.dll", "dxgi.dll"] {
             var other = fakePE(builtin: true)
             other.append(Data("another gptk build".utf8))
-            try other.write(to: store.appending(path: "lib/wine/x86_64-windows").appending(path: name))
+            try other.write(to: store.appending(path: "lib/ano/x86_64-windows").appending(path: name))
         }
 
         #expect(resolve("d3d11.dll") == .unavailable(.missingFile))
@@ -144,10 +156,10 @@ struct WineD3DSourceTests {
     @Test("A stranded forwarder with current backups resolves to those backups")
     func strandedForwarderWithCurrentOriginals() throws {
         try deploy()
-        try FileManager.default.removeItem(at: runtime.appending(path: "Wine/lib/wine/x86_64-unix/dxgi.so"))
+        try FileManager.default.removeItem(at: runtime.appending(path: "Ano/lib/ano/x86_64-unix/dxgi.so"))
         var other = fakePE(builtin: true)
         other.append(Data("another gptk build".utf8))
-        try other.write(to: store.appending(path: "lib/wine/x86_64-windows/d3d11.dll"))
+        try other.write(to: store.appending(path: "lib/ano/x86_64-windows/d3d11.dll"))
         #expect(!GPTKImporter.isDeployed(inLibraryFolder: runtime))
 
         #expect(resolve("d3d11.dll") == .originals(original("d3d11.dll")))
@@ -172,7 +184,7 @@ struct WineD3DSourceTests {
     func forwarderSlotWithoutBridgeUsesOriginals() throws {
         try deploy()
         try FileManager.default.removeItem(
-            at: runtime.appending(path: "Wine/lib/wine/x86_64-unix/dxgi.so")
+            at: runtime.appending(path: "Ano/lib/ano/x86_64-unix/dxgi.so")
         )
         #expect(!GPTKImporter.isDeployed(inLibraryFolder: runtime))
 
@@ -223,7 +235,7 @@ struct WineD3DSourceTests {
 
     @Test("A payload copied in by hand with no backups is reported as such")
     func handPlacedPayload() throws {
-        try makePayload(at: runtime.appending(path: "Wine").appending(path: "lib"))
+        try makePayload(at: runtime.appending(path: "Ano").appending(path: "lib"), moduleFolder: "ano")
         let emptyStore = tempDir.appending(path: "empty-store")
 
         #expect(resolve("dxgi.dll", store: emptyStore) == .unavailable(.handPlacedPayload))

@@ -41,7 +41,7 @@ final class VCRedistDetectorTests: XCTestCase {
         Data("MZ".utf8) + Data(count: 0x3E) + Data("This program cannot be run in DOS mode.".utf8)
     }
 
-    /// A PE header carrying one of Wine's markers at 0x40.
+    /// A PE header carrying one of the engine's markers at 0x40, NUL-terminated.
     private func wineDLL(_ marker: String) -> Data {
         Data("MZ".utf8) + Data(count: 0x3E) + Data(marker.utf8) + Data(count: 16)
     }
@@ -60,15 +60,15 @@ final class VCRedistDetectorTests: XCTestCase {
 
     func testWineBuiltinCopiesAreNotTheRuntime() throws {
         for folder in ["system32", "syswow64"] {
-            try write(wineDLL("Wine builtin DLL"), named: "msvcp140.dll", in: folder)
-            try write(wineDLL("Wine builtin DLL"), named: "vcruntime140.dll", in: folder)
+            try write(wineDLL("Ano builtin DLL"), named: "msvcp140.dll", in: folder)
+            try write(wineDLL("Ano builtin DLL"), named: "vcruntime140.dll", in: folder)
         }
         XCTAssertFalse(VCRedistDetector.isInstalled(prefixURL: prefixURL))
     }
 
     func testWinePlaceholderCopiesAreNotTheRuntime() throws {
-        try write(wineDLL("Wine placeholder DLL"), named: "msvcp140.dll", in: "system32")
-        try write(wineDLL("Wine placeholder DLL"), named: "vcruntime140.dll", in: "system32")
+        try write(wineDLL("Ano placeholder DLL"), named: "msvcp140.dll", in: "system32")
+        try write(wineDLL("Ano placeholder DLL"), named: "vcruntime140.dll", in: "system32")
         XCTAssertFalse(VCRedistDetector.isInstalled(prefixURL: prefixURL))
     }
 
@@ -79,7 +79,7 @@ final class VCRedistDetectorTests: XCTestCase {
     }
 
     func testNativeDLLsInSysWOW64AreTheRuntime() throws {
-        try write(wineDLL("Wine builtin DLL"), named: "msvcp140.dll", in: "system32")
+        try write(wineDLL("Ano builtin DLL"), named: "msvcp140.dll", in: "system32")
         try write(nativeDLL, named: "msvcp140.dll", in: "syswow64")
         try write(nativeDLL, named: "vcruntime140.dll", in: "syswow64")
         XCTAssertTrue(VCRedistDetector.isInstalled(prefixURL: prefixURL))
@@ -87,7 +87,7 @@ final class VCRedistDetectorTests: XCTestCase {
 
     func testOneNativeDLLAloneIsNotTheRuntime() throws {
         try write(nativeDLL, named: "msvcp140.dll", in: "system32")
-        try write(wineDLL("Wine builtin DLL"), named: "vcruntime140.dll", in: "system32")
+        try write(wineDLL("Ano builtin DLL"), named: "vcruntime140.dll", in: "system32")
         XCTAssertFalse(VCRedistDetector.isInstalled(prefixURL: prefixURL))
     }
 

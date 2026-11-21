@@ -164,6 +164,21 @@ struct WineSteamClientDriverTests {
         #expect(names == ["steam.exe", "steamwebhelper.exe", "fsd-win64-shipping.exe", "start.exe"])
     }
 
+    @Test("On engine 5.x the images follow the Libraries/Ano and lib/ano paths")
+    func exeNamesUnderTheEnginesLayout() {
+        let runtime = "/Users/me/Library/Application Support/io.github.highstormpvp.Ano/Libraries/Ano"
+        let core = runtime + "/lib/ano/x86_64-unix/ano-core"
+        let loader = runtime + "/bin/ano-loader"
+        let listing = """
+        \(loader) C:\\Program Files (x86)\\Steam\\steam.exe -silent
+        \(core) C:\\Program Files (x86)\\Steam\\steamwebhelper.exe --type=renderer
+        \(core) C:\\windows\\system32\\ano-device.exe
+        \(runtime)/bin/ano-server
+        """
+        let names = WineSteamClientDriver.exeImageNames(inProcessListing: listing)
+        #expect(names == ["steam.exe", "steamwebhelper.exe", "ano-device.exe"])
+    }
+
     @Test("On runtime 4.9.0 a program the app starts keeps the ano-loader path")
     func exeNamesAfterTheLoaderLink() {
         let wine = "/Users/me/Library/Application Support/io.github.highstormpvp.Ano/Libraries/Wine"

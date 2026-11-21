@@ -84,7 +84,7 @@ extension ChromiumFrontEndLaunchTests {
         expectDXVK(entry, "3DMark.exe")
         #expect(entry?["d3d9"] == "n,b", "DXVK's d3d9, which DXMT does not ship")
         let bottleScope = recorder.overrides(for: .bottle)
-        #expect(bottleScope?["winemetal"] == "b", "the bottle scope is DXMT's")
+        #expect(bottleScope?["anometal"] == "b", "the bottle scope is DXMT's")
         #expect(bottleScope?["d3d9"] != "n,b", "the bottle scope is not DXVK's")
         #expect(dxvkDeployed)
     }

@@ -56,9 +56,9 @@ final class DLLOverrideRegistryTests: XCTestCase {
     }
 
     func testParsesBuiltinOnlyModes() {
-        let parsed = Wine.parseDLLOverrides("dxgi=b;winemetal=b")
+        let parsed = Wine.parseDLLOverrides("dxgi=b;anometal=b")
         XCTAssertEqual(parsed["dxgi"], "b")
-        XCTAssertEqual(parsed["winemetal"], "b")
+        XCTAssertEqual(parsed["anometal"], "b")
     }
 
     /// `dll=` with no value is how a DLL is disabled, in both the variable and

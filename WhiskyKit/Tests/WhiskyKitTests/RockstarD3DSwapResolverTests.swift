@@ -26,7 +26,7 @@ import Testing
 @Suite("Rockstar Direct3D swap resolver")
 struct RockstarD3DSwapResolverTests {
     private static let originals = URL(filePath: "/store/originals/d3d11.dll")
-    private static let libWine = URL(filePath: "/Libraries/Wine/lib/wine/x86_64-windows/d3d11.dll")
+    private static let libWine = URL(filePath: "/Libraries/Ano/lib/ano/x86_64-windows/d3d11.dll")
     private static let dxgi = URL(filePath: "/store/originals/dxgi.dll")
 
     /// Inputs that pass every check, from the store's originals.

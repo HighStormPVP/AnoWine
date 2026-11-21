@@ -29,7 +29,7 @@ struct GPTKVideoProcessorTests {
     }
 
     private func peDir(of runtime: URL) -> URL {
-        runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-windows")
     }
 
@@ -104,7 +104,7 @@ struct GPTKVideoProcessorTests {
         #expect(try exportName(of: renamed) == "d3dmt.dll")
 
         // the unix half has to follow the renamed PE or D3DMetal never binds
-        let link = runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        let link = runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-unix").appending(path: "d3dmt.so")
         let destination = try FileManager.default.destinationOfSymbolicLink(
             atPath: link.path(percentEncoded: false)
@@ -183,7 +183,7 @@ struct GPTKVideoProcessorTests {
         let fileManager = FileManager.default
         #expect(!fileManager.fileExists(atPath: peDir(of: runtime)
                 .appending(path: "d3dmt.dll").path(percentEncoded: false)))
-        let link = runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        let link = runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-unix").appending(path: "d3dmt.so")
         #expect((try? fileManager.destinationOfSymbolicLink(atPath: link.path(percentEncoded: false))) == nil)
     }
@@ -278,7 +278,7 @@ struct GPTKVideoProcessorTests {
         let actual = try exportName(of: renamed).trimmingCharacters(in: ["\0"])
         #expect(actual == interposer.renamedName, "export name is \(actual)")
 
-        let link = runtime.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
+        let link = runtime.appending(path: "Ano").appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-unix").appending(path: interposer.renamedUnixName)
         let destination = try FileManager.default.destinationOfSymbolicLink(
             atPath: link.path(percentEncoded: false)

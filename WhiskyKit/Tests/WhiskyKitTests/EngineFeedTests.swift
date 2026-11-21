@@ -23,14 +23,16 @@ import Testing
 
 @Suite("Engine update feeds")
 struct EngineFeedTests {
-    /// Ano 6 and 7 keep reading the old feed, which stays on runtime 3.1.6.
-    /// This app must read a different one, or a bump meant for it would reach
-    /// them too.
-    @Test("The app reads the 4.x feed, not the frozen one older apps read")
-    func readsTheVersionedFeed() {
-        #expect(DistributionConfig.versionPlistURL != DistributionConfig.legacyVersionPlistURL)
-        let legacy = "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages/WhiskyWineVersion.plist"
-        #expect(DistributionConfig.legacyVersionPlistURL == legacy)
+    /// Ano 6 and 7 read `WhiskyWineVersion.plist` (runtime 3.1.6) and Ano 8
+    /// reads `WhiskyWineVersion-v4.plist` (4.9.0). This app needs the renamed
+    /// engine, so it reads a feed of its own, or a bump meant for one app line
+    /// would reach the others too.
+    @Test("The app reads the renamed engine's feed, not the ones older apps read")
+    func readsItsOwnFeed() {
+        let pages = "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages"
+        #expect(DistributionConfig.versionPlistURL == "\(pages)/AnoRuntimeVersion.plist")
+        #expect(DistributionConfig.versionPlistURL != "\(pages)/WhiskyWineVersion.plist")
+        #expect(DistributionConfig.versionPlistURL != "\(pages)/WhiskyWineVersion-v4.plist")
     }
 
     /// The published feeds decode as the app reads them: the old one still on

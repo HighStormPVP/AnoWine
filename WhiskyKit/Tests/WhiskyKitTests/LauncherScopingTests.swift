@@ -223,7 +223,7 @@ final class LauncherScopingTests {
 
         // The prefix default is the games', DXMT, and no part of it is DXVK's d3d9.
         let bottleScope = recorder.overrides(for: .bottle)
-        #expect(bottleScope?["winemetal"] == "b")
+        #expect(bottleScope?["anometal"] == "b")
         #expect(bottleScope?["d3d9"] == nil)
         let steamScope = recorder.overrides(for: .program("steam.exe"))
         expectDXVK(steamScope, "steam.exe")

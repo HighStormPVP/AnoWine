@@ -58,6 +58,17 @@ final class ProxyEnvironmentTests: XCTestCase {
         XCTAssertNil(env["DYLD_INSERT_LIBRARIES"])
     }
 
+    /// The interceptor stays on for programs under the runtime folder, so it
+    /// must name the engine's (`Libraries/Ano`), where the loader now is.
+    func testRuntimeFolderIsTheEngines() {
+        let folder = ProxyEnvironment.variables(port: 1)[ProxyEnvironment.wineDirKey] ?? ""
+        XCTAssertTrue(folder.hasSuffix("/Libraries/Ano"), folder)
+        XCTAssertTrue(
+            AnoWineRuntime.loaderURL.path(percentEncoded: false).hasPrefix(folder + "/"),
+            AnoWineRuntime.loaderURL.path(percentEncoded: false)
+        )
+    }
+
     @MainActor
     func testProxiedBottleWithoutHelperFailsClosed() {
         let env = Wine.constructWineEnvironment(for: makeBottle(proxied: true), proxyPort: { _ in nil })

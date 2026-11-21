@@ -58,7 +58,7 @@ final class DXMTGameFolderTests {
 
         let folder = game.deletingLastPathComponent()
         #expect(Fixture.holdsDXMT(folder, arch: "x64"))
-        #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "winemetal.dll").path))
+        #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "anometal.dll").path))
     }
 
     @Test("A 32-bit game gets the x32 trio")

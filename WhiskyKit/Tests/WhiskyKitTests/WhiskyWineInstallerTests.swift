@@ -112,7 +112,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
-        let plistURL = tempDir.appendingPathComponent("WhiskyWineVersion").appendingPathExtension("plist")
+        let plistURL = tempDir.appendingPathComponent("AnoRuntimeVersion").appendingPathExtension("plist")
         let plist: [String: Any] = [
             "version": ["major": 3, "minor": 0, "patch": 0],
             "dxvkVersion": "1.10.3"
@@ -129,7 +129,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
     func testWhiskyWineInfoAtMissingFileReturnsNil() {
         let missing = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
-            .appendingPathComponent("WhiskyWineVersion.plist")
+            .appendingPathComponent("AnoRuntimeVersion.plist")
 
         XCTAssertNil(WhiskyWineInstaller.whiskyWineInfo(at: missing))
     }
@@ -140,7 +140,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
         // A present-but-corrupt plist must be swallowed to nil, not crash.
-        let garbageURL = tempDir.appendingPathComponent("WhiskyWineVersion").appendingPathExtension("plist")
+        let garbageURL = tempDir.appendingPathComponent("AnoRuntimeVersion").appendingPathExtension("plist")
         try Data("this is not a plist".utf8).write(to: garbageURL)
 
         XCTAssertNil(WhiskyWineInstaller.whiskyWineInfo(at: garbageURL))
@@ -152,7 +152,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tempDir) }
 
         // Valid plist but missing a required version field — decode throws, swallowed to nil.
-        let partialURL = tempDir.appendingPathComponent("WhiskyWineVersion").appendingPathExtension("plist")
+        let partialURL = tempDir.appendingPathComponent("AnoRuntimeVersion").appendingPathExtension("plist")
         let plist: [String: Any] = ["version": ["major": 3, "minor": 0]]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
         try data.write(to: partialURL)
@@ -160,23 +160,65 @@ final class WhiskyWineInstallerTests: XCTestCase {
         XCTAssertNil(WhiskyWineInstaller.whiskyWineInfo(at: partialURL))
     }
 
-    // MARK: - isRuntimePresent (plist + wine64)
+    // MARK: - isRuntimePresent (plist + loader)
 
     /// Builds a runtime tree under `folder` with an optional version plist and an
-    /// optional `wine64` binary, mirroring the layout the installer extracts.
+    /// optional loader, in the engine's layout the installer extracts
+    /// (`AnoRuntimeVersion.plist`, `Ano/bin/ano-loader`).
     private func makeRuntime(in folder: URL, plist: Bool, wine64: Bool) throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         if plist {
-            let plistURL = folder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist")
+            let plistURL = folder.appending(path: "AnoRuntimeVersion").appendingPathExtension("plist")
             let contents: [String: Any] = ["version": ["major": 3, "minor": 0, "patch": 0]]
             let data = try PropertyListSerialization.data(fromPropertyList: contents, format: .xml, options: 0)
             try data.write(to: plistURL)
         }
         if wine64 {
-            let binDir = folder.appending(path: "Wine").appending(path: "bin")
+            let binDir = folder.appending(path: "Ano").appending(path: "bin")
             try FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
             try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "ano-loader"))
         }
+    }
+
+    /// Builds a complete runtime in the layout engine 4.x and older ship:
+    /// `WhiskyWineVersion.plist` beside `Wine/bin/ano-loader`, with
+    /// `Wine/lib/external` holding D3DMetal.
+    private func makeOldLayoutRuntime(in folder: URL) throws {
+        let binDir = folder.appending(path: "Wine").appending(path: "bin")
+        try FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
+        try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "ano-loader"))
+        let contents: [String: Any] = ["version": ["major": 4, "minor": 9, "patch": 0], "gptkCapable": true]
+        let data = try PropertyListSerialization.data(fromPropertyList: contents, format: .xml, options: 0)
+        try data.write(to: folder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist"))
+        try FileManager.default.createDirectory(
+            at: folder.appending(path: "Wine/lib/external/D3DMetal.framework"), withIntermediateDirectories: true
+        )
+    }
+
+    /// A `Libraries/Wine` runtime is the old engine: it reads as not installed,
+    /// so Setup offers the renamed one instead of the app launching programs
+    /// through a layout it no longer looks in.
+    func testRuntimeInTheOldLayoutIsNotPresent() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        try makeOldLayoutRuntime(in: tempDir)
+
+        XCTAssertFalse(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
+        XCTAssertFalse(WhiskyWineInstaller.isD3DMetalPresent(inLibraryFolder: tempDir))
+        XCTAssertFalse(GPTKImporter.isRuntimeGPTKCapable(inLibraryFolder: tempDir))
+        XCTAssertNil(GPTKImporter.runtimeVersionStamp(inLibraryFolder: tempDir))
+
+        // Not even beside a version record under the new name.
+        try makeRuntime(in: tempDir, plist: true, wine64: false)
+        XCTAssertFalse(WhiskyWineInstaller.isRuntimePresent(inLibraryFolder: tempDir))
+    }
+
+    func testRuntimeVersionIsReadFromTheEnginesPlist() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        try makeRuntime(in: tempDir, plist: true, wine64: true)
+
+        XCTAssertEqual(GPTKImporter.runtimeVersionStamp(inLibraryFolder: tempDir), "3.0.0")
     }
 
     func testRuntimePresentWhenPlistAndBinaryExist() throws {
@@ -209,7 +251,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
     func testD3DMetalPresentWhenFrameworkExists() throws {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: tempDir) }
-        let external = tempDir.appending(path: "Wine").appending(path: "lib").appending(path: "external")
+        let external = tempDir.appending(path: "Ano").appending(path: "lib").appending(path: "external")
         try FileManager.default.createDirectory(
             at: external.appending(path: "D3DMetal.framework"),
             withIntermediateDirectories: true
@@ -219,8 +261,8 @@ final class WhiskyWineInstallerTests: XCTestCase {
     }
 
     func testD3DMetalNotPresentInRuntimeWithoutGPTKPayload() throws {
-        // The layout the current Libraries bundle actually ships: Wine, DXVK
-        // and DXMT, but no D3DMetal payload under Wine/lib/external.
+        // The layout the current Libraries bundle actually ships: the engine,
+        // DXVK and DXMT, but no D3DMetal payload under Ano/lib/external.
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: tempDir) }
         try makeRuntime(in: tempDir, plist: true, wine64: true)
@@ -461,6 +503,24 @@ final class WhiskyWineInstallerTests: XCTestCase {
         }
     }
 
+    func testInstallRefusesAnArchiveInTheOldLayout() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let sourceDir = tempDir.appendingPathComponent("Libraries")
+        try makeOldLayoutRuntime(in: sourceDir)
+        let tarball = try makeTarball(of: "Libraries", in: tempDir)
+        let destination = tempDir.appendingPathComponent("dest")
+        let installed = try makeInstalledRuntime(in: destination)
+
+        XCTAssertThrowsError(try WhiskyWineInstaller.install(tarball: tarball, into: destination)) { error in
+            XCTAssertEqual(error as? WhiskyWineInstallError, .runtimeIncomplete)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: installed.path))
+        XCTAssertEqual(try stagingLeftovers(in: destination), [])
+    }
+
     func testInstallLeavesNoStagingFoldersAfterSuccess() throws {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
@@ -606,7 +666,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
         let destination = tempDir.appendingPathComponent("dest")
         _ = try makeInstalledRuntime(in: destination)
         let runtime = destination.appendingPathComponent("Libraries")
-        let recreated = runtime.appendingPathComponent("Wine/lib/external")
+        let recreated = runtime.appendingPathComponent("Ano/lib/external")
 
         var movesIntoPlace = 0
         let moveItem: (URL, URL) throws -> Void = { source, target in
@@ -657,7 +717,7 @@ final class WhiskyWineInstallerTests: XCTestCase {
     func testStaleCleanupKeepsFolderWhenUnusableRuntimeCannotBeMovedAside() throws {
         let destination = try makeTempDir()
         let runtime = destination.appendingPathComponent("Libraries")
-        let recreated = runtime.appendingPathComponent("Wine/lib/external")
+        let recreated = runtime.appendingPathComponent("Ano/lib/external")
         try FileManager.default.createDirectory(at: recreated, withIntermediateDirectories: true)
         let stale = destination.appendingPathComponent(".runtime-staging-\(UUID().uuidString)")
         let retired = stale.appendingPathComponent("Libraries.previous")

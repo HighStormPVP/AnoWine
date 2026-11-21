@@ -68,7 +68,7 @@ final class SteamDXMTAppLaunchTests {
     }
 
     /// The launcher's `system32` after the launch: DXVK's d3d11/d3d10core, no
-    /// DXMT dxgi, and DXMT's winemetal, which the game folder's trio imports.
+    /// DXMT dxgi, and DXMT's anometal, which the game folder's trio imports.
     private func expectLauncherKeepsDXVK(_ bottle: Bottle) {
         for dll in ["d3d11.dll", "d3d10core.dll"] {
             #expect(
@@ -80,7 +80,7 @@ final class SteamDXMTAppLaunchTests {
             Fixture.contents(fixture.system32(bottle, "dxgi.dll")) != Fixture.dxmtFake("x64", "dxgi.dll"),
             "DXMT's dxgi is not in system32"
         )
-        #expect(Fixture.contents(fixture.system32(bottle, "winemetal.dll")) == Fixture.dxmtFake("x64", "winemetal.dll"))
+        #expect(Fixture.contents(fixture.system32(bottle, "anometal.dll")) == Fixture.dxmtFake("x64", "anometal.dll"))
     }
 
     /// The game's entry prefers the native trio, which its own folder now holds.

@@ -35,7 +35,7 @@ struct WineStrippedCopyTests {
                 at: dir.deletingLastPathComponent(), withIntermediateDirectories: true
             )
         }
-        var wine = fakePE(builtin: true)
+        var wine = fakePE(builtin: true, mark: anoBuiltinMark)
         wine.append(Data("wine dxgi".utf8))
         try wine.write(to: source)
     }
@@ -116,7 +116,7 @@ struct WineStrippedCopyTests {
     @Test("A missing source throws and never leaves the destination missing")
     func missingSourceLeavesDestination() throws {
         try FileManager.default.removeItem(at: source)
-        let before = fakePE(builtin: true)
+        let before = fakePE(builtin: true, mark: anoBuiltinMark)
         try before.write(to: destination)
 
         #expect(throws: WineStrippedCopyError.self) {
@@ -240,7 +240,7 @@ struct WineStrippedCopyTests {
 
     @Test("Deploying from a resolved source installs its stripped copy")
     func deployFromResolvedSource() throws {
-        try makePrefix(holding: fakePE(builtin: true))
+        try makePrefix(holding: fakePE(builtin: true, mark: anoBuiltinMark))
 
         Wine.deployCleanDXGI(prefixRoot: prefixRoot, source: .libWine(source))
 
@@ -249,7 +249,7 @@ struct WineStrippedCopyTests {
 
     @Test("An unavailable source leaves the prefix's dxgi as it is")
     func unavailableSourceLeavesPrefix() throws {
-        let existing = fakePE(builtin: true)
+        let existing = fakePE(builtin: true, mark: anoBuiltinMark)
         try makePrefix(holding: existing)
 
         Wine.deployCleanDXGI(prefixRoot: prefixRoot, source: .unavailable(.missingFile))
@@ -265,7 +265,7 @@ struct WineStrippedCopyTests {
         let store = try makeImportedStore(in: tempDir)
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
         try writeRuntimeVersion(at: runtime, 11, 20, 0)
-        let existing = fakePE(builtin: true)
+        let existing = fakePE(builtin: true, mark: anoBuiltinMark)
         try makePrefix(holding: existing)
 
         Wine.reconcileDXGIForDXVK(
@@ -282,7 +282,7 @@ struct WineStrippedCopyTests {
         try writeRuntimeVersion(at: runtime, 11, 19, 0)
         let store = try makeImportedStore(in: tempDir)
         try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
-        try makePrefix(holding: fakePE(builtin: true))
+        try makePrefix(holding: fakePE(builtin: true, mark: anoBuiltinMark))
 
         Wine.reconcileDXGIForDXVK(
             prefixRoot: prefixRoot, gptkPayloadIsDeployed: true, libraryFolder: runtime, store: store

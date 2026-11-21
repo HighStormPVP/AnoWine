@@ -36,7 +36,7 @@ struct GPTKHandPlacedPayloadTests {
         var nvapi = fakePE(builtin: true)
         nvapi.append(Data("store's nvapi".utf8))
         try nvapi.write(
-            to: store.appending(path: "lib").appending(path: "wine").appending(path: "x86_64-windows")
+            to: store.appending(path: "lib").appending(path: "ano").appending(path: "x86_64-windows")
                 .appending(path: GPTKImporter.nvapiBridgeName)
         )
     }

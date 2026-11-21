@@ -184,7 +184,7 @@ struct GPTKImporterTests {
         #expect(record.gptkVersion == "4.0b2")
         #expect(GPTKImporter.storedRecord(inStore: store)?.gptkVersion == "4.0b2")
 
-        let link = store.appending(path: "lib").appending(path: "wine")
+        let link = store.appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-unix").appending(path: "dxgi.so")
         let destination = try FileManager.default.destinationOfSymbolicLink(
             atPath: link.path(percentEncoded: false)
@@ -201,7 +201,7 @@ struct GPTKImporterTests {
 
         try GPTKImporter.importPayload(payload, intoStore: store)
 
-        let link = store.appending(path: "lib").appending(path: "wine")
+        let link = store.appending(path: "lib").appending(path: "ano")
             .appending(path: "x86_64-unix").appending(path: "d3d11.so")
         let destination = try FileManager.default.destinationOfSymbolicLink(
             atPath: link.path(percentEncoded: false)
@@ -265,6 +265,70 @@ struct GPTKImporterTests {
         try FileManager.default.removeItem(
             at: store.appending(path: "lib").appending(path: "external")
         )
+
+        #expect(GPTKImporter.storedRecord(inStore: store) == nil)
+    }
+
+    // MARK: - Apple's layout and the store's
+
+    @Test("Apple's image, whose bridges sit in redist/lib/wine, imports into the store's lib/ano")
+    func importsApplesLayoutUnderTheEnginesName() throws {
+        let volume = tempDir.appending(path: "volume")
+        let lib = volume.appending(path: "redist").appending(path: "lib")
+        try makePayload(at: lib)
+        let store = tempDir.appending(path: "store")
+        let located = try #require(GPTKImporter.locatePayload(under: volume))
+        let payload = try GPTKImporter.validatePayload(at: located, isAppleSigned: { _, _ in true })
+
+        try GPTKImporter.importPayload(payload, intoStore: store, revalidatingWith: { _, _ in true })
+
+        let fileManager = FileManager.default
+        let storeLib = store.appending(path: "lib")
+        for name in GPTKImporter.forwarderDLLNames {
+            let dll = storeWindowsDir(store).appending(path: name)
+            #expect(fileManager.fileExists(atPath: dll.path(percentEncoded: false)), "\(name)")
+        }
+        let link = storeLib.appending(path: "ano").appending(path: "x86_64-unix").appending(path: "dxgi.so")
+        #expect(try fileManager.destinationOfSymbolicLink(atPath: link.path(percentEncoded: false))
+            == GPTKImporter.unixLinkDestination)
+        #expect(!fileManager.fileExists(atPath: storeLib.appending(path: "wine").path(percentEncoded: false)))
+        #expect(GPTKImporter.storedRecord(inStore: store)?.gptkVersion == "4.0b2")
+        // Apple's image is read, never changed.
+        #expect(fileManager.fileExists(
+            atPath: lib.appending(path: "wine/x86_64-windows/dxgi.dll").path(percentEncoded: false)
+        ))
+    }
+
+    @Test("The bridges' folder is found by what it holds, not by its name")
+    func findsTheBridgesFolderByItsContents() throws {
+        let lib = tempDir.appending(path: "lib")
+        try makePayload(at: lib, omitting: ["d3d12.dll"], moduleFolder: "toolkit")
+
+        #expect(GPTKImporter.locatePayload(under: lib) == lib)
+        #expect(throws: GPTKImportError.payloadIncomplete(missing: ["toolkit/x86_64-windows/d3d12.dll"])) {
+            try GPTKImporter.validatePayload(at: lib)
+        }
+    }
+
+    @Test("A payload with no bridges' folder is reported as missing every forwarder")
+    func payloadWithoutBridgesFolder() throws {
+        let lib = tempDir.appending(path: "lib")
+        try makePayload(at: lib)
+        try FileManager.default.removeItem(at: lib.appending(path: "wine"))
+
+        #expect(GPTKImporter.locatePayload(under: lib) == nil)
+        let missing = GPTKImporter.forwarderDLLNames.map { "x86_64-windows/\($0)" }
+        #expect(throws: GPTKImportError.payloadIncomplete(missing: missing)) {
+            try GPTKImporter.validatePayload(at: lib)
+        }
+    }
+
+    @Test("A store still in Apple's layout (lib/wine) holds no payload the app reads")
+    func storeInApplesLayoutIsNotRead() throws {
+        let store = try makeImportedStore(in: tempDir)
+        #expect(GPTKImporter.storedRecord(inStore: store) != nil)
+        let storeLib = store.appending(path: "lib")
+        try FileManager.default.moveItem(at: storeLib.appending(path: "ano"), to: storeLib.appending(path: "wine"))
 
         #expect(GPTKImporter.storedRecord(inStore: store) == nil)
     }

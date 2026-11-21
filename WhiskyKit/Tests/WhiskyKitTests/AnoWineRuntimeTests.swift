@@ -25,6 +25,13 @@ final class AnoWineRuntimeTests: XCTestCase {
         XCTAssertEqual(AnoWineRuntime.serverName, "ano-server")
     }
 
+    func testRuntimeBinFolderIsTheEngines() {
+        XCTAssertTrue(
+            WhiskyWineInstaller.binFolder.path(percentEncoded: false).hasSuffix("/Libraries/Ano/bin"),
+            WhiskyWineInstaller.binFolder.path(percentEncoded: false)
+        )
+    }
+
     func testURLsLiveInTheRuntimeBinFolder() {
         XCTAssertEqual(AnoWineRuntime.loaderURL, WhiskyWineInstaller.binFolder.appending(path: "ano-loader"))
         XCTAssertEqual(AnoWineRuntime.serverURL, WhiskyWineInstaller.binFolder.appending(path: "ano-server"))
@@ -44,7 +51,7 @@ final class AnoWineRuntimeTests: XCTestCase {
         let env = Wine.constructWineEnvironment(for: bottle)
 
         let server = try XCTUnwrap(env["WINESERVER"])
-        XCTAssertTrue(server.hasSuffix("/Libraries/Wine/bin/ano-server"), server)
+        XCTAssertTrue(server.hasSuffix("/Libraries/Ano/bin/ano-server"), server)
     }
 
     /// A runtime downloaded before the rename (or a partial install) only has
@@ -53,11 +60,11 @@ final class AnoWineRuntimeTests: XCTestCase {
     func testRuntimeWithOnlyOriginalNamesIsNotPresent() throws {
         let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: tempDir) }
-        let binDir = tempDir.appending(path: "Wine").appending(path: "bin")
+        let binDir = tempDir.appending(path: "Ano").appending(path: "bin")
         try FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
         let plist: [String: Any] = ["version": ["major": 3, "minor": 1, "patch": 2]]
         try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
-            .write(to: tempDir.appending(path: "WhiskyWineVersion").appendingPathExtension("plist"))
+            .write(to: tempDir.appending(path: "AnoRuntimeVersion").appendingPathExtension("plist"))
         try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "wine64"))
         // Runtime v3.1.2 named the loader `anowine`; it must be replaced, not reused.
         try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: "anowine"))

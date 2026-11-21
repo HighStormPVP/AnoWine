@@ -19,11 +19,20 @@
 import Foundation
 @testable import WhiskyKit
 
-/// Builds a fake PE: 0x40 bytes of stub, then either winebuild's marker
-/// (Apple's forwarders and Wine's builtins carry it) or filler (a native PE).
-func fakePE(builtin: Bool) -> Data {
+/// The builtin mark Apple's D3DMetal DLLs carry at 0x40: Wine's, which the
+/// engine still accepts beside its own.
+let appleBuiltinMark = Data("Wine builtin DLL".utf8)
+
+/// The builtin mark the engine writes at 0x40 on its own DLLs: "Ano builtin
+/// DLL" and a NUL, the 16 bytes its loader compares.
+let anoBuiltinMark = Data("Ano builtin DLL\0".utf8)
+
+/// Builds a fake PE: 0x40 bytes of stub, then either a builtin mark (Apple's
+/// by default; the engine's builtins carry ``anoBuiltinMark``) or filler (a
+/// native PE).
+func fakePE(builtin: Bool, mark: Data = appleBuiltinMark) -> Data {
     var data = Data(count: 0x40)
-    data.append(builtin ? Data("Wine builtin DLL".utf8) : Data(count: 16))
+    data.append(builtin ? mark : Data(count: 16))
     data.append(Data(count: 16))
     return data
 }
@@ -47,7 +56,7 @@ func fakePEWithExportName(_ name: String, builtin: Bool = true) -> Data {
     data[0] = 0x4D
     data[1] = 0x5A
     if builtin {
-        data.replaceSubrange(0x40 ..< 0x50, with: Data("Wine builtin DLL".utf8))
+        data.replaceSubrange(0x40 ..< 0x50, with: appleBuiltinMark)
     }
     put32(0x3C, 0x80) // e_lfanew
     put32(0x80, 0x0000_4550) // "PE\0\0"
@@ -67,9 +76,20 @@ func fakePEWithExportName(_ name: String, builtin: Bool = true) -> Data {
 /// test has something shaped like Apple's DLL to rename.
 func makeStoreSlotRenameable(inStore store: URL, slotName: String) throws {
     try fakePEWithExportName(slotName).write(
-        to: store.appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: slotName)
+        to: storeWindowsDir(store).appending(path: slotName)
     )
+}
+
+/// The store's Windows DLL folder: `lib/ano/x86_64-windows`, Apple's module
+/// folder under the engine's name.
+func storeWindowsDir(_ store: URL) -> URL {
+    store.appending(path: "lib").appending(path: "ano").appending(path: "x86_64-windows")
+}
+
+/// One of a runtime's module folders under `libraryFolder`:
+/// `Ano/lib/ano/<arch>`, the engine's layout.
+func runtimeModuleDir(_ libraryFolder: URL, _ arch: String = "x86_64-windows") -> URL {
+    libraryFolder.appending(path: "Ano").appending(path: "lib").appending(path: "ano").appending(path: arch)
 }
 
 func makeStoreD3D12Renameable(inStore store: URL) throws {
@@ -85,7 +105,7 @@ func makeInterposerShim(
     try FileManager.default.createDirectory(
         at: shim.deletingLastPathComponent(), withIntermediateDirectories: true
     )
-    var data = fakePE(builtin: true)
+    var data = fakePE(builtin: true, mark: anoBuiltinMark)
     data.append(Data(marker.utf8))
     try data.write(to: shim)
     return shim
@@ -97,23 +117,28 @@ func makeVideoProcessorShim(at libraryFolder: URL, marker: String = "interposer"
     try FileManager.default.createDirectory(
         at: shim.deletingLastPathComponent(), withIntermediateDirectories: true
     )
-    var data = fakePE(builtin: true)
+    var data = fakePE(builtin: true, mark: anoBuiltinMark)
     data.append(Data(marker.utf8))
     try data.write(to: shim)
     return shim
 }
 
 /// Assembles Apple's `redist/lib` payload layout under `libRoot`.
+///
+/// Apple's image keeps the bridges in `wine/x86_64-windows` and
+/// `wine/x86_64-unix`; `moduleFolder` names that folder otherwise, as a copy
+/// into the engine's tree by hand does (`ano`).
 func makePayload(
     at libRoot: URL,
     version: String? = "4.0b2",
     builtinForwarders: Bool = true,
     omitting: Set<String> = [],
-    unixEntriesAsFiles: Bool = false
+    unixEntriesAsFiles: Bool = false,
+    moduleFolder: String = "wine"
 ) throws {
     let fileManager = FileManager.default
-    let peDir = libRoot.appending(path: "wine").appending(path: "x86_64-windows")
-    let unixDir = libRoot.appending(path: "wine").appending(path: "x86_64-unix")
+    let peDir = libRoot.appending(path: moduleFolder).appending(path: "x86_64-windows")
+    let unixDir = libRoot.appending(path: moduleFolder).appending(path: "x86_64-unix")
     let external = libRoot.appending(path: "external")
     try fileManager.createDirectory(at: peDir, withIntermediateDirectories: true)
     try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
@@ -166,21 +191,22 @@ func makePayload(
     }
 }
 
-/// The import name Wine's own `d3d11` and `dxgi` carry and Apple's
-/// forwarders lack, as `WineD3DSource.importsWined3d(_:)` reads it.
-let wined3dImport = Data("wined3d.dll\0".utf8)
+/// The import name the engine's own `d3d11` and `dxgi` carry and Apple's
+/// forwarders lack, as `WineD3DSource.importsWined3d(_:)` reads it: wined3d
+/// under the engine's name.
+let wined3dImport = Data("anod3d.dll\0".utf8)
 
-/// Assembles a minimal Wine runtime tree with builtin-marked d3d DLLs that
-/// import wined3d, like Wine's own. `marker` stays the files' last bytes.
+/// Assembles a minimal engine tree (`Ano/lib/ano`) with builtin-marked d3d
+/// DLLs that import anod3d, like the engine's own. `marker` stays the files'
+/// last bytes.
 func makeRuntime(at libraryFolder: URL, marker: String = "wine original") throws {
     let fileManager = FileManager.default
-    let wineLib = libraryFolder.appending(path: "Wine").appending(path: "lib")
-    let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
-    let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+    let peDir = runtimeModuleDir(libraryFolder)
+    let unixDir = runtimeModuleDir(libraryFolder, "x86_64-unix")
     try fileManager.createDirectory(at: peDir, withIntermediateDirectories: true)
     try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
     for name in ["d3d10.dll", "d3d11.dll", "d3d12.dll", "dxgi.dll"] {
-        var wineBuiltin = fakePE(builtin: true)
+        var wineBuiltin = fakePE(builtin: true, mark: anoBuiltinMark)
         wineBuiltin.append(wined3dImport)
         wineBuiltin.append(Data(marker.utf8))
         try wineBuiltin.write(to: peDir.appending(path: name))
@@ -192,7 +218,7 @@ func writeRuntimeVersion(at libraryFolder: URL, _ major: Int, _ minor: Int, _ pa
     let plist: [String: Any] = ["version": ["major": major, "minor": minor, "patch": patch]]
     let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
     try data.write(
-        to: libraryFolder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist")
+        to: libraryFolder.appending(path: "AnoRuntimeVersion").appendingPathExtension("plist")
     )
 }
 
@@ -200,7 +226,7 @@ func writeRuntimeVersion(at libraryFolder: URL, _ major: Int, _ minor: Int, _ pa
 /// carrying the version plist and the loader (`ano-loader`) the installer requires.
 func makeLibrariesTarball(in directory: URL) throws -> URL {
     let source = directory.appending(path: "Libraries")
-    let binDir = source.appending(path: "Wine").appending(path: "bin")
+    let binDir = source.appending(path: "Ano").appending(path: "bin")
     try FileManager.default.createDirectory(at: binDir, withIntermediateDirectories: true)
     try Data("#!/bin/sh\n".utf8).write(to: binDir.appending(path: AnoWineRuntime.loaderName))
     try writeRuntimeVersion(at: source, 3, 0, 0)
@@ -231,10 +257,8 @@ func makeGPTKTempDir() throws -> URL {
 @discardableResult
 func makePartialDeploy(store: URL, runtime: URL, runtimeVersion: String) throws -> URL {
     let fileManager = FileManager.default
-    let peDir = runtime.appending(path: "Wine").appending(path: "lib")
-        .appending(path: "wine").appending(path: "x86_64-windows")
-    let storePE = store.appending(path: "lib")
-        .appending(path: "wine").appending(path: "x86_64-windows")
+    let peDir = runtimeModuleDir(runtime)
+    let storePE = storeWindowsDir(store)
     let originals = store.appending(path: "originals")
     try fileManager.createDirectory(at: originals, withIntermediateDirectories: true)
 
@@ -259,8 +283,7 @@ func makePartialDeploy(store: URL, runtime: URL, runtimeVersion: String) throws 
 /// shipped, stays the default the deployment tests see.
 @discardableResult
 func makeStoreMetalFXBridge(inStore store: URL, marker: String = "metalfx bridge") throws -> URL {
-    let dll = store.appending(path: "lib").appending(path: "wine")
-        .appending(path: "x86_64-windows").appending(path: GPTKImporter.metalFXBridgeSourceName)
+    let dll = storeWindowsDir(store).appending(path: GPTKImporter.metalFXBridgeSourceName)
     var data = fakePE(builtin: true)
     data.append(Data(marker.utf8))
     try data.write(to: dll)
