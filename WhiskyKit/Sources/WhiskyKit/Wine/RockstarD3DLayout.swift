@@ -30,7 +30,7 @@ import Foundation
 ///
 /// Wine's own DLLs are only reachable as builtins while the runtime still has
 /// them. Deploying the GPTK payload puts Apple's forwarders into D3DMetal in
-/// their place in `lib/wine`, so `d3d11=b` there reaches D3DMetal and fails
+/// their place in `lib/ano`, so `d3d11=b` there reaches D3DMetal and fails
 /// the same way. The layout is decided by what those two slots hold and, with
 /// the payload deployed, by whether the bottle can take Wine's own `d3d11` in
 /// its `system32` instead (``swapped(source:)``).
@@ -113,8 +113,8 @@ public enum RockstarD3DLayout: Equatable, Sendable {
     /// The layout for what the runtime's `d3d11.dll` and `dxgi.dll` slots hold.
     ///
     /// - Parameters:
-    ///   - d3d11IsForwarder: Whether `lib/wine`'s `d3d11.dll` leads to D3DMetal.
-    ///   - dxgiIsForwarder: Whether `lib/wine`'s `dxgi.dll` leads to D3DMetal.
+    ///   - d3d11IsForwarder: Whether `lib/ano`'s `d3d11.dll` leads to D3DMetal.
+    ///   - dxgiIsForwarder: Whether `lib/ano`'s `dxgi.dll` leads to D3DMetal.
     static func resolve(d3d11IsForwarder: Bool, dxgiIsForwarder: Bool) -> RockstarD3DLayout {
         d3d11IsForwarder || dxgiIsForwarder ? .degraded(.gptkForwarders) : .builtin
     }
@@ -154,8 +154,7 @@ public enum RockstarD3DLayout: Equatable, Sendable {
     /// in the store's `originals/` folder, byte for byte. A missing slot or a
     /// missing backup is not.
     static func wineOriginals(libraryFolder: URL, store: URL) -> (d3d11: Bool, dxgi: Bool) {
-        let peDir = libraryFolder.appending(path: "Wine").appending(path: "lib")
-            .appending(path: "wine").appending(path: "x86_64-windows")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: libraryFolder)
         let originals = store.appending(path: "originals")
         func isOriginal(_ name: String) -> Bool {
             let backup = originals.appending(path: name).path(percentEncoded: false)
@@ -174,8 +173,7 @@ public enum RockstarD3DLayout: Equatable, Sendable {
     /// also is when it holds the DXGI driver version shim, which deploy puts
     /// in front of Apple's forwarder. A missing slot is not.
     static func forwarders(libraryFolder: URL, store: URL) -> (d3d11: Bool, dxgi: Bool) {
-        let peDir = libraryFolder.appending(path: "Wine").appending(path: "lib")
-            .appending(path: "wine").appending(path: "x86_64-windows")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: libraryFolder)
         let storeLib = store.appending(path: "lib")
         func isForwarder(_ name: String) -> Bool {
             let slot = peDir.appending(path: name)
@@ -221,7 +219,7 @@ public enum RockstarD3DLayout: Equatable, Sendable {
     /// the user's setting; then whether Wine's own files can be found; then
     /// whether anything in the bottle would lose DXVK to the swap. Only a
     /// bottle that passes all of them is ``swapped(source:)``, from either
-    /// place Wine's `d3d11` can be: a `lib/wine` slot that is still Wine's
+    /// place Wine's `d3d11` can be: a `lib/ano` slot that is still Wine's
     /// own in a part-deployed runtime, or the store's backup.
     ///
     /// - Parameter inputs: What the launch read about the bottle.

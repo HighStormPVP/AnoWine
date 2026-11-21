@@ -21,7 +21,7 @@ import Foundation
 extension Wine {
     /// Installs Wine's builtin at `source` into `destination` as a true native
     /// PE: a copy with the builtin marker stripped, so the loader runs this
-    /// file instead of redirecting to whatever `lib/wine` holds.
+    /// file instead of redirecting to whatever `lib/ano` holds.
     ///
     /// The destination is a DLL in a bottle's system directory, and a launch
     /// with that DLL missing fails outright. So the destination is never

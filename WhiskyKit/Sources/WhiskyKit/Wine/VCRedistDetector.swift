@@ -20,11 +20,13 @@ import Foundation
 
 /// Detects whether the Microsoft Visual C++ 2015-2022 runtime is installed in a prefix.
 ///
-/// Wine ships its own `msvcp140.dll` and `vcruntime140.dll`, and wineboot copies
-/// them into every prefix's `system32` and `syswow64`, so the files existing says
-/// nothing. Wine marks its copies at offset 0x40, where a native PE carries its
-/// DOS stub: "Wine builtin DLL" for builtin modules, "Wine placeholder DLL" for
-/// fake ones. The runtime counts as installed when one of those folders holds
+/// The engine ships its own `msvcp140.dll` and `vcruntime140.dll`, and ano-boot
+/// copies them into every prefix's `system32` and `syswow64`, so the files
+/// existing says nothing. The engine marks its copies at offset 0x40, where a
+/// native PE carries its DOS stub: "Ano builtin DLL" for builtin modules, "Ano
+/// placeholder DLL" for fake ones, each with its NUL. Apple's D3DMetal DLLs,
+/// the only ones with Wine's mark, are not these two. The runtime counts as
+/// installed when one of those folders holds
 /// both DLLs as native PE files, which is what the redistributable (or
 /// winetricks' `vcrun2019`) leaves behind.
 ///
@@ -36,8 +38,9 @@ public enum VCRedistDetector {
     /// The prefix folders a redistributable installs into: 64-bit, then 32-bit.
     static let systemFolders = ["system32", "syswow64"]
 
-    /// Wine's markers at offset 0x40 of the DLLs it installs itself.
-    static let wineSignatures = [Data("Wine builtin DLL".utf8), Data("Wine placeholder DLL".utf8)]
+    /// The engine's markers at offset 0x40 of the DLLs it installs itself,
+    /// NUL included, as its loader compares them.
+    static let wineSignatures = [Data("Ano builtin DLL\0".utf8), Data("Ano placeholder DLL\0".utf8)]
 
     /// Whether the VC++ 2015-2022 runtime is installed in a prefix.
     ///
@@ -52,7 +55,7 @@ public enum VCRedistDetector {
         }
     }
 
-    /// Whether a file is a PE image that Wine did not install as its own.
+    /// Whether a file is a PE image that the engine did not install as its own.
     ///
     /// Fails closed: a missing, unreadable, or truncated file, or one without
     /// the `MZ` magic, is not native.

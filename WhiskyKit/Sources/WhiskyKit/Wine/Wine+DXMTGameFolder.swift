@@ -21,7 +21,7 @@ import Foundation
 import os.log
 
 extension Wine {
-    /// DXMT's trio as a game folder gets it. `winemetal.dll` stays in
+    /// DXMT's trio as a game folder gets it. `anometal.dll` stays in
     /// `system32` only, where its builtin redirect already serves the trio.
     static let dxmtGameFolderDLLs = ["d3d11.dll", "d3d10core.dll", "dxgi.dll"]
 

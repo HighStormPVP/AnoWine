@@ -30,7 +30,7 @@ public enum WhiskyWineInstallError: LocalizedError, Equatable {
     /// OS purged the temporary download before installation ran.
     case tarballNotFound
     /// The archive extracted, but what it holds is not a usable runtime (no
-    /// version plist or no `wine64`). The installed runtime is left in place.
+    /// version plist or no loader). The installed runtime is left in place.
     case runtimeIncomplete
     /// The new runtime could not be moved into place, and the previous one
     /// could not be put back either. The previous runtime stays in the staging
@@ -111,14 +111,15 @@ public class WhiskyWineInstaller {
     /// Located at `~/Library/Application Support/{bundle-identifier}/Libraries/`.
     public static let libraryFolder = applicationFolder.appending(path: "Libraries")
 
-    /// The URL to the Wine binary directory.
+    /// The URL to the runtime's binary directory, `Libraries/Ano/bin`.
     ///
-    /// This folder contains `wine64`, `wineserver`, and other Wine executables.
-    public static let binFolder: URL = libraryFolder.appending(path: "Wine").appending(path: "bin")
+    /// This folder contains `ano-loader` and `ano-server`.
+    public static let binFolder: URL = AnoWineRuntime.runtimeFolder(inLibraryFolder: libraryFolder)
+        .appending(path: "bin")
 
     /// Checks whether WhiskyWine is currently installed and usable.
     ///
-    /// Requires both a readable version plist *and* the `wine64` binary on disk:
+    /// Requires both a readable version plist *and* the loader on disk:
     /// a half-extracted or partially-removed runtime can leave the plist behind
     /// without the binary, and reporting that as "installed" makes every bottle
     /// fail confusingly instead of prompting a re-install.
@@ -129,22 +130,25 @@ public class WhiskyWineInstaller {
     }
 
     /// Whether a usable runtime exists under `folder` — both the version plist
-    /// and the `wine64` binary the app actually executes. Factored out of
+    /// and the loader the app actually executes. Factored out of
     /// ``isWhiskyWineInstalled()`` so it can be tested against a temp directory.
+    ///
+    /// Only the engine's layout counts (``AnoWineRuntime/versionPlistName``
+    /// beside `Ano/bin/ano-loader`). A runtime in the layout older engines
+    /// ship reads as not installed, so Setup installs the renamed one.
     static func isRuntimePresent(inLibraryFolder folder: URL) -> Bool {
-        let versionPlist = folder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist")
-        guard whiskyWineInfo(at: versionPlist) != nil else { return false }
+        guard whiskyWineInfo(at: AnoWineRuntime.versionPlist(inLibraryFolder: folder)) != nil else { return false }
 
-        // Mirrors `Wine.wineBinary` (binFolder/wine64), the executable used to
-        // launch every program — if it's missing the runtime isn't usable.
-        let wineBinary = folder.appending(path: "Wine").appending(path: "bin")
+        // Mirrors `Wine.wineBinary` (binFolder/ano-loader), the executable used
+        // to launch every program — if it's missing the runtime isn't usable.
+        let wineBinary = AnoWineRuntime.runtimeFolder(inLibraryFolder: folder).appending(path: "bin")
             .appending(path: AnoWineRuntime.loaderName)
         return FileManager.default.fileExists(atPath: wineBinary.path(percentEncoded: false))
     }
 
     /// Checks whether the installed runtime bundles Apple's D3DMetal layer.
     ///
-    /// GPTK-based Wine builds carry D3DMetal under `Wine/lib/external/` as
+    /// GPTK-capable engines carry D3DMetal under `Ano/lib/external/` as
     /// `D3DMetal.framework` with `libd3dshared.dylib` alongside. Runtimes built
     /// without GPTK ship neither, and a bottle configured for D3DMetal silently
     /// falls back to wined3d at launch.
@@ -157,7 +161,7 @@ public class WhiskyWineInstaller {
     /// Whether the D3DMetal payload exists under `folder`. Factored out of
     /// ``isD3DMetalInstalled()`` so it can be tested against a temp directory.
     static func isD3DMetalPresent(inLibraryFolder folder: URL) -> Bool {
-        let external = folder.appending(path: "Wine").appending(path: "lib").appending(path: "external")
+        let external = AnoWineRuntime.libFolder(inLibraryFolder: folder).appending(path: "external")
         let candidates = [
             external.appending(path: "D3DMetal.framework"),
             external.appending(path: "libd3dshared.dylib")
@@ -524,10 +528,7 @@ public class WhiskyWineInstaller {
     /// - Returns: The decoded ``WhiskyWineVersion``, or `nil` if WhiskyWine is
     ///   not installed or the version file cannot be read.
     public static func whiskyWineInfo() -> WhiskyWineVersion? {
-        let versionPlist = libraryFolder
-            .appending(path: "WhiskyWineVersion")
-            .appendingPathExtension("plist")
-        return whiskyWineInfo(at: versionPlist)
+        whiskyWineInfo(at: AnoWineRuntime.versionPlist(inLibraryFolder: libraryFolder))
     }
 
     /// Reads a WhiskyWine version record from a plist at an arbitrary URL.
@@ -535,7 +536,7 @@ public class WhiskyWineInstaller {
     /// ``whiskyWineInfo()`` resolves the installed location; this overload reads
     /// any plist URL (also convenient for tests).
     ///
-    /// - Parameter url: The location of a `WhiskyWineVersion.plist` file.
+    /// - Parameter url: The location of a version plist (`AnoRuntimeVersion.plist`).
     /// - Returns: The decoded record, or `nil` if it is missing or malformed.
     public static func whiskyWineInfo(at url: URL) -> WhiskyWineVersion? {
         do {

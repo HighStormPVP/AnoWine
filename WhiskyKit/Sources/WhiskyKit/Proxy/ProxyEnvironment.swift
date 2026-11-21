@@ -28,7 +28,7 @@ public enum ProxyEnvironment {
     public static let portKey = "ANO_PROXY_PORT"
     /// Absolute path of `libano_net.dylib`.
     public static let libraryKey = "ANO_NET_LIB"
-    /// The runtime's `Libraries/Wine` folder: programs under it keep the interceptor.
+    /// The runtime's `Libraries/Ano` folder: programs under it keep the interceptor.
     public static let wineDirKey = "ANO_WINE_DIR"
     /// The runtime's `ano-loader`, which the wrapper starts.
     public static let realLoaderKey = "ANO_REAL_LOADER"
@@ -37,7 +37,7 @@ public enum ProxyEnvironment {
     /// The variables a proxied bottle's launches carry.
     public static func variables(
         port: UInt16?, library: URL = libraryURL,
-        wineFolder: URL = WhiskyWineInstaller.libraryFolder.appending(path: "Wine"),
+        wineFolder: URL = AnoWineRuntime.runtimeFolder(inLibraryFolder: WhiskyWineInstaller.libraryFolder),
         realLoader: URL = AnoWineRuntime.loaderURL
     ) -> [String: String] {
         [

@@ -57,7 +57,7 @@ extension Wine {
     /// carries a game's plan still runs, and its helpers keep restarting, on
     /// DXVK: its files stay in place, and are copied after a DXMT plan's, so
     /// the launcher keeps working when the two share a file. DXMT's
-    /// `winemetal.dll`, which DXVK does not ship, stays in `system32`.
+    /// `anometal.dll`, which DXVK does not ship, stays in `system32`.
     ///
     /// The game then finds DXMT's trio in its own folder, which Wine's loader
     /// searches before `system32` (#378). Any other plan takes back the copies

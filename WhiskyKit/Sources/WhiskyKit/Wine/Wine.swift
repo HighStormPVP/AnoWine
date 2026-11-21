@@ -1298,8 +1298,8 @@ public class Wine {
             // reinstall the placeholder on the next prefix update, but a runtime
             // whose wine.inf matches the prefix stamp never runs one. Put back the
             // runtime's own marked copy, which is what wineboot installs.
-            let builtin = libraryFolder.appending(path: "Wine").appending(path: "lib")
-                .appending(path: "wine").appending(path: arch).appending(path: "dxgi.dll")
+            let builtin = AnoWineRuntime.moduleFolder(arch, inLibraryFolder: libraryFolder)
+                .appending(path: "dxgi.dll")
             guard fileManager.fileExists(atPath: builtin.path(percentEncoded: false)) else {
                 Logger.wineKit.warning("No builtin dxgi.dll to restore into \(dir, privacy: .public)")
                 continue
@@ -1315,12 +1315,15 @@ public class Wine {
         }
     }
 
-    /// winebuild's signature in the 16 bytes at offset 0x40 of every Wine
-    /// builtin PE. The loader treats a file carrying it as a placeholder for
-    /// the builtin in `lib/wine`, never as a DLL in its own right.
-    static let builtinMarker = Data("Wine builtin DLL".utf8)
+    /// Whether `window`, the 16 bytes at offset 0x40 of a PE, is a builtin
+    /// mark (``AnoWineRuntime/builtinMarks``): the engine's, or the one Apple's
+    /// D3DMetal DLLs carry. The loader treats a file carrying either as a
+    /// placeholder for the builtin in `lib/ano`, never as a DLL in its own right.
+    static func isBuiltinMark(_ window: Data) -> Bool {
+        AnoWineRuntime.builtinMarkWindows.contains(window)
+    }
 
-    /// Whether the PE at `url` carries winebuild's builtin marker.
+    /// Whether the PE at `url` carries a builtin marker.
     ///
     /// Stricter than the inverse of ``isNativePE(_:)``, which also answers
     /// `false` for a file too short to hold the marker: here only a file that
@@ -1330,12 +1333,12 @@ public class Wine {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
         defer { try? handle.close() }
         guard (try? handle.seek(toOffset: 0x40)) != nil,
-              let marker = try? handle.read(upToCount: 16)
+              let marker = try? handle.read(upToCount: AnoWineRuntime.builtinMarkLength)
         else { return false }
-        return marker == builtinMarker
+        return isBuiltinMark(marker)
     }
 
-    /// Strips the "Wine builtin DLL" marker at offset 0x40 from a PE file.
+    /// Strips the builtin marker at offset 0x40 from a PE file.
     static func stripBuiltinMarker(at fileURL: URL) throws {
         guard FileManager.default.fileExists(atPath: fileURL.path(percentEncoded: false)) else { return }
         let handle = try FileHandle(forUpdating: fileURL)
@@ -1352,7 +1355,7 @@ public class Wine {
     /// marker stripped so the loader accepts it as a true native PE.
     ///
     /// Only `system32` is written: GPTK deploys forwarders into
-    /// `wine/x86_64-windows` only, so the 32-bit builtin is still Wine's own
+    /// `ano/x86_64-windows` only, so the 32-bit builtin is still Wine's own
     /// and a 64-bit original has no business in `syswow64`.
     ///
     /// `source` is whatever ``WineD3DSource`` resolved for the installed
@@ -1424,11 +1427,11 @@ public class Wine {
     private static let dxmtNativeTrio = ["d3d11.dll", "dxgi.dll", "d3d10core.dll"]
 
     /// The DXMT files deployed into a bottle: the native D3D trio plus
-    /// `winemetal.dll`. `winemetal.dll` is the builtin-marked redirect whose
-    /// import resolves to the runtime's `winemetal.dll` builtin in `lib/wine`.
+    /// `anometal.dll`. `anometal.dll` is the builtin-marked redirect whose
+    /// import resolves to the runtime's `anometal.dll` builtin in `lib/ano`.
     /// The NVIDIA extras (nvapi64/nvngx) in the payload are deliberately not
     /// deployed — DXMT's vendor spoofing is out of scope.
-    private static let dxmtPrefixDLLs = dxmtNativeTrio + ["winemetal.dll"]
+    private static let dxmtPrefixDLLs = dxmtNativeTrio + ["anometal.dll"]
 
     /// Whether the installed runtime carries a DXMT payload that can actually be
     /// activated per-bottle: present **and** the *native* variant. A
@@ -1452,9 +1455,9 @@ public class Wine {
     }
 
     /// Returns `true` when the PE at `url` is a markerless *native* DLL — i.e. its
-    /// DOS stub does not carry winebuild's "Wine builtin DLL" signature in the 16
+    /// DOS stub does not carry a builtin mark (``isBuiltinMark(_:)``) in the 16
     /// bytes at offset 0x40. A builtin-marked copy placed in the prefix is ignored
-    /// by the loader, which redirects to the `lib/wine` builtin (wined3d) instead.
+    /// by the loader, which redirects to the `lib/ano` builtin (anod3d) instead.
     /// A file too short to hold those 16 bytes is treated as **not** native
     /// (fail-closed): a truncated or corrupt payload must not be deployed as if it
     /// were a working native DLL — that would resurrect the silent wined3d
@@ -1463,10 +1466,11 @@ public class Wine {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         try handle.seek(toOffset: 0x40)
-        guard let marker = try handle.read(upToCount: 16), marker.count == 16 else {
+        let length = AnoWineRuntime.builtinMarkLength
+        guard let marker = try handle.read(upToCount: length), marker.count == length else {
             return false
         }
-        return marker != builtinMarker
+        return !isBuiltinMark(marker)
     }
 
     /// Places the per-bottle files a backend needs in the prefix before launch.
@@ -1580,12 +1584,12 @@ public class Wine {
     /// Installs DXMT into a bottle so its Direct3D-11-to-Metal layer is used.
     ///
     /// Copies the native D3D translation trio (`d3d11`, `dxgi`, `d3d10core`) and
-    /// `winemetal.dll` from the runtime's DXMT payload into the bottle's system
+    /// `anometal.dll` from the runtime's DXMT payload into the bottle's system
     /// directories — the same per-bottle, prefix-local model as ``enableDXVK``,
     /// selected by the `n,b` overrides from ``DLLOverrideResolver/dxmtPreset(builtinD3D12IsD3DMetal:)``.
-    /// The runtime ships DXMT's `winemetal.dll` builtin (paired with its
-    /// `winemetal.so` unixlib) in `lib/wine`, so this method never touches the
-    /// shared Wine tree; the prefix `winemetal.dll` is the builtin-marked
+    /// The runtime ships DXMT's `anometal.dll` builtin (paired with its
+    /// `anometal.so` unixlib) in `lib/ano`, so this method never touches the
+    /// shared engine tree; the prefix `anometal.dll` is the builtin-marked
     /// redirect that resolves the trio's import to that builtin.
     ///
     /// - Parameter bottle: The ``Bottle`` to install DXMT into.

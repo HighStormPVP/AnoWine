@@ -51,9 +51,7 @@ extension GPTKImporter {
     /// The version of the D3DMetal framework in `folder`'s runtime, whether it
     /// was deployed from the store or copied in by hand.
     static func deployedPayloadVersion(inLibraryFolder folder: URL) -> String? {
-        frameworkVersion(
-            inExternal: folder.appending(path: "Wine").appending(path: "lib").appending(path: "external")
-        )
+        frameworkVersion(inExternal: AnoWineRuntime.libFolder(inLibraryFolder: folder).appending(path: "external"))
     }
 
     /// Whether the payload in `folder`'s runtime is the one `store` deployed.
@@ -68,8 +66,7 @@ extension GPTKImporter {
         guard storedRecord(inStore: store) != nil else {
             return false
         }
-        let peDir = folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
         let storeLib = store.appending(path: "lib")
         let interposed = Set(interposers.map(\.slotName))
         return forwarderDLLNames.filter { !interposed.contains($0) }.allSatisfy { name in
@@ -134,8 +131,8 @@ extension GPTKImporter {
             return
         }
 
-        let slot = folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: videoProcessorInterposer.slotName)
+        let slot = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
+            .appending(path: videoProcessorInterposer.slotName)
         let slotIsDeploys = isVideoProcessorInstalled(inLibraryFolder: folder)
             || isGPTKForwarder(slot, matching: store.appending(path: "lib"))
         guard hasVideoProcessor(inLibraryFolder: folder), slotIsDeploys else {
@@ -171,8 +168,7 @@ extension GPTKImporter {
     /// anything else may be forwarding to them.
     static func takeBack(_ interposer: GPTKInterposer, fromLibraryFolder folder: URL, storeLib: URL?) {
         let fileManager = FileManager.default
-        let wineLib = folder.appending(path: "Wine").appending(path: "lib")
-        let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
         let slot = peDir.appending(path: interposer.slotName)
         let candidates = applesDLLCandidates(for: interposer, inPEDir: peDir, storeLib: storeLib)
 
@@ -200,7 +196,7 @@ extension GPTKImporter {
 
         try? fileManager.removeItem(at: peDir.appending(path: interposer.renamedName))
         try? fileManager.removeItem(
-            at: wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+            at: AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder)
                 .appending(path: interposer.renamedUnixName)
         )
     }
@@ -214,8 +210,7 @@ extension GPTKImporter {
     ) -> [Data] {
         var candidates: [Data] = []
         if let storeLib {
-            let pristine = storeLib.appending(path: "wine").appending(path: "x86_64-windows")
-                .appending(path: interposer.slotName)
+            let pristine = storeWindowsFolder(inStoreLib: storeLib).appending(path: interposer.slotName)
             if let data = try? Data(contentsOf: pristine) {
                 candidates.append(data)
             }

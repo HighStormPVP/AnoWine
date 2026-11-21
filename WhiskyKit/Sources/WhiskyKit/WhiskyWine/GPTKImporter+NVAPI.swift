@@ -41,19 +41,16 @@ extension GPTKImporter {
 
     /// Where the bridge lives in the store, or `nil` for a payload without one.
     static func nvapiBridgeSource(inStore store: URL) -> URL? {
-        let source = store.appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: nvapiBridgeName)
+        let source = storeWindowsFolder(inStoreLib: store.appending(path: "lib")).appending(path: nvapiBridgeName)
         return FileManager.default.fileExists(atPath: source.path(percentEncoded: false)) ? source : nil
     }
 
     static func nvapiBridgePE(inLibraryFolder folder: URL) -> URL {
-        folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: nvapiBridgeName)
+        AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder).appending(path: nvapiBridgeName)
     }
 
     static func nvapiBridgeUnixLink(inLibraryFolder folder: URL) -> URL {
-        folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-unix").appending(path: nvapiBridgeUnixName)
+        AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder).appending(path: nvapiBridgeUnixName)
     }
 
     static func nvapiPlaceholderBackup(inLibraryFolder folder: URL) -> URL {

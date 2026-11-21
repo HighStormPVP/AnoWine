@@ -18,12 +18,14 @@
 
 import Foundation
 
-/// Names of the Wine programs in AnoWine's runtime.
+/// Names of the programs, folders and files in Ano's runtime.
 ///
-/// AnoWine's runtime is upstream's with two programs renamed: the loader
-/// (`wine64`, a symlink to `wine` upstream) is `ano-loader`, and `wineserver` is
-/// `ano-server`. Wine finds the renamed server through `WINESERVER`, which
-/// every launch environment sets. See `spikes/REPORT.md`.
+/// Ano's runtime is upstream's engine with its names renamed (runtime 5.0.0):
+/// the loader (`wine64`, a symlink to `wine` upstream) is `ano-loader`,
+/// `wineserver` is `ano-server`, and the layout is `Libraries/Ano` with
+/// `bin`, `lib/ano` and `share/ano`, beside `Libraries/AnoRuntimeVersion.plist`.
+/// The engine finds the renamed server through the server variable every launch
+/// environment sets. See `spikes/REPORT.md`.
 public enum AnoWineRuntime {
     /// The Wine loader every program is launched through.
     public static let loaderName = "ano-loader"
@@ -38,6 +40,57 @@ public enum AnoWineRuntime {
     /// `lib/wine/x86_64-unix/wine`). From runtime 3.1.6 `ps` shows its path
     /// first, then the Windows program.
     public static let coreName = "ano-core"
+
+    /// The runtime's folder in `Libraries` (upstream's `Wine`), holding `bin`,
+    /// `lib` and `share`.
+    public static let runtimeFolderName = "Ano"
+    /// The folder in the runtime's `lib` and `share` that holds its modules and
+    /// data (upstream's `wine`): `lib/ano/x86_64-windows`, `share/ano/mono`.
+    public static let moduleFolderName = "ano"
+    /// The runtime's version record in `Libraries`, without its `.plist`
+    /// extension (upstream's `WhiskyWineVersion`, with the same keys).
+    public static let versionPlistName = "AnoRuntimeVersion"
+    /// The marks a builtin DLL carries in the 16 bytes at offset 0x40, where a
+    /// native PE has its DOS stub. The engine writes the first on its own DLLs
+    /// and still loads the second as builtin, because Apple's D3DMetal DLLs
+    /// carry it.
+    public static let builtinMarks = [
+        "Ano builtin DLL",
+        "Wine builtin DLL" // old name: the mark Apple's D3DMetal DLLs carry
+    ]
+
+    /// ``builtinMarks`` as the loader compares them: the 16 bytes at offset
+    /// 0x40, the mark padded with NULs ("Ano builtin DLL" and its terminator).
+    static let builtinMarkWindows: [Data] = builtinMarks.map { mark in
+        var window = Data(mark.utf8)
+        window.append(Data(count: max(0, builtinMarkLength - window.count)))
+        return window
+    }
+
+    /// How many bytes at offset 0x40 a builtin mark takes.
+    static let builtinMarkLength = 16
+
+    /// The runtime under a `Libraries` folder: `Libraries/Ano`.
+    static func runtimeFolder(inLibraryFolder folder: URL) -> URL {
+        folder.appending(path: runtimeFolderName)
+    }
+
+    /// The runtime's `lib`: `Libraries/Ano/lib`, holding the module folder,
+    /// `external` (Apple's D3DMetal, once imported) and `gptk-video`.
+    static func libFolder(inLibraryFolder folder: URL) -> URL {
+        runtimeFolder(inLibraryFolder: folder).appending(path: "lib")
+    }
+
+    /// One of the runtime's module folders: `Libraries/Ano/lib/ano/<arch>`,
+    /// for example `x86_64-windows` or `x86_64-unix`.
+    static func moduleFolder(_ arch: String, inLibraryFolder folder: URL) -> URL {
+        libFolder(inLibraryFolder: folder).appending(path: moduleFolderName).appending(path: arch)
+    }
+
+    /// The runtime's version record: `Libraries/AnoRuntimeVersion.plist`.
+    static func versionPlist(inLibraryFolder folder: URL) -> URL {
+        folder.appending(path: versionPlistName).appendingPathExtension("plist")
+    }
 
     /// The loader inside the installed runtime.
     public static var loaderURL: URL {

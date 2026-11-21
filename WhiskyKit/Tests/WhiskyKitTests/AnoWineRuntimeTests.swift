@@ -25,6 +25,27 @@ final class AnoWineRuntimeTests: XCTestCase {
         XCTAssertEqual(AnoWineRuntime.serverName, "ano-server")
     }
 
+    /// The engine's layout names, in one place (runtime 5.0.0).
+    func testRuntimeLayoutNames() {
+        XCTAssertEqual(AnoWineRuntime.runtimeFolderName, "Ano")
+        XCTAssertEqual(AnoWineRuntime.moduleFolderName, "ano")
+        XCTAssertEqual(AnoWineRuntime.versionPlistName, "AnoRuntimeVersion")
+        XCTAssertEqual(AnoWineRuntime.builtinMarks, ["Ano builtin DLL", "Wine builtin DLL"])
+        XCTAssertEqual(AnoWineRuntime.builtinMarkWindows, [
+            Data("Ano builtin DLL\0".utf8), Data("Wine builtin DLL".utf8)
+        ])
+
+        let libraries = URL(filePath: "/L")
+        XCTAssertEqual(
+            AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: libraries).path(percentEncoded: false),
+            "/L/Ano/lib/ano/x86_64-unix"
+        )
+        XCTAssertEqual(
+            AnoWineRuntime.versionPlist(inLibraryFolder: libraries).path(percentEncoded: false),
+            "/L/AnoRuntimeVersion.plist"
+        )
+    }
+
     func testRuntimeBinFolderIsTheEngines() {
         XCTAssertTrue(
             WhiskyWineInstaller.binFolder.path(percentEncoded: false).hasSuffix("/Libraries/Ano/bin"),

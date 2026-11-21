@@ -43,7 +43,7 @@ extension GPTKImporter {
     /// Testable seam for ``isRuntimeGPTKCapable()``: reads the version plist
     /// of the runtime under `folder`.
     static func isRuntimeGPTKCapable(inLibraryFolder folder: URL) -> Bool {
-        let plist = folder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist")
+        let plist = AnoWineRuntime.versionPlist(inLibraryFolder: folder)
         return WhiskyWineInstaller.whiskyWineInfo(at: plist)?.gptkCapable == true
     }
 
@@ -55,11 +55,11 @@ extension GPTKImporter {
     }
 
     /// Testable seam for ``isDeployed()``: the unix bridge for dxgi and the
-    /// shared dylib both present in the Wine tree.
+    /// shared dylib both present in the engine's tree.
     static func isDeployed(inLibraryFolder folder: URL) -> Bool {
-        let lib = folder.appending(path: "Wine").appending(path: "lib")
-        let bridge = lib.appending(path: "wine").appending(path: "x86_64-unix").appending(path: "dxgi.so")
-        let dylib = lib.appending(path: "external").appending(path: "libd3dshared.dylib")
+        let bridge = AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder).appending(path: "dxgi.so")
+        let dylib = AnoWineRuntime.libFolder(inLibraryFolder: folder).appending(path: "external")
+            .appending(path: "libd3dshared.dylib")
         let fileManager = FileManager.default
         return fileManager.fileExists(atPath: bridge.path(percentEncoded: false)) &&
             fileManager.fileExists(atPath: dylib.path(percentEncoded: false))
@@ -168,7 +168,7 @@ extension GPTKImporter {
 
     /// The runtime version under `folder`, or `nil` if none is readable.
     static func runtimeVersionStamp(inLibraryFolder folder: URL) -> String? {
-        let plist = folder.appending(path: "WhiskyWineVersion").appendingPathExtension("plist")
+        let plist = AnoWineRuntime.versionPlist(inLibraryFolder: folder)
         guard let info = WhiskyWineInstaller.whiskyWineInfo(at: plist) else { return nil }
         return "\(info.version.major).\(info.version.minor).\(info.version.patch)"
     }
@@ -213,9 +213,8 @@ extension GPTKImporter {
         }
         let fileManager = FileManager.default
         let storeLib = store.appending(path: "lib")
-        let wineLib = folder.appending(path: "Wine").appending(path: "lib")
-        let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
-        let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
+        let unixDir = AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder)
         let originals = store.appending(path: "originals")
         try prepareOriginals(inStore: store, forLibraryFolder: folder)
 
@@ -238,10 +237,7 @@ extension GPTKImporter {
                     try fileManager.removeItem(at: target)
                 }
             }
-            try fileManager.copyItem(
-                at: storeLib.appending(path: "wine").appending(path: "x86_64-windows").appending(path: name),
-                to: target
-            )
+            try fileManager.copyItem(at: storeWindowsFolder(inStoreLib: storeLib).appending(path: name), to: target)
         }
 
         try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
@@ -254,7 +250,7 @@ extension GPTKImporter {
             )
         }
 
-        let externalDest = wineLib.appending(path: "external")
+        let externalDest = AnoWineRuntime.libFolder(inLibraryFolder: folder).appending(path: "external")
         if fileManager.fileExists(atPath: externalDest.path(percentEncoded: false)) {
             try fileManager.removeItem(at: externalDest)
         }
@@ -278,8 +274,7 @@ extension GPTKImporter {
     /// name, so deploy never mistakes an already-deployed Apple DLL for a Wine
     /// original worth backing up and remove only deletes what it put there.
     static func isGPTKForwarder(_ dll: URL, matching storeLib: URL) -> Bool {
-        let storeDLL = storeLib.appending(path: "wine").appending(path: "x86_64-windows")
-            .appending(path: dll.lastPathComponent)
+        let storeDLL = storeWindowsFolder(inStoreLib: storeLib).appending(path: dll.lastPathComponent)
         return FileManager.default.contentsEqual(
             atPath: dll.path(percentEncoded: false),
             andPath: storeDLL.path(percentEncoded: false)
@@ -297,9 +292,8 @@ extension GPTKImporter {
         mutationLock.lock()
         defer { mutationLock.unlock() }
         let fileManager = FileManager.default
-        let wineLib = folder.appending(path: "Wine").appending(path: "lib")
-        let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
-        let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
+        let unixDir = AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder)
         let originals = store.appending(path: "originals")
         let storeLib = store.appending(path: "lib")
 
@@ -346,7 +340,7 @@ extension GPTKImporter {
             try? fileManager.removeItem(at: unixDir.appending(path: name))
         }
 
-        let external = wineLib.appending(path: "external")
+        let external = AnoWineRuntime.libFolder(inLibraryFolder: folder).appending(path: "external")
         if fileManager.fileExists(atPath: external.path(percentEncoded: false)) {
             try fileManager.removeItem(at: external)
         }

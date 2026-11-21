@@ -69,7 +69,7 @@ public enum GPTKImportError: LocalizedError, Equatable {
 
 /// A located and validated GPTK payload (Apple's `redist/lib` layout).
 public struct GPTKPayload: Equatable, Sendable {
-    /// The folder containing `external/` and `wine/`.
+    /// The folder containing `external/` and the bridges' folder.
     public let libRoot: URL
     /// The D3DMetal framework version, e.g. `"4.0b2"`.
     public let version: String
@@ -92,8 +92,9 @@ public struct GPTKStoreRecord: Codable, Equatable, Sendable {
 /// PE forwarder DLLs, and six unix-side names that all resolve to
 /// `libd3dshared.dylib`.
 ///
-/// Importing copies the payload verbatim into a pristine store (`D3DMetal/`,
-/// a sibling of `Libraries/`), surviving runtime reinstalls. Deployment, placing
+/// Importing copies the payload verbatim into a pristine store (`D3DMetal/`, a
+/// sibling of `Libraries/`), surviving runtime reinstalls, but for the bridges'
+/// folder, which takes the engine's name (`lib/ano`). Deployment, placing
 /// the payload into the Wine tree the way Apple documents, is a separate,
 /// gated step: the payload's DLLs are C++ with exception handling, and a Wine
 /// build without personality-routine support for builtin modules kills every
@@ -134,8 +135,8 @@ public enum GPTKImporter {
     /// finds the framework beside it.
     static let unixLibraryNames = ["d3d10.so", "d3d11.so", "d3d12.so", "dxgi.so"]
 
-    /// The symlink target for every unix bridge name, relative to
-    /// `wine/x86_64-unix/`.
+    /// The symlink target for every unix bridge name, relative to the
+    /// `x86_64-unix` folder in the module folder (`lib/ano/x86_64-unix/`).
     static let unixLinkDestination = "../../external/libd3dshared.dylib"
 
     /// The pristine payload store: `D3DMetal/`, a sibling of `Libraries/`.
@@ -170,11 +171,8 @@ public enum GPTKImporter {
     /// A payload root has the shared dylib and at least one forwarder in
     /// Apple's layout. Full completeness is ``validatePayload(at:)``'s job.
     static func isPayloadRoot(_ url: URL) -> Bool {
-        let fileManager = FileManager.default
-        let dylib = url.appending(path: "external").appending(path: "libd3dshared.dylib")
-        let dxgi = url.appending(path: "wine").appending(path: "x86_64-windows").appending(path: "dxgi.dll")
-        return fileManager.fileExists(atPath: dylib.path(percentEncoded: false)) &&
-            fileManager.fileExists(atPath: dxgi.path(percentEncoded: false))
+        guard let modules = moduleFolder(inPayload: url) else { return false }
+        return holdsPayload(url, modules: modules)
     }
 
     /// Whether `url` is readable and long enough for the marker check.
@@ -216,19 +214,22 @@ public enum GPTKImporter {
         isAppleSigned: (_ code: URL, _ identifier: String) -> Bool = GPTKImporter.isAppleSigned(_:identifier:)
     ) throws -> GPTKPayload {
         let fileManager = FileManager.default
-        let peDir = libRoot.appending(path: "wine").appending(path: "x86_64-windows")
+        let modules = moduleFolder(inPayload: libRoot)
+        let peDir = modules?.appending(path: "x86_64-windows")
         let external = libRoot.appending(path: "external")
+        // The folder as the payload names it, so a missing path matches the disk.
+        let peDirPath = (modules.map { "\($0.lastPathComponent)/" } ?? "") + "x86_64-windows"
 
         var missing: [String] = []
         for name in forwarderDLLNames
-            where !fileManager.fileExists(atPath: peDir.appending(path: name).path(percentEncoded: false)) {
-            missing.append("wine/x86_64-windows/\(name)")
+            where !fileManager.fileExists(atPath: peDir?.appending(path: name).path(percentEncoded: false) ?? "") {
+            missing.append("\(peDirPath)/\(name)")
         }
         for path in ["libd3dshared.dylib", "D3DMetal.framework"]
             where !fileManager.fileExists(atPath: external.appending(path: path).path(percentEncoded: false)) {
             missing.append("external/\(path)")
         }
-        guard missing.isEmpty else {
+        guard missing.isEmpty, let peDir else {
             throw GPTKImportError.payloadIncomplete(missing: missing)
         }
 
@@ -324,6 +325,7 @@ public enum GPTKImporter {
             // leave the store pointing at the source, and every later deploy
             // would copy whatever the source holds by then.
             try fileManager.copyItem(at: payload.libRoot.resolvingSymlinksInPath(), to: staging)
+            try adoptModuleFolder(inPayload: staging)
             try linkUnixBridges(inPayload: staging)
             if let isAppleSigned {
                 version = try validatePayload(at: staging, isAppleSigned: isAppleSigned).version
@@ -356,7 +358,7 @@ public enum GPTKImporter {
     /// to its shared library.
     private static func linkUnixBridges(inPayload libRoot: URL) throws {
         let fileManager = FileManager.default
-        let unixDir = libRoot.appending(path: "wine").appending(path: "x86_64-unix")
+        let unixDir = storeModuleFolder(inStoreLib: libRoot).appending(path: "x86_64-unix")
         try fileManager.createDirectory(at: unixDir, withIntermediateDirectories: true)
         for name in unixLibraryNames {
             let link = unixDir.appending(path: name)
@@ -374,11 +376,13 @@ public enum GPTKImporter {
         storedRecord(inStore: storeFolder)
     }
 
-    /// Testable seam for ``storedRecord()``.
+    /// Testable seam for ``storedRecord()``. Only the store's own layout
+    /// (`lib/ano`) counts: a store an older app made in Apple's holds nothing.
     static func storedRecord(inStore store: URL) -> GPTKStoreRecord? {
+        let storeLib = store.appending(path: "lib")
         guard let data = try? Data(contentsOf: recordURL(inStore: store)),
               let record = try? PropertyListDecoder().decode(GPTKStoreRecord.self, from: data),
-              isPayloadRoot(store.appending(path: "lib"))
+              holdsPayload(storeLib, modules: storeModuleFolder(inStoreLib: storeLib))
         else { return nil }
         return record
     }

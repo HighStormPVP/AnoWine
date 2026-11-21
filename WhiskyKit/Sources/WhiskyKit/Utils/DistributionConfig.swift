@@ -30,14 +30,12 @@ public enum DistributionConfig {
     /// URL for the runtime version plist, which names the runtime to install
     /// and offers as an update.
     ///
-    /// Ano 6 and 7 read `WhiskyWineVersion.plist`, which stays on runtime
-    /// 3.1.6: runtime 4.9.0 needs this app's D3DMetal, DLL override,
-    /// environment and Steam detection changes, so older apps are not offered
-    /// a runtime nobody tested them with. This feed is the one that moves.
-    public static let versionPlistURL = "\(feedBaseURL)/WhiskyWineVersion-v4.plist"
-
-    /// The feed Ano 6 and 7 read, frozen on runtime 3.1.6.
-    static let legacyVersionPlistURL = "\(feedBaseURL)/WhiskyWineVersion.plist"
+    /// Each app line reads its own feed, so a runtime bump reaches only the
+    /// apps built for it: Ano 6 and 7 read `WhiskyWineVersion.plist` (runtime
+    /// 3.1.6) and Ano 8 reads `WhiskyWineVersion-v4.plist` (4.9.0). This app
+    /// runs only the renamed engine (5.0.0 and later), whose feed is named like
+    /// the version plist inside it.
+    public static let versionPlistURL = "\(feedBaseURL)/\(AnoWineRuntime.versionPlistName).plist"
 
     /// The GitHub Releases page, which lists app releases and the runtime
     /// builds.

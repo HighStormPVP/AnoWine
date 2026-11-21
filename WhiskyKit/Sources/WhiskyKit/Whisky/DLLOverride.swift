@@ -228,8 +228,8 @@ public struct DLLOverrideResolver: Sendable {
     ///
     /// The Direct3D translation trio is `n,b` so the DXMT natives copied into
     /// the prefix win, with Wine's builtins as fallback.
-    /// `winemetal` is pinned to builtin: DXMT's bridge DLL relies on Wine's
-    /// unixlib binding (`__wine_unix_call`) to reach `winemetal.so`, which only
+    /// `anometal` is pinned to builtin: DXMT's bridge DLL relies on the engine's
+    /// unixlib binding (`__ano_unix_call`) to reach `anometal.so`, which only
     /// works for builtin-loaded modules — a native copy in the prefix would
     /// load but be unable to call into Metal.
     ///
@@ -244,7 +244,7 @@ public struct DLLOverrideResolver: Sendable {
             DLLOverrideEntry(dllName: "dxgi", mode: .nativeThenBuiltin),
             DLLOverrideEntry(dllName: "d3d10core", mode: .nativeThenBuiltin),
             DLLOverrideEntry(dllName: "d3d11", mode: .nativeThenBuiltin),
-            DLLOverrideEntry(dllName: "winemetal", mode: .builtin)
+            DLLOverrideEntry(dllName: "anometal", mode: .builtin)
         ] + d3d12Entries(builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal)
     }
 

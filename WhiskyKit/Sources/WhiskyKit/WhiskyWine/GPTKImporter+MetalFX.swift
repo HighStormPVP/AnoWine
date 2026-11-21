@@ -63,8 +63,8 @@ extension GPTKImporter {
     /// Where the bridge lives in the store, or `nil` for a payload too old to
     /// carry one.
     static func metalFXBridgeSource(inStore store: URL) -> URL? {
-        let source = store.appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: metalFXBridgeSourceName)
+        let source = storeWindowsFolder(inStoreLib: store.appending(path: "lib"))
+            .appending(path: metalFXBridgeSourceName)
         return FileManager.default.fileExists(atPath: source.path(percentEncoded: false)) ? source : nil
     }
 
@@ -79,13 +79,11 @@ extension GPTKImporter {
     }
 
     static func metalFXBridgePE(inLibraryFolder folder: URL) -> URL {
-        folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: metalFXBridgeName)
+        AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder).appending(path: metalFXBridgeName)
     }
 
     static func metalFXBridgeUnixLink(inLibraryFolder folder: URL) -> URL {
-        folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-unix").appending(path: metalFXBridgeUnixName)
+        AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder).appending(path: metalFXBridgeUnixName)
     }
 
     /// Puts the bridge in the tree under its export name with a unix half beside

@@ -81,7 +81,7 @@ extension GPTKImporter {
     static let interposers = [videoProcessorInterposer, dxgiVersionInterposer]
 
     static func shim(for interposer: GPTKInterposer, inLibraryFolder folder: URL) -> URL {
-        folder.appending(path: "Wine").appending(path: "lib")
+        AnoWineRuntime.libFolder(inLibraryFolder: folder)
             .appending(path: "gptk-video").appending(path: interposer.shimFileName)
     }
 
@@ -94,7 +94,7 @@ extension GPTKImporter {
     static let videoProcessorSlotName = "d3d12.dll"
 
     static func videoProcessorShim(inLibraryFolder folder: URL) -> URL {
-        videoProcessorShimPath.reduce(folder.appending(path: "Wine")) { $0.appending(path: $1) }
+        videoProcessorShimPath.reduce(AnoWineRuntime.runtimeFolder(inLibraryFolder: folder)) { $0.appending(path: $1) }
     }
 
     /// Whether `folder`'s runtime carries an interposer to install at all.
@@ -111,8 +111,7 @@ extension GPTKImporter {
 
     /// Whether the interposer currently occupies the `d3d12.dll` slot.
     static func isInstalled(_ interposer: GPTKInterposer, inLibraryFolder folder: URL) -> Bool {
-        let peDir = folder.appending(path: "Wine").appending(path: "lib")
-            .appending(path: "wine").appending(path: "x86_64-windows")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
         return FileManager.default.contentsEqual(
             atPath: peDir.appending(path: interposer.slotName).path(percentEncoded: false),
             andPath: shim(for: interposer, inLibraryFolder: folder).path(percentEncoded: false)
@@ -140,9 +139,8 @@ extension GPTKImporter {
             return
         }
 
-        let wineLib = folder.appending(path: "Wine").appending(path: "lib")
-        let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
-        let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
+        let unixDir = AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder)
         let slot = peDir.appending(path: interposer.slotName)
         let renamed = peDir.appending(path: interposer.renamedName)
 
@@ -191,14 +189,13 @@ extension GPTKImporter {
         _ interposer: GPTKInterposer, fromLibraryFolder folder: URL, usingStore store: URL
     ) {
         let fileManager = FileManager.default
-        let wineLib = folder.appending(path: "Wine").appending(path: "lib")
-        let peDir = wineLib.appending(path: "wine").appending(path: "x86_64-windows")
-        let unixDir = wineLib.appending(path: "wine").appending(path: "x86_64-unix")
+        let peDir = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
+        let unixDir = AnoWineRuntime.moduleFolder("x86_64-unix", inLibraryFolder: folder)
         let slot = peDir.appending(path: interposer.slotName)
 
         if isInstalled(interposer, inLibraryFolder: folder) {
-            let pristine = store.appending(path: "lib").appending(path: "wine")
-                .appending(path: "x86_64-windows").appending(path: interposer.slotName)
+            let pristine = storeWindowsFolder(inStoreLib: store.appending(path: "lib"))
+                .appending(path: interposer.slotName)
             if let original = try? Data(contentsOf: pristine) {
                 do {
                     try replaceSlot(slot, with: original)
@@ -242,8 +239,8 @@ extension GPTKImporter {
         for interposer: GPTKInterposer, inBottle bottle: URL, fromLibraryFolder folder: URL
     ) {
         let fileManager = FileManager.default
-        let source = folder.appending(path: "Wine").appending(path: "lib").appending(path: "wine")
-            .appending(path: "x86_64-windows").appending(path: interposer.renamedName)
+        let source = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
+            .appending(path: interposer.renamedName)
         guard fileManager.fileExists(atPath: source.path(percentEncoded: false)) else { return }
 
         let system32 = bottle.appending(path: "drive_c").appending(path: "windows")
