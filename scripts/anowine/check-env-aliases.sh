@@ -50,6 +50,8 @@ done
 code=0
 wait "$run" || code=$?
 "$ENGINE/bin/ano-server" -k 2> /dev/null || true
+# The stand-in leaves the engine, or bottles made later get it as a builtin.
+rm -f "$PE/aliastest.dll" "$UNIX/aliastest.so"
 # A Windows program ends its lines with \r\n.
 tr -d '\r' < "$WORK/out.txt" > "$WORK/out.lf"
 cat "$WORK/out.lf"
