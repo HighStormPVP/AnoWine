@@ -40,9 +40,10 @@ class LintTests(unittest.TestCase):
 
     def test_programs_modules_and_files(self):
         swift = ('run("winecfg", ["-v"])\nlet d = "winemetal.dll"\nlet o = "winemetal"\nlet b = "wined3d"\n'
-                 'let p = "WhiskyWineVersion"\nlet t = "winetricks"\nlet l = "winetricks.log"\n')
+                 'let p = "WhiskyWineVersion"\nlet t = "winetricks"\nlet l = "winetricks.log"\n'
+                 'static let suffix = ".wine-placeholder"\n')
         self.assertEqual(self.names(swift), [(1, "program"), (2, "module"), (3, "module"), (4, "module"),
-                                             (5, "file"), (6, "file"), (7, "file")])
+                                             (5, "file"), (6, "file"), (7, "file"), (8, "file")])
 
     def test_engine_output(self):
         swift = 'if line.hasPrefix("wine-") {}\nlet r = #"^wine:"#\n'

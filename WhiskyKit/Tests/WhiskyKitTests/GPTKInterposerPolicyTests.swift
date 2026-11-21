@@ -94,6 +94,21 @@ struct GPTKInterposerPolicyTests {
         #expect(fixture.exists(fixture.placeholder(in: bottle)))
     }
 
+    @Test("An earlier Ano's bottle gets nothing at launch")
+    func launchLeavesAnEarlierAnosBottleAlone() throws {
+        let store = try fixture.makeStore(version: GPTKInterposerFixture.validatedVersion)
+        let runtime = try fixture.makeRuntimeTree(shippingInterposers: false)
+        try GPTKImporter.deploy(fromStore: store, intoLibraryFolder: runtime)
+        try fixture.makeShims(in: runtime)
+        let bottle = try fixture.makeBottle()
+        try Data("WINE REGISTRY Version 2\n".utf8).write(to: bottle.appending(path: "system.reg"))
+
+        GPTKImporter.ensureVideoProcessorInstalled(bottles: [bottle], inLibraryFolder: runtime, usingStore: store)
+
+        #expect(GPTKImporter.isVideoProcessorInstalled(inLibraryFolder: runtime))
+        #expect(!fixture.exists(fixture.placeholder(in: bottle)))
+    }
+
     @Test("A GPTK 3 payload copied in by hand is left as it is at launch", arguments: [false, true])
     func launchLeavesHandPlacedPayloadAlone(storeHoldsAnotherPayload: Bool) throws {
         let store = storeHoldsAnotherPayload

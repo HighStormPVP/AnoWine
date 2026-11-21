@@ -70,6 +70,16 @@ final class NVAPIBridgeTests: XCTestCase {
         XCTAssertEqual(target, GPTKImporter.unixLinkDestination)
     }
 
+    func testInstallLeavesNoFileNamedAfterWineInTheRuntime() throws {
+        let (store, folder) = try makeTree()
+        try GPTKImporter.installNVAPIBridge(intoLibraryFolder: folder, usingStore: store)
+
+        let names = FileManager.default.enumerator(atPath: folder.path(percentEncoded: false))?
+            .compactMap { $0 as? String } ?? []
+        XCTAssertFalse(names.isEmpty)
+        XCTAssertEqual(names.filter { $0.lowercased().contains("wine") }, [])
+    }
+
     func testRemovePutsWinesPlaceholderBack() throws {
         let (store, folder) = try makeTree()
         try GPTKImporter.installNVAPIBridge(intoLibraryFolder: folder, usingStore: store)
