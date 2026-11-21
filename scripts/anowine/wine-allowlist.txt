@@ -1022,3 +1022,4 @@ UnsupportedQueryViewInEntityContainerMapping	not-wine	mono System.Data.Entity: V
 # not-wine: what ano-tricks keeps (Plan 3c-3, make_ano_tricks.py), read by hand.
 ifwinexist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
 ifWinExist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
+a modified copy of Winetricks 20260125	license	the LGPL 2.1 section 2(b) notice at the top of Libraries/ano-tricks, naming the work it modifies (make_ano_tricks.py)

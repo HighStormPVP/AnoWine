@@ -321,19 +321,29 @@ those paths would not exist, or would be someone else's to claim); the app uses 
 (the wrapper; `powershell_core`, PowerShell itself, stays). The generator stops if any Wine URL
 is left that the map does not replace.
 
-**Edits**: the update check, self-update and stats report are stubs. Upstream checks
+**Edits**: the update check, self-update, stats report and the download-failure hint are
+stubs. The hint looked up the user's country at ipinfo.io (their IP address, outside the
+proxy) whenever a first download failed or a checksum differed, as vcrun2019's does today
+because Microsoft serves a newer file. Upstream checks
 raw.githubusercontent.com on every run, outside the bottle's proxy, and once renamed, its
 self-update would fetch from a GitHub account (`Anotricks`) anyone could register. The cache
 is `~/Library/Caches/io.github.highstormpvp.Ano/ano-tricks`; upstream's was `~/.cache/winetricks`,
 because it sets `XDG_CACHE_HOME` before its macOS default applies. Three comment links to other
-sites' pages about Wine are removed.
+sites' pages about Wine are removed. When the loader's architecture cannot be read (a wrapper
+script first on PATH, as the proxy has, or `lipo` on a Mac without Xcode's tools), upstream
+guesses the 64-bit loader as `wine64`; renamed, that turned `ano-loader` into `ano64-loader`,
+and every verb failed. ano-tricks keeps the loader's name (the engine has one loader). The top
+of the file says it is a modified copy of Winetricks 20260125, changed on 2026-11-21, as LGPL
+2.1 §2(b) asks; the phrase is on the allowlist as a license line.
 
 **A bug fixed on the way**: upstream's vcrun2022 (master too) copies `msvcp140.dll` out of
 the redistributables' cabinets itself, because their installer keeps the builtin, which has a
 higher version number. But the pinned 2022 cabinets name the file `msvcp140.dll_x86` and
 `msvcp140.dll_amd64`, so nothing was extracted and the verb still exited 0: games got Wine's
-builtin `msvcp140`, in today's app too. ano-tricks extracts it by its real name; a later rename
-fails the verb instead. vcrun2019's cabinets say `msvcp140.dll` and work.
+builtin `msvcp140`, in today's app too. ano-tricks takes any `msvcp140.dll*` from the cabinet
+(`w_ano_msvcp140`), and if a later redistributable has none, it keeps the builtin with a
+warning, as upstream did, instead of failing the app's main verb. vcrun2019's cabinets say
+`msvcp140.dll` and work.
 
 **In a bottle** (`check-ano-tricks.sh`, engine 5.0.0's default bottle, called as the app calls
 it: one verb per call, `--force` for vcrun, the app's environment only; run 44847281515):
@@ -353,6 +363,7 @@ Each verb is in the bottle's `ano-tricks.log`; there is no `winetricks.log` and 
 
 **For 3c-4 (the app)**: call `Libraries/ano-tricks` with `ANO`, `ANOSERVER`, `ANOPREFIX`
 (`Winetricks+Install.swift`, `Winetricks+InstalledVerbs.swift`, the Terminal script in
-`Winetricks.swift`); read `ano-tricks.log` (`Winetricks+InstalledVerbs.swift`); make
+`Winetricks.swift`), and for a proxied bottle `ANO_BIN` where it passes `WINE_BIN` today
+(`ProxyEnvironment.swift`); read `ano-tricks.log` (`Winetricks+InstalledVerbs.swift`); make
 `Libraries/verbs.txt` again from `ano-tricks list-all` (today it is upstream's list: the dropped
 verbs and 82 "wine"s); then drop `Libraries/winetricks`.

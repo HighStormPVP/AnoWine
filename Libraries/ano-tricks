@@ -4,6 +4,13 @@
 # SC2031: ANO was modified in a subshell. That change might be lost
 # This has to be right after the shebang, see: https://github.com/koalaman/shellcheck/issues/779
 
+# This file is a modified copy of Winetricks 20260125, changed for Ano on 2026-11-21
+# by make_ano_tricks.py in https://github.com/HighStormPVP/AnoWine:
+# its names are Ano's (programs, variables, settings, links), some verbs are
+# removed, it makes no update check, self-update or statistics report, and it keeps
+# its downloads in Ano's cache folder. Its copyright and license (GNU LGPL 2.1 or
+# later) are below.
+
 # Name of this version of ano-tricks (YYYYMMDD)
 # (This doesn't change often, use the sha256sum of the file when reporting problems)
 ANOTRICKS_VERSION=20260125
@@ -2954,30 +2961,10 @@ anotricks_dl_url_to_stdout()
     fi
 }
 
-anotricks_dl_warning() {
-    case ${LANG} in
-        bg*) _W_countrymsg="Вашият IP адрес е от Русия. Ако възникне грешка със сертификата по време на изтеглянето, моля, рестартирайте с '--torify' или изтеглете файловете ръчно, например с VPN." ;;
-        ru*) _W_countrymsg="Скрипт определил, что ваш IP-адрес принадлежит России. Если во время загрузки файлов вы увидите ошибки несоответствия сертификата, перезапустите скрипт с опцией '--torify' или скачайте файлы вручную, например, используя VPN." ;;
-        pl*) _W_countrymsg="Wykryto, że twój adres IP należy do Rosji. W wypadku problemów z pobieraniem, uruchom z parametrem '--torify' lub pobierz plik manualnie, np. z użyciem VPN." ;;
-        zh_CN*) _W_countrymsg="系统检测到您的 IP 地址属于俄罗斯。如果您在下载时遇到证书错误，请使用选项 --torify 重新启动，或者通过 VPN 手动下载文件。" ;;
-        *)  _W_countrymsg="Your IP address has been determined to belong to Russia. If you encounter a certificate error while downloading, please relaunch with the '--torify' option, or download files manually, for instance using VPN." ;;
-    esac
-
-    # Lookup own country via IP address only once (i.e. don't run this function for every download invocation)
-    if [ -z "${W_COUNTRY}" ] ; then
-        W_COUNTRY="$(anotricks_dl_url_to_stdout "https://ipinfo.io/$(anotricks_dl_url_to_stdout "https://ipinfo.io/ip")" | awk -F '"' '/country/{print $4}')"
-        export W_COUNTRY
-
-        if [ -z "${W_COUNTRY}" ] ; then
-            export W_COUNTRY="unknown"
-        fi
-    fi
-
-    # TODO: Resolve a full country name via https://github.com/umpirsky/country-list/tree/master/data
-    case "${W_COUNTRY}" in
-        "RU") w_warn "${_W_countrymsg}" ;;
-        *) : ;;
-    esac
+anotricks_dl_warning()
+{
+    # Ano: no country lookup (it sent the user's IP address to ipinfo.io, outside the proxy).
+    return
 }
 
 anotricks_get_sha256sum_prog() {
@@ -4538,7 +4525,8 @@ anotricks_set_anoprefix()
                 # Handle case where ano binaries (or binary wrappers) have a suffix
                 ANO64="$(dirname "${ANO}")/"
                 [ "${ANO64}" = "./" ] && ANO64=""
-                ANO64="${ANO64}$(basename "${ANO}" | sed 's/^ano/ano64/')"
+                # Ano: one loader runs 32- and 64-bit programs (there is no ano64): keep its name.
+                ANO64="${ANO64}$(basename "${ANO}")"
             fi
         fi
         ANO_ARCH="${ANO64}"
@@ -12998,6 +12986,22 @@ w_metadata vcrun2022 dlls \
     file1="vc_redist.x86.exe" \
     installed_file1="${W_SYSTEM32_DLLS_WIN}/vcruntime140.dll"
 
+# Ano: copy msvcp140.dll out of a VC++ redistributable's cabinet into a system
+# folder. The 2022 cabinets name it msvcp140.dll_x86 or msvcp140.dll_amd64 (older
+# ones msvcp140.dll); with none there, keep the builtin, as upstream's verb did.
+# $1 - the cabinet, $2 - a folder to extract to, $3 - the system folder
+w_ano_msvcp140()
+{
+    w_try_cabextract --directory="$2" "$1" -F 'msvcp140.dll*'
+    for _W_msvcp140 in "$2"/msvcp140.dll*; do
+        if [ -f "${_W_msvcp140}" ]; then
+            w_try mv -f "${_W_msvcp140}" "$3/msvcp140.dll"
+            return
+        fi
+    done
+    w_warn "No msvcp140.dll in $1: keeping the builtin msvcp140."
+}
+
 load_vcrun2022()
 {
     # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist
@@ -13018,9 +13022,7 @@ load_vcrun2022()
     # Setup will refuse to install msvcp140 because the builtin's version number is higher, so manually replace it
     # See https://github.com/HighStormPVP/AnoWine/issues
     w_try_cabextract --directory="${W_TMP}/win32"  "${W_CACHE}"/"${W_PACKAGE}"/vc_redist.x86.exe -F 'a10'
-    # Ano: in the 2022 redistributable the file is msvcp140.dll_x86.
-    w_try_cabextract --directory="${W_TMP}/win32" "${W_TMP}/win32/a10" -F 'msvcp140.dll_x86'
-    w_try mv -f "${W_TMP}/win32/msvcp140.dll_x86" "${W_SYSTEM32_DLLS}/msvcp140.dll"
+    w_ano_msvcp140 "${W_TMP}/win32/a10" "${W_TMP}/win32" "${W_SYSTEM32_DLLS}"
 
     w_try_cd "${W_CACHE}"/"${W_PACKAGE}"
     w_try_ms_installer "${ANO}" vc_redist.x86.exe ${W_OPT_UNATTENDED:+/q}
@@ -13045,9 +13047,7 @@ load_vcrun2022()
 
             # Also replace 64-bit msvcp140.dll
             w_try_cabextract --directory="${W_TMP}/win64"  "${W_CACHE}"/"${W_PACKAGE}"/vc_redist.x64.exe -F 'a12'
-            # Ano: in the 2022 redistributable the file is msvcp140.dll_amd64.
-            w_try_cabextract --directory="${W_TMP}/win64" "${W_TMP}/win64/a12" -F 'msvcp140.dll_amd64'
-            w_try mv -f "${W_TMP}/win64/msvcp140.dll_amd64" "${W_SYSTEM64_DLLS}/msvcp140.dll"
+            w_ano_msvcp140 "${W_TMP}/win64/a12" "${W_TMP}/win64" "${W_SYSTEM64_DLLS}"
 
             w_try_ms_installer "${ANO}" vc_redist.x64.exe ${W_OPT_UNATTENDED:+/q}
             ;;

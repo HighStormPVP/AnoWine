@@ -50,7 +50,11 @@ DROP_HELPERS = frozenset(["galliumnine", "otvdm"])
 
 NO_UPDATE = '    w_die "ano-tricks does not update itself: it comes with Ano, and Ano updates it."\n'
 NO_NETWORK = "    # Ano: ano-tricks makes no update check and sends no statistics.\n    return\n"
+NO_LOOKUP = "    # Ano: no country lookup (it sent the user's IP address to ipinfo.io, outside the proxy).\n    return\n"
 STUBS = {
+    # Called when a first download attempt fails or a cached file's checksum
+    # differs (vcrun2019's does today: Microsoft serves a newer one).
+    "winetricks_dl_warning": NO_LOOKUP,
     "winetricks_check_update_availability": NO_UPDATE,
     "winetricks_selfupdate": NO_UPDATE,
     "winetricks_selfupdate_rollback": NO_UPDATE,
@@ -67,25 +71,59 @@ EDITS = (
     ("    # See also https://code.google.com/p/winezeug/issues/detail?id=78\n", ""),
     ("    # https://github.com/seapear/AffinityOnLinux/blob/main/wine-dark-theme.reg\n", ""),
     ("    # https://bgstack15.ddns.net/blog/posts/2024/08/21/set-wine-theme-from-cli/\n", ""),
+    # When the loader's architecture cannot be read (a wrapper script first on
+    # PATH, as the app's proxy has; lipo without Xcode's tools), upstream guesses
+    # the 64-bit loader as wine64; renamed, that turns ano-loader into
+    # ano64-loader. The engine runs 32- and 64-bit programs with one loader.
+    ("""                WINE64="${WINE64}$(basename "${WINE}" | sed 's/^wine/wine64/')"\n""",
+     """                # Ano: one loader runs 32- and 64-bit programs (there is no ano64): keep its name.\n"""
+     """                WINE64="${WINE64}$(basename "${WINE}")"\n"""),
+    # vcrun2022's msvcp140.dll (FUNCTION_EDITS): the helper goes right before it.
+    ("load_vcrun2022()\n{\n", '''# Ano: copy msvcp140.dll out of a VC++ redistributable's cabinet into a system
+# folder. The 2022 cabinets name it msvcp140.dll_x86 or msvcp140.dll_amd64 (older
+# ones msvcp140.dll); with none there, keep the builtin, as upstream's verb did.
+# $1 - the cabinet, $2 - a folder to extract to, $3 - the system folder
+w_ano_msvcp140()
+{
+    w_try_cabextract --directory="$2" "$1" -F 'msvcp140.dll*'
+    for _W_msvcp140 in "$2"/msvcp140.dll*; do
+        if [ -f "${_W_msvcp140}" ]; then
+            w_try mv -f "${_W_msvcp140}" "$3/msvcp140.dll"
+            return
+        fi
+    done
+    w_warn "No msvcp140.dll in $1: keeping the builtin msvcp140."
+}
+
+load_vcrun2022()
+{
+'''),
 )
+
+# LGPL 2.1 section 2(b): the modified file says so, with the date. Change
+# NOTICE_DATE when the edits above change.
+NOTICE_DATE = "2026-11-21"
+NOTICE = f"""# This file is a modified copy of Winetricks 20260125, changed for Ano on {NOTICE_DATE}
+# by make_ano_tricks.py in https://github.com/HighStormPVP/AnoWine:
+# its names are Ano's (programs, variables, settings, links), some verbs are
+# removed, it makes no update check, self-update or statistics report, and it keeps
+# its downloads in Ano's cache folder. Its copyright and license (GNU LGPL 2.1 or
+# later) are below.
+"""
 
 # Upstream's vcrun2022 copies msvcp140.dll out of the redistributables' cabinets
 # itself (their installer keeps the builtin, whose version number is higher),
 # but in the pinned 2022 redistributables the file is msvcp140.dll_x86 (a10) and
 # msvcp140.dll_amd64 (a12): -F 'msvcp140.dll' extracts nothing and the verb
-# leaves the builtin. (vcrun2019's cabinets name it msvcp140.dll.) If the name
-# changes again, the mv fails the verb instead.
+# leaves the builtin. (vcrun2019's cabinets name it msvcp140.dll.) The helper
+# w_ano_msvcp140 (EDITS) takes any msvcp140.dll* and keeps the builtin if none.
 FUNCTION_EDITS = (
     ("load_vcrun2022",
      """    w_try_cabextract --directory="${W_SYSTEM32_DLLS}" "${W_TMP}/win32/a10" -F 'msvcp140.dll'\n""",
-     """    # Ano: in the 2022 redistributable the file is msvcp140.dll_x86.\n"""
-     """    w_try_cabextract --directory="${W_TMP}/win32" "${W_TMP}/win32/a10" -F 'msvcp140.dll_x86'\n"""
-     """    w_try mv -f "${W_TMP}/win32/msvcp140.dll_x86" "${W_SYSTEM32_DLLS}/msvcp140.dll"\n"""),
+     """    w_ano_msvcp140 "${W_TMP}/win32/a10" "${W_TMP}/win32" "${W_SYSTEM32_DLLS}"\n"""),
     ("load_vcrun2022",
      """            w_try_cabextract --directory="${W_SYSTEM64_DLLS}" "${W_TMP}/win64/a12" -F 'msvcp140.dll'\n""",
-     """            # Ano: in the 2022 redistributable the file is msvcp140.dll_amd64.\n"""
-     """            w_try_cabextract --directory="${W_TMP}/win64" "${W_TMP}/win64/a12" -F 'msvcp140.dll_amd64'\n"""
-     """            w_try mv -f "${W_TMP}/win64/msvcp140.dll_amd64" "${W_SYSTEM64_DLLS}/msvcp140.dll"\n"""),
+     """            w_ano_msvcp140 "${W_TMP}/win64/a12" "${W_TMP}/win64" "${W_SYSTEM64_DLLS}"\n"""),
 )
 
 METADATA = re.compile(r"^w_metadata ([A-Za-z0-9_]+) ", re.M)
@@ -130,8 +168,9 @@ def drop_verbs(text: str, verbs, helpers=()) -> str:
 
 
 def _function(text: str, name: str) -> re.Match:
-    """The one definition of name() with its braces in column 0."""
-    pattern = re.compile(rf"^{re.escape(name)}\(\)\n\{{\n(.*?)^\}}\n", re.M | re.S)
+    """The one definition of name(), its closing brace in column 0 (the opening
+    one on the next line, or on the same line: name() {)."""
+    pattern = re.compile(rf"^{re.escape(name)}\(\)(?:\n| )\{{\n(.*?)^\}}\n", re.M | re.S)
     matches = list(pattern.finditer(text))
     if len(matches) != 1:
         raise ValueError(f"expected one function {name}, found {len(matches)}")
@@ -189,6 +228,8 @@ def generate(upstream: str) -> str:
     if left:
         raise ValueError("URLs naming Wine on hosts the map does not replace:\n  " + "\n  ".join(left))
     out = rename(text, rules)
+    version_line = "\n\n# Name of this version of ano-tricks (YYYYMMDD)\n"
+    out = replace_once(out, version_line, "\n\n" + NOTICE + version_line[1:])
     unused = [t for t in rules.protect_texts if t not in rules.used]
     if unused:
         raise ValueError(f"protected text never seen: {', '.join(unused)}")
