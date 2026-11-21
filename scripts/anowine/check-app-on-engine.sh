@@ -29,21 +29,24 @@ cp -R "$SRC_LIB" "$APP_LIB"
 [ -f "$APP_LIB/AnoRuntimeVersion.plist" ] && [ -x "$APP_LIB/Ano/bin/ano-loader" ] \
   || { echo "::error::$SRC_LIB is not an engine 5.x Libraries folder"; exit 1; }
 
-# 1. A new bottle, and a program run in it the way the app runs one.
+# 1. A new bottle, and a program run in it the way the app runs one. --follow
+#    streams the engine's log and the exit code, not a console program's own
+#    output, so the program leaves a file in the bottle.
 cli 120 create T > "$LOGS/create.log" 2>&1 || fail "ano create exited $? ($(tail -1 "$LOGS/create.log"))"
 code=0
-cli 1200 run --follow T 'C:\windows\system32\cmd.exe' /c echo app-on-engine-ok > "$LOGS/run.log" 2>&1 || code=$?
+cli 1200 run --follow T 'C:\windows\system32\cmd.exe' /c 'echo app-on-engine-ok> C:\app-on-engine.txt' \
+  > "$LOGS/run.log" 2>&1 || code=$?
 "$APP_LIB/Ano/bin/ano-server" -k 2> /dev/null || true
 tr -d '\r' < "$LOGS/run.log" > "$LOGS/run.lf"
-if grep -q "app-on-engine-ok" "$LOGS/run.lf"; then
-  echo "ano run: the program ran (exit $code)"
-else
-  tail -n 30 "$LOGS/run.lf"
-  fail "ano run did not print the program's output (exit $code$([ "$code" != 142 ] || echo ', stopped after 1200 s'))"
-fi
 B=$(find "$BOTTLES" -mindepth 1 -maxdepth 1 -type d | head -n 1)
 [ -n "$B" ] || { echo "::error::no bottle under $BOTTLES"; exit 1; }
 echo "bottle: $B"
+if grep -q "app-on-engine-ok" "$B/drive_c/app-on-engine.txt" 2> /dev/null && grep -q "Exited with code 0" "$LOGS/run.lf"; then
+  echo "ano run: the program ran and wrote C:\\app-on-engine.txt (exit $code)"
+else
+  tail -n 30 "$LOGS/run.lf"
+  fail "ano run: no C:\\app-on-engine.txt from the program, or no exit code 0 (exit $code$([ "$code" != 142 ] || echo ', stopped after 1200 s'))"
+fi
 
 # 2. What the app wrote: the engine's registry, Software\Ano, no wine keys.
 head -n 1 "$B/system.reg" | grep -q "^ANO REGISTRY" || fail "system.reg does not start with ANO REGISTRY"
