@@ -95,7 +95,9 @@ extension Wine {
         dxvkFolder: URL = Wine.dxvkFolder,
         dxmtFolder: URL = Wine.dxmtFolder
     ) async throws -> PreparedLaunch {
-        try await prepareProgramLaunch(
+        // Before anything reaches the prefix: an earlier Ano's bottle is never touched.
+        try bottle.refuseIfFromOldRuntime()
+        return try await prepareProgramLaunch(
             at: url, args: request.args, bottle: bottle, environment: request.environment,
             programOverrides: request.programOverrides, programSettings: request.programSettings,
             gameProfileEnvironment: request.gameProfileEnvironment,

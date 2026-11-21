@@ -479,7 +479,6 @@ public class Wine {
         dxmtFolder: URL = Wine.dxmtFolder,
         rockstarRuntime: RockstarD3DRuntime = .installed
     ) async throws -> PreparedLaunch {
-        try bottle.refuseIfFromOldRuntime()
         // Font aliases first, before any setting is read: their import can take
         // a few seconds, and a setting changed during it would leave this launch
         // with one backend's files and another's environment. It must finish

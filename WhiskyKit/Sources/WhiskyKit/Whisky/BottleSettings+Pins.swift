@@ -65,6 +65,26 @@ public extension BottleSettings {
         unpinnedPrograms.removeAll { Self.pinKey($0) == key }
     }
 
+    /// The pins that still name a file, without duplicates: an existing file, or
+    /// one on a removable volume that is not connected now.
+    func prunedPins() -> [PinnedProgram] {
+        var found: Set<URL> = []
+        return pins.filter { pin in
+            guard let url = pin.url else { return false }
+            guard !found.contains(url) else { return false }
+            found.insert(url)
+            let urlPath = url.path(percentEncoded: false)
+            let volume: URL?
+            do {
+                volume = try url.resourceValues(forKeys: [.volumeURLKey]).volume ?? nil
+            } catch {
+                volume = nil
+            }
+            let legallyRemoved = pin.removable && volume == nil
+            return FileManager.default.fileExists(atPath: urlPath) || legallyRemoved
+        }
+    }
+
     /// The unpin records that still name an existing file, without duplicates.
     ///
     /// A record for an uninstalled program has nothing left to protect, and a

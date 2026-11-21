@@ -198,21 +198,7 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
         }
 
         // Get rid of duplicates and pins that reference removed files
-        var found: Set<URL> = []
-        let validPins = self.settings.pins.filter { pin in
-            guard let url = pin.url else { return false }
-            guard !found.contains(url) else { return false }
-            found.insert(url)
-            let urlPath = url.path(percentEncoded: false)
-            let volume: URL?
-            do {
-                volume = try url.resourceValues(forKeys: [.volumeURLKey]).volume ?? nil
-            } catch {
-                volume = nil
-            }
-            let legallyRemoved = pin.removable && volume == nil
-            return FileManager.default.fileExists(atPath: urlPath) || legallyRemoved
-        }
+        let validPins = self.settings.prunedPins()
         // Assigning settings saves Metadata.plist (didSet), so only do it when a pin was
         // actually dropped. WhiskyCmd loads every registered bottle, and a save on every
         // load can overwrite a settings change the app wrote in the meantime.
