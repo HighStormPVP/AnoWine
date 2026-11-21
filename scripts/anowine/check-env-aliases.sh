@@ -50,7 +50,9 @@ done
 code=0
 wait "$run" || code=$?
 "$ENGINE/bin/ano-server" -k 2> /dev/null || true
-cat "$WORK/out.txt"
+# A Windows program ends its lines with \r\n.
+tr -d '\r' < "$WORK/out.txt" > "$WORK/out.lf"
+cat "$WORK/out.lf"
 echo "engine processes seen with ps -E: $(wc -l < "$WORK/ps.txt")"
 
 [ "$code" = 0 ] || fail "envrun.exe exited $code"
@@ -60,11 +62,11 @@ grep -q "ANOD3DMETAL=1" "$WORK/ps.txt" || fail "ps -E shows no ANOD3DMETAL=1, so
 if grep -E "WINED3DMETAL=|WINEESYNC=" "$WORK/ps.txt" | cut -c1-300; then
   fail "an engine process shows WINED3DMETAL or WINEESYNC in its environment"
 fi
-grep -qx "unix: WINED3DMETAL=1 WINEESYNC=1 (call 0)" "$WORK/out.txt" \
+grep -qx "unix: WINED3DMETAL=1 WINEESYNC=1 (call 0)" "$WORK/out.lf" \
   || fail "inside the process, the old names are not set (what D3DMetal would read)"
-grep -qx "windows: WINED3DMETAL=- WINEESYNC=-" "$WORK/out.txt" \
+grep -qx "windows: WINED3DMETAL=- WINEESYNC=-" "$WORK/out.lf" \
   || fail "the Windows environment shows an old name"
-grep -qx "child: done" "$WORK/out.txt" || fail "the child did not finish"
+grep -qx "child: done" "$WORK/out.lf" || fail "the child did not finish"
 
 [ "$fails" -eq 0 ] || exit 1
 echo "D3DMetal's variables: set inside the process only"

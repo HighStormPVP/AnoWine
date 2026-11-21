@@ -27,6 +27,8 @@ __wine_dbg_output	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt;
 __wine_dbg_strdup	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
 __wine_unix_call_funcs	alias	the unix-call table ntdll.so looks up in libd3dshared.dylib (aliases.txt; provisional)
 __wine_unix_call_wow64_funcs	alias	the wow64 unix-call table ntdll.so looks up in libd3dshared.dylib (aliases.txt; provisional)
+WINED3DMETAL	alias	D3DMetal reads it; ntdll.so sets it from ANOD3DMETAL inside each process only (aliases.txt, patches/rename/0005; provisional)
+WINEESYNC	alias	D3DMetal reads it; ntdll.so sets it from ANOESYNC inside each process only (aliases.txt, patches/rename/0005; provisional)
 
 # mono-internal and not-wine: what wine-mono 11.3.0 keeps after its rename (Plan 3c-2, payloads
 # run 44705330083), each read by hand.

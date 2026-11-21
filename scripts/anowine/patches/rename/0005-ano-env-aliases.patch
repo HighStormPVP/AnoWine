@@ -1,0 +1,157 @@
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index 459726f..816e987 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -839,6 +839,65 @@ void init_environment(void)
+ }
+ 
+ 
++/* Ano (patches/rename/0005): Apple's D3DMetal, a closed part Ano cannot
++ * rebuild, reads WINED3DMETAL and WINEESYNC itself. Ano sets ANOD3DMETAL and
++ * ANOESYNC; each process copies them to the old names in its own environment
++ * only, after its Windows environment is built (ano_env_set_aliases), and
++ * hands the old names to no other program: a forked child drops them before
++ * it execs (ano_env_unset_aliases) and every environment passed on skips them
++ * (ano_env_is_alias, ano_env_without_aliases). A child sets them again from
++ * the Ano names. scripts/anowine/aliases.txt lists them. */
++static const char * const ano_env_aliases[][2] =
++{
++    { "ANOD3DMETAL", "WINED3DMETAL" },
++    { "ANOESYNC", "WINEESYNC" },
++};
++
++void ano_env_set_aliases(void)
++{
++    unsigned int i;
++
++    for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++)
++    {
++        const char *value = getenv( ano_env_aliases[i][0] );
++        if (value) setenv( ano_env_aliases[i][1], value, 1 );
++    }
++}
++
++void ano_env_unset_aliases(void)
++{
++    unsigned int i;
++
++    for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++) unsetenv( ano_env_aliases[i][1] );
++}
++
++BOOL ano_env_is_alias( const char *entry )
++{
++    unsigned int i;
++
++    for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++)
++    {
++        size_t len = strlen( ano_env_aliases[i][1] );
++        if (!strncmp( entry, ano_env_aliases[i][1], len ) && entry[len] == '=') return TRUE;
++    }
++    return FALSE;
++}
++
++/* environ without the old names: an array the caller frees (not its strings),
++ * or environ itself if there is no memory for one. */
++char **ano_env_without_aliases(void)
++{
++    char **entry, **copy;
++    size_t count = 0;
++
++    for (entry = environ; *entry; entry++) count++;
++    if (!(copy = malloc( (count + 1) * sizeof(*copy) ))) return environ;
++    count = 0;
++    for (entry = environ; *entry; entry++) if (!ano_env_is_alias( *entry )) copy[count++] = *entry;
++    copy[count] = NULL;
++    return copy;
++}
++
+ /* check if a ANO_HOST_ prefixed variable already exists in the environment */
+ static BOOL host_var_exists( const char *name )
+ {
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index 642a9cd..21a9823 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -248,11 +248,13 @@ static char *build_relative_path( const char *base, const char *from, const char
+ /* build a path to a binary and exec it */
+ static int build_path_and_exec( pid_t *pid, const char *dir, const char *name, char **argv )
+ {
++    char **envp = ano_env_without_aliases();
+     int ret;
+ 
+     argv[0] = build_path( dir, name );
+-    ret = posix_spawn( pid, argv[0], NULL, NULL, argv, environ );
++    ret = posix_spawn( pid, argv[0], NULL, NULL, argv, envp );
+     free( argv[0] );
++    if (envp != environ) free( envp );
+     return ret;
+ }
+ 
+@@ -636,6 +638,7 @@ static void replace_anoloader_path_with_link(char **anoloader_path, const char *
+ 
+ static void preloader_exec( char **argv, const char *image_path )
+ {
++    ano_env_unset_aliases();
+ #ifdef HAVE_ANO_PRELOADER
+     asprintf( &argv[0], "%s-preloader", argv[1] );
+ #ifdef __APPLE__
+@@ -2226,6 +2229,7 @@ static void start_main_thread(void)
+     init_cpu_info();
+     init_files();
+     init_startup_info();
++    ano_env_set_aliases();
+     dbg_init();
+     *(ULONG_PTR *)&peb->CloudFileFlags = get_image_address();
+     set_load_order_app_name( main_wargv[0] );
+diff --git a/dlls/ntdll/unix/process.c b/dlls/ntdll/unix/process.c
+index 1c966bb..c35cfdf 100644
+--- a/dlls/ntdll/unix/process.c
++++ b/dlls/ntdll/unix/process.c
+@@ -240,7 +240,7 @@ static BOOL write_env(int sock, const WCHAR *pe_env, const char *anodebug)
+     BOOL ret = TRUE;
+ 
+     for (elem = environ; *elem; elem++)
+-        length += strlen(*elem) + 1;
++        if (!ano_env_is_alias( *elem )) length += strlen(*elem) + 1;
+ 
+     if (anodebug)
+         length += strlen(anodebug) + 1;
+@@ -266,6 +266,7 @@ static BOOL write_env(int sock, const WCHAR *pe_env, const char *anodebug)
+ 
+     for (elem = environ; *elem; elem++)
+     {
++        if (ano_env_is_alias( *elem )) continue;
+         if (!write_data(sock, *elem, strlen(*elem) + 1))
+         {
+             WARN("failed to write environment variable\n");
+@@ -977,6 +978,7 @@ NTSTATUS WINAPI __ano_unix_spawnvp( char * const argv[], int wait )
+     if (!(pid = fork()))
+     {
+         /* in child */
++        ano_env_unset_aliases();
+         close( fd[0] );
+         signal( SIGPIPE, SIG_DFL );
+         if (!wait)
+@@ -1107,6 +1109,7 @@ static NTSTATUS fork_and_exec( OBJECT_ATTRIBUTES *attr, const char *unix_name, i
+                 fchdir( unixdir );
+                 close( unixdir );
+             }
++            ano_env_unset_aliases();
+             execv( unix_name, argv );
+         }
+ 
+diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
+index d6f3211..3606980 100644
+--- a/dlls/ntdll/unix/unix_private.h
++++ b/dlls/ntdll/unix/unix_private.h
+@@ -240,6 +240,10 @@ extern BOOL simulate_writecopy;
+ 
+ extern void init_environment(void);
+ extern void init_startup_info(void);
++extern void ano_env_set_aliases(void);
++extern void ano_env_unset_aliases(void);
++extern BOOL ano_env_is_alias( const char *entry );
++extern char **ano_env_without_aliases(void);
+ extern void *create_startup_info( const UNICODE_STRING *nt_image, ULONG process_flags,
+                                   const RTL_USER_PROCESS_PARAMETERS *params,
+                                   const struct pe_image_info *pe_info, DWORD *info_size );
