@@ -71,24 +71,24 @@ public enum AnoWineRuntime {
     static let builtinMarkLength = 16
 
     /// The runtime under a `Libraries` folder: `Libraries/Ano`.
-    static func runtimeFolder(inLibraryFolder folder: URL) -> URL {
+    public static func runtimeFolder(inLibraryFolder folder: URL) -> URL {
         folder.appending(path: runtimeFolderName)
     }
 
     /// The runtime's `lib`: `Libraries/Ano/lib`, holding the module folder,
     /// `external` (Apple's D3DMetal, once imported) and `gptk-video`.
-    static func libFolder(inLibraryFolder folder: URL) -> URL {
+    public static func libFolder(inLibraryFolder folder: URL) -> URL {
         runtimeFolder(inLibraryFolder: folder).appending(path: "lib")
     }
 
     /// One of the runtime's module folders: `Libraries/Ano/lib/ano/<arch>`,
     /// for example `x86_64-windows` or `x86_64-unix`.
-    static func moduleFolder(_ arch: String, inLibraryFolder folder: URL) -> URL {
+    public static func moduleFolder(_ arch: String, inLibraryFolder folder: URL) -> URL {
         libFolder(inLibraryFolder: folder).appending(path: moduleFolderName).appending(path: arch)
     }
 
     /// The runtime's version record: `Libraries/AnoRuntimeVersion.plist`.
-    static func versionPlist(inLibraryFolder folder: URL) -> URL {
+    public static func versionPlist(inLibraryFolder folder: URL) -> URL {
         folder.appending(path: versionPlistName).appendingPathExtension("plist")
     }
 
