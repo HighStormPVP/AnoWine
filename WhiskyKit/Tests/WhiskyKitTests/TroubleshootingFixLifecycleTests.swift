@@ -253,6 +253,6 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
             hasProgram: false
         ))
         XCTAssertFalse(FixApplicator.canUndo(FixAttempt(fixId: "install-winetricks-verb"), hasProgram: true))
-        XCTAssertFalse(FixApplicator.canUndo(FixAttempt(fixId: "restart-wineserver"), hasProgram: true))
+        XCTAssertFalse(FixApplicator.canUndo(FixAttempt(fixId: "restart-ano-server"), hasProgram: true))
     }
 }

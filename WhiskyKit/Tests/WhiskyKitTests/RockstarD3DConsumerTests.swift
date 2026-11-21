@@ -240,22 +240,22 @@ final class RockstarD3DConsumerTests {
         let userReg = #"""
         WINE REGISTRY Version 2
 
-        [Software\\Wine\\AppDefaults\\EADesktop.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\EADesktop.exe\\DllOverrides] 1731628800
         "d3d11"="n,b"
 
-        [Software\\Wine\\AppDefaults\\EABackgroundService.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\EABackgroundService.exe\\DllOverrides] 1731628800
         "d3d11"="n,b"
 
-        [Software\\Wine\\AppDefaults\\EpicGamesLauncher.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\EpicGamesLauncher.exe\\DllOverrides] 1731628800
         "d3d11"="b"
 
-        [Software\\Wine\\AppDefaults\\EADesktop.exe\\Extra\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\EADesktop.exe\\Extra\\DllOverrides] 1731628800
         "d3d11"="n,b"
 
-        [Software\\Wine\\AppDefaults\\SomeGame.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\SomeGame.exe\\DllOverrides] 1731628800
         "d3d11"="n,b"
 
-        [Software\\Wine\\AppDefaults\\steamwebhelper.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\steamwebhelper.exe\\DllOverrides] 1731628800
         "d3d11"="n,b"
 
         """#

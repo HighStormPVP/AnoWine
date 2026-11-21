@@ -111,8 +111,8 @@ final class ProgramGenerateTerminalCommandTests: XCTestCase {
 
         let command = program.generateTerminalCommand()
 
-        // Command should set WINEPREFIX to bottle path
-        XCTAssertTrue(command.contains("WINEPREFIX="), "Command should set WINEPREFIX")
+        // Command should set ANOPREFIX to bottle path
+        XCTAssertTrue(command.contains("ANOPREFIX="), "Command should set ANOPREFIX")
         XCTAssertTrue(command.contains(bottleURL.path), "Command should contain bottle path")
     }
 

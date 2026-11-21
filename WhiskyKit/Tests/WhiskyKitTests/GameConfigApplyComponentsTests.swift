@@ -135,17 +135,17 @@ final class GameConfigApplyComponentsTests {
 
     @Test("Without the game in the bottle, the variables are kept in the bottle, scoped to its executables")
     func environmentFallsBackToBottleRecord() throws {
-        let variant = makeVariant(environment: ["WINE_LARGE_ADDRESS_AWARE": "1"])
+        let variant = makeVariant(environment: ["ANO_LARGE_ADDRESS_AWARE": "1"])
         let entry = makeEntry(variant: variant)
 
         let snapshot = try GameConfigApplicator.apply(entry: entry, variant: variant, to: bottle)
 
         #expect(bottle.settings.gameConfigEnvironments == [GameConfigEnvironment(
             entryId: "test-game", title: "Test Game", executables: ["TestGame.exe"],
-            variables: ["WINE_LARGE_ADDRESS_AWARE": "1"]
+            variables: ["ANO_LARGE_ADDRESS_AWARE": "1"]
         )])
         #expect(bottle.settings.gameConfigEnvironment(forExecutable: "testgame.EXE")
-            == ["WINE_LARGE_ADDRESS_AWARE": "1"])
+            == ["ANO_LARGE_ADDRESS_AWARE": "1"])
         #expect(bottle.settings.gameConfigEnvironment(forExecutable: "Other.exe").isEmpty)
 
         // Applying the entry again replaces its record rather than adding one.

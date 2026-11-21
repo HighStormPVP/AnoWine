@@ -61,7 +61,7 @@ final class LauncherFixesRockstarTests: LauncherFixesTestCase {
     func bottleOverrides(_ bottle: Bottle) -> String {
         Wine.constructWineEnvironment(
             for: bottle, recommendedBackend: .d3dMetal, builtinD3D12IsD3DMetal: true
-        )["WINEDLLOVERRIDES"] ?? ""
+        )["ANODLLOVERRIDES"] ?? ""
     }
 
     @MainActor

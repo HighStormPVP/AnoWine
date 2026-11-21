@@ -139,7 +139,7 @@ final class CrashClassifierTests: XCTestCase {
 
     func testPageFaultMatch() {
         var (patterns, _) = PatternLoader.loadDefaults()
-        let line = "wine: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
+        let line = "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
 
         var matched = false
         for index in patterns.indices where patterns[index].id == "page-fault" {
@@ -216,7 +216,7 @@ final class CrashClassifierTests: XCTestCase {
 
     func testPrefixCorruptionMatch() {
         var (patterns, _) = PatternLoader.loadDefaults()
-        let line = "wine: could not load user32.dll, status c0000135"
+        let line = "ano: could not load user32.dll, status c0000135"
 
         var matched = false
         for index in patterns.indices where patterns[index].id == "prefix-corruption" {

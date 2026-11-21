@@ -76,7 +76,8 @@ private enum AudioRegistrySyncQueue {
 /// registry rather than environment variables. This extension provides a clean API for
 /// reading and writing those settings, as well as resetting audio device state.
 public extension Wine {
-    private enum AudioRegistryKey: String {
+    /// Internal, not private, so tests can check the keys against the engine's names.
+    internal enum AudioRegistryKey: String {
         case drivers = #"HKCU\Software\Wine\Drivers"#
         case directSound = #"HKCU\Software\Wine\DirectSound"#
         case mmDevices = #"HKLM\Software\Microsoft\Windows\CurrentVersion\MMDevices"#

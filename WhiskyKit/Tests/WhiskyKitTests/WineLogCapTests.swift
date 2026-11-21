@@ -28,7 +28,7 @@ final class WineLogCapTests: XCTestCase {
     Arguments: start /unix C:\\game.exe
 
     Environment (keys only):
-    WINEPREFIX, WINEDEBUG
+    ANOPREFIX, ANODEBUG
 
 
     """

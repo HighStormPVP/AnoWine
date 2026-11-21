@@ -113,7 +113,7 @@ final class SteamGameLaunchScopingTests {
         let launch = try await prepareGameLaunch(bottle, plan: plan, recorder: recorder)
 
         // Inherited by whatever the invocation starts, the client included.
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
         for game in games {
             let entry = recorder.overrides(for: .program(game))
             expectDXVK(entry, game)
@@ -130,7 +130,7 @@ final class SteamGameLaunchScopingTests {
 
         let launch = try await prepareGameLaunch(bottle, recorder: recorder)
 
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
         for game in games {
             let entry = recorder.overrides(for: .program(game))
             #expect(entry != nil, "\(game) gets its own entry")

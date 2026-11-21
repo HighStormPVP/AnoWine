@@ -212,7 +212,7 @@ final class FixApplicatorLocalizationTests: XCTestCase {
 
         let fix = try preview("run-enhanced-diagnostics", program: program)
 
-        XCTAssertEqual(fix.settingName, String(localized: "WINEDEBUG Preset"))
+        XCTAssertEqual(fix.settingName, String(localized: "ANODEBUG Preset"))
         assertPlainCatalogKey(fix.settingName)
         XCTAssertEqual(fix.currentValue, WineDebugPreset.normal.displayName)
         XCTAssertEqual(fix.newValue, WineDebugPreset.verbose.displayName)
@@ -295,8 +295,12 @@ final class FixApplicatorLocalizationTests: XCTestCase {
     // MARK: - Wineserver
 
     func testRestartWineserverPreviewIsLocalized() throws {
-        let fix = try preview("restart-wineserver")
+        let fix = try preview("restart-ano-server")
 
+        // The engine's server is ano-server; the fix names the program it restarts.
+        XCTAssertEqual(fix.settingName, "ano-server")
+        XCTAssertTrue(FixApplicator.knownFixIds.contains("restart-ano-server"))
+        XCTAssertFalse(FixApplicator.knownFixIds.contains("restart-wineserver"))
         XCTAssertEqual(fix.currentValue, String(localized: "console.running"))
         XCTAssertEqual(fix.newValue, String(localized: "troubleshooting.fix.value.restarted"))
         assertCatalogKey(fix.currentValue)

@@ -177,7 +177,7 @@ final class RockstarLauncherScopingTests {
         recorder.expectRockstarChain(layout: .builtin)
         #expect(recorder.programScopes.filter { $0.lowercased() == "launcher.exe" }.count == 1)
         // Nothing left in the environment to outvote the registry entry.
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     @Test("Another program called launcher.exe keeps its own launch set in a bottle with Rockstar")
@@ -271,7 +271,7 @@ final class RockstarLauncherScopingTests {
         _ = try rockstarLauncher(in: bottle)
         try recordRenderer(in: bottle)
         let recorder = ScopeRecorder()
-        var environment = ["WINEDLLOVERRIDES": "d3d11=n,b;dxgi=n,b"]
+        var environment = ["ANODLLOVERRIDES": "d3d11=n,b;dxgi=n,b"]
 
         try await Wine.applyDLLOverrides(
             for: steam(in: bottle), bottle: bottle, wineEnvironment: &environment, applyToDescendants: true,

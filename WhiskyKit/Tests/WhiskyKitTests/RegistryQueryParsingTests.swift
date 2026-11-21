@@ -23,7 +23,7 @@ import XCTest
 /// with four-space separators, CRLF line endings.
 final class RegistryQueryParsingTests: XCTestCase {
     private func output(_ valueLine: String) -> String {
-        "\r\nHKEY_CURRENT_USER\\Software\\Wine\\Drivers\r\n\(valueLine)\r\n\r\n"
+        "\r\nHKEY_CURRENT_USER\\Software\\Ano\\Drivers\r\n\(valueLine)\r\n\r\n"
     }
 
     func testStringValue() {
@@ -67,7 +67,7 @@ final class RegistryQueryParsingTests: XCTestCase {
 
     func testMissingValueIsNil() {
         XCTAssertNil(Wine.registryValue(
-            fromQueryOutput: "\r\nHKEY_CURRENT_USER\\Software\\Wine\\Drivers\r\n",
+            fromQueryOutput: "\r\nHKEY_CURRENT_USER\\Software\\Ano\\Drivers\r\n",
             type: .string
         ))
         XCTAssertNil(Wine.registryValue(fromQueryOutput: "", type: .string))

@@ -87,7 +87,7 @@ final class ProxyEnvironmentTests: XCTestCase {
             incoming["DYLD_INSERT_LIBRARIES"] = "/tmp/libano_net.dylib"
             XCTAssertNil(ProxyEnvironment.launchEnvironment(incoming, executable: executable)["DYLD_INSERT_LIBRARIES"])
         }
-        let unproxied = ProxyEnvironment.launchEnvironment(["WINEPREFIX": "/x"], executable: AnoWineRuntime.loaderURL)
+        let unproxied = ProxyEnvironment.launchEnvironment(["ANOPREFIX": "/x"], executable: AnoWineRuntime.loaderURL)
         XCTAssertNil(unproxied["DYLD_INSERT_LIBRARIES"])
     }
 

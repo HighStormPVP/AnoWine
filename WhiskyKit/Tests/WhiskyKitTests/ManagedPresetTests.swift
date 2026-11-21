@@ -39,7 +39,7 @@ final class ManagedPresetTests: XCTestCase {
     }
 
     /// D3DMetal and WineD3D both run on Wine's builtin D3D and pick between
-    /// themselves with WINED3DMETAL, so neither overrides a DLL.
+    /// themselves with ANOD3DMETAL, so neither overrides a DLL.
     func testBuiltinBackendsContributeNothing() {
         // Not even d3d12 over D3DMetal's builtin, which is theirs to use.
         XCTAssertTrue(DLLOverrideResolver.managedPreset(for: .d3dMetal, builtinD3D12IsD3DMetal: true).isEmpty)

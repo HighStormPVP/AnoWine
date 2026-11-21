@@ -173,7 +173,7 @@ final class RSILauncherTests {
         expectDXVK(recorder.overrides(for: .program("RSI Launcher.exe")), "RSI Launcher.exe")
         // The prefix default is the games', and nothing is left for a child to inherit.
         expectNoTranslationLayer(recorder.overrides(for: .bottle), "the bottle scope")
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
         #expect(bottle.settings.graphicsBackend == .recommended)
     }
 
@@ -197,7 +197,7 @@ final class RSILauncherTests {
         let launch = try await prepare(starCitizen(in: bottle), in: bottle, recorder: recorder)
 
         expectNoTranslationLayer(recorder.overrides(for: .program("StarCitizen.exe")), "StarCitizen.exe")
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     @Test("Over DXMT, Star Citizen started by the launcher loads the DXVK files the launcher's launch leaves")
@@ -265,6 +265,6 @@ final class RSILauncherTests {
         for key in ["LC_ALL", "LANG"] {
             #expect(env[key] == nil, "\(key)")
         }
-        expectNoTranslationLayer(Wine.parseDLLOverrides(env["WINEDLLOVERRIDES"] ?? ""), "the bottle's overrides")
+        expectNoTranslationLayer(Wine.parseDLLOverrides(env["ANODLLOVERRIDES"] ?? ""), "the bottle's overrides")
     }
 }

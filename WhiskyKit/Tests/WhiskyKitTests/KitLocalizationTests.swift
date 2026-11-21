@@ -185,7 +185,7 @@ final class KitLocalizationTests: XCTestCase {
         XCTAssertFalse(report.contains("diagnostics."), "the report should hold no catalog keys")
     }
 
-    // MARK: - WINEDEBUG Presets
+    // MARK: - ANODEBUG Presets
 
     func testPresetNamesAndDescriptionsAreLocalizedWhileExportNamesStayEnglish() {
         let english = ["Normal", "Crash Analysis", "DLL Loading", "Verbose"]

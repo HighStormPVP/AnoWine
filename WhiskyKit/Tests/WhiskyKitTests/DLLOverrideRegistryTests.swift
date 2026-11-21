@@ -25,14 +25,14 @@ final class DLLOverrideRegistryTests: XCTestCase {
     func testBottleScopeUsesPrefixDefaultKey() {
         XCTAssertEqual(
             Wine.DLLOverrideScope.bottle.registryKey,
-            #"HKCU\Software\Wine\DllOverrides"#
+            #"HKCU\Software\Ano\DllOverrides"#
         )
     }
 
     func testProgramScopeIsKeyedOnTheExecutable() {
         XCTAssertEqual(
             Wine.DLLOverrideScope.program("steam.exe").registryKey,
-            #"HKCU\Software\Wine\AppDefaults\steam.exe\DllOverrides"#
+            #"HKCU\Software\Ano\AppDefaults\steam.exe\DllOverrides"#
         )
     }
 
@@ -119,12 +119,12 @@ final class DLLOverrideRegistryTests: XCTestCase {
 
     func testDocumentWritesEachKeyWithoutDeletingIt() {
         let doc = Wine.registryDocument(for: [
-            (key: #"HKCU\Software\Wine\DllOverrides"#, overrides: ["d3d11": "n,b"])
+            (key: #"HKCU\Software\Ano\DllOverrides"#, overrides: ["d3d11": "n,b"])
         ])
         XCTAssertTrue(doc.hasPrefix("Windows Registry Editor Version 5.00"))
         // Deleting the key also took every value winetricks or winecfg wrote.
         XCTAssertFalse(doc.contains("[-"))
-        XCTAssertTrue(doc.contains(#"[HKCU\Software\Wine\DllOverrides]"#))
+        XCTAssertTrue(doc.contains(#"[HKCU\Software\Ano\DllOverrides]"#))
         XCTAssertTrue(doc.contains(#""d3d11"="n,b""#))
         // The managed names it does not set are taken back one by one.
         XCTAssertTrue(doc.contains(#""dxgi"=-"#))

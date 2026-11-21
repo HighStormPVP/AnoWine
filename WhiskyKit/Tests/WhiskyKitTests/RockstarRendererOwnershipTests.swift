@@ -174,7 +174,7 @@ final class RockstarRendererOwnershipTests {
         WINE REGISTRY Version 2
         ;; All keys relative to \\User\\S-1-5-21-0-0-0-1000
 
-        [Software\\Wine\\AppDefaults\\Launcher.exe\\Direct3D] 1731628800
+        [Software\\Ano\\AppDefaults\\Launcher.exe\\Direct3D] 1731628800
         #time=1db36a0c0000000
         "Renderer"="vulkan"
 

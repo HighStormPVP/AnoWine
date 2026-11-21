@@ -71,7 +71,7 @@ struct TerminalEnvironmentCommandTests {
         let root = try TestShell.makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
 
-        // A custom bottle location can contain any of these; WINEPREFIX and
+        // A custom bottle location can contain any of these; ANOPREFIX and
         // DXVK_CONFIG_FILE carry the path into the environment.
         let bottleURL = root.appending(path: #"Games it's "odd" $HOME `id` back\slash; a=b"#)
         try FileManager.default.createDirectory(at: bottleURL, withIntermediateDirectories: true)
@@ -95,14 +95,14 @@ struct TerminalEnvironmentCommandTests {
 
         // Guard against a vacuous pass: the settings have to put every character under
         // test into the values, starting with the override list from the report.
-        let prefix = try #require(expected["WINEPREFIX"])
-        let overrides = try #require(expected["WINEDLLOVERRIDES"])
+        let prefix = try #require(expected["ANOPREFIX"])
+        let overrides = try #require(expected["ANODLLOVERRIDES"])
         #expect(overrides.hasPrefix("d2d1=n,b;d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b;"))
         #expect(overrides.contains(#"x\'$(touch "#))
         #expect(expected["DXVK_CONFIG_FILE"] == "Z:\(prefix)/dxvk.conf")
         for character in Self.trickyCharacters {
-            #expect(prefix.contains(character), "WINEPREFIX lacks \(character)")
-            #expect(overrides.contains(character), "WINEDLLOVERRIDES lacks \(character)")
+            #expect(prefix.contains(character), "ANOPREFIX lacks \(character)")
+            #expect(overrides.contains(character), "ANODLLOVERRIDES lacks \(character)")
         }
 
         let exported = try await Self.exportedEnvironment(evaluating: output, in: shell, home: root)
@@ -110,8 +110,38 @@ struct TerminalEnvironmentCommandTests {
             #expect(exported[key] == value, "\(key)")
         }
         #expect(exported["PATH"] == "\(WhiskyWineInstaller.binFolder.path):\(TestShell.basePath)")
-        #expect(exported["WINE"] == "ano-loader")
+        #expect(exported["ANO"] == "ano-loader")
+        #expect(exported["WINE"] == nil)
+        #expect(!exported.keys.contains { $0.contains("WINE") }, "\(exported.keys.sorted())")
         #expect(!FileManager.default.fileExists(atPath: marker.path))
+    }
+
+    /// The engine's programs are `ano-cfg`, `ano-boot` and the rest; `winecfg` and
+    /// its kin no longer exist in it. An alias named `ano` would shadow the `ano`
+    /// command line tool (`/usr/local/bin/ano`), so the loader is only on PATH.
+    @Test("The aliases run the engine's ano- programs; none is named ano or wine")
+    func aliasesNameTheEnginePrograms() throws {
+        let output = Wine.generateTerminalEnvironmentCommand(binFolder: URL(filePath: "/tmp/bin"), environment: [:])
+        var aliases: [String: String] = [:]
+        for line in output.split(separator: "\n") where line.hasPrefix("alias ") {
+            let definition = line.dropFirst("alias ".count)
+            let separator = try #require(definition.firstIndex(of: "="), "\(line)")
+            let name = String(definition[..<separator])
+            aliases[name] = String(definition[definition.index(after: separator)...])
+        }
+
+        let enginePrograms = ["ano-cfg", "ano-boot", "ano-console", "ano-dbg", "ano-file", "ano-path"]
+        for program in enginePrograms {
+            #expect(aliases[program] == "\"ano-loader \(program)\"", "\(program)")
+        }
+        // Windows' own programs, run through the loader under their own names.
+        for program in ["msiexec", "regedit", "regsvr32"] {
+            #expect(aliases[program] == "\"ano-loader \(program)\"", "\(program)")
+        }
+        #expect(Set(aliases.keys) == Set(enginePrograms + ["msiexec", "regedit", "regsvr32"]))
+        #expect(aliases["ano"] == nil)
+        #expect(!output.lowercased().contains("wine"), "\(output)")
+        #expect(output.contains("export ANO=\"ano-loader\""))
     }
 
     @Test(

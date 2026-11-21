@@ -106,7 +106,7 @@ final class ProgramLaunchPreparationTests {
         let userReg = #"""
         WINE REGISTRY Version 2
 
-        [Software\\Wine\\Fonts\\Replacements] 1788028200
+        [Software\\Ano\\Fonts\\Replacements] 1788028200
         "Meiryo"="Source Han Sans"
         "SimSun"="Source Han Sans SC"
 
@@ -165,7 +165,7 @@ final class ProgramLaunchPreparationTests {
         #expect(AudioRegistryState.load(from: bottle.url) == .factoryDefault)
         // In the environment, the variable would shadow every per-executable
         // registry entry for the launched program and everything it spawns.
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
         #expect(launch.environment["PROGRAM_SETTING"] == "kept")
         #expect(launch.arguments == ["start", "/unix", program.url.path(percentEncoded: false), "-windowed"])
 
@@ -178,7 +178,7 @@ final class ProgramLaunchPreparationTests {
         #expect(recorder.overrides(for: .program("Game.exe"))?["d3d11"] == "n,b")
     }
 
-    @Test("Every run mode carries the program's diagnostic WINEDEBUG preset")
+    @Test("Every run mode carries the program's diagnostic ANODEBUG preset")
     func launchCarriesProgramSettings() async throws {
         let bottle = try makeBottle()
         let program = try makeConflictingProgram(in: bottle)
@@ -186,7 +186,7 @@ final class ProgramLaunchPreparationTests {
 
         let launch = try await program.prepareLaunch(args: [], overrideWriter: RegistryRecorder().writer)
 
-        #expect(launch.environment["WINEDEBUG"] == WineDebugPreset.dllLoad.winedebugValue)
+        #expect(launch.environment["ANODEBUG"] == WineDebugPreset.dllLoad.winedebugValue)
     }
 
     @Test("Every run mode adds the CJK font aliases a bottle with Source Han Sans is missing")
@@ -238,7 +238,7 @@ final class ProgramLaunchPreparationTests {
 
         #expect(recorder.imports == [CJKFontReplacements.registryDocument(for: CJKFontReplacements.replacements)])
         // The whole launch is wined3d's: none of it is the DXVK the bottle had before the import.
-        #expect(launch.environment["WINED3DMETAL"] == "0")
+        #expect(launch.environment["ANOD3DMETAL"] == "0")
         #expect(recorder.overrides(for: .bottle)?["d2d1"] == "n,b")
         #expect(recorder.overrides(for: .bottle)?["d3d11"] == nil)
     }
@@ -253,11 +253,11 @@ final class ProgramLaunchPreparationTests {
             for: program.prepareLaunch(args: ["-windowed"], overrideWriter: RegistryRecorder().writer)
         )
 
-        #expect(!command.contains("WINEDLLOVERRIDES="))
+        #expect(!command.contains("ANODLLOVERRIDES="))
         #expect(command.contains("PROGRAM_SETTING=kept"))
-        #expect(command.contains("WINEDEBUG=\(WineDebugPreset.dllLoad.winedebugValue.esc)"))
+        #expect(command.contains("ANODEBUG=\(WineDebugPreset.dllLoad.winedebugValue.esc)"))
         #expect(command.hasSuffix(
-            "env -u WINEDLLOVERRIDES \(Wine.wineBinary.esc) start /unix \(program.url.esc) -windowed"
+            "env -u ANODLLOVERRIDES \(Wine.wineBinary.esc) start /unix \(program.url.esc) -windowed"
         ))
     }
 
@@ -276,7 +276,7 @@ final class ProgramLaunchPreparationTests {
         )
 
         // A client this invocation starts would inherit the variable.
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
         #expect(recorder.overrides(for: .program("RDR2.exe"))?["xinput1_3"] == "n")
         #expect(launch.arguments == ["start", "/unix", steam.path(percentEncoded: false), "-applaunch", "1174180"])
         // The launcher keeps its own set; the game's plan is not in it.
@@ -288,52 +288,52 @@ final class ProgramLaunchPreparationTests {
     @Test("A prepared launch prints exactly as prepared, without rebuilding its environment")
     func preparedLaunchPrintsVerbatim() {
         let launch = Wine.PreparedLaunch(
-            environment: ["WINEPREFIX": "/tmp/My Bottle", "DXVK_HUD": "fps"],
+            environment: ["ANOPREFIX": "/tmp/My Bottle", "DXVK_HUD": "fps"],
             arguments: ["start", "/unix", "/tmp/My Bottle/drive_c/Game.exe", "--name", "Player One"]
         )
 
         let command = Wine.generateRunCommand(for: launch)
 
-        #expect(command.contains(#"WINEPREFIX=/tmp/My\ Bottle "#))
+        #expect(command.contains(#"ANOPREFIX=/tmp/My\ Bottle "#))
         #expect(command.contains("DXVK_HUD=fps "))
-        #expect(!command.contains("WINEDLLOVERRIDES="))
+        #expect(!command.contains("ANODLLOVERRIDES="))
         #expect(command.hasSuffix(
-            "env -u WINEDLLOVERRIDES \(Wine.wineBinary.esc) "
+            "env -u ANODLLOVERRIDES \(Wine.wineBinary.esc) "
                 + #"start /unix /tmp/My\ Bottle/drive_c/Game.exe --name Player\ One"#
         ))
     }
 
-    @Test("A printed command runs Wine without the WINEDLLOVERRIDES its terminal exports")
+    @Test("A printed command runs Wine without the ANODLLOVERRIDES its terminal exports")
     func printedCommandClearsInheritedOverrides() async throws {
         let launch = Wine.PreparedLaunch(
-            environment: ["WINEPREFIX": "/tmp/My Bottle"],
+            environment: ["ANOPREFIX": "/tmp/My Bottle"],
             arguments: ["start", "/unix", "/tmp/My Bottle/drive_c/Game.exe"]
         )
 
         // What `WhiskyCmd shellenv` and Open in Terminal export: the bottle's
         // set, which would shadow the entries preparation wrote for the program.
         let environment = try await environmentOfPrintedCommand(
-            for: launch, inherited: ["WINEDLLOVERRIDES": "d2d1=n,b;d3d11=n,b", "KEPT": "yes"]
+            for: launch, inherited: ["ANODLLOVERRIDES": "d2d1=n,b;d3d11=n,b", "KEPT": "yes"]
         )
 
-        #expect(environment["WINEDLLOVERRIDES"] == nil)
-        #expect(environment["WINEPREFIX"] == "/tmp/My Bottle")
+        #expect(environment["ANODLLOVERRIDES"] == nil)
+        #expect(environment["ANOPREFIX"] == "/tmp/My Bottle")
         #expect(environment["KEPT"] == "yes")
     }
 
     @Test("A printed command sets the overrides a launch keeps for a descendant over the terminal's")
     func printedCommandSetsDescendantOverrides() async throws {
         let launch = Wine.PreparedLaunch(
-            environment: ["WINEPREFIX": "/tmp/My Bottle", "WINEDLLOVERRIDES": "d3d11=n,b;nvapi64="],
+            environment: ["ANOPREFIX": "/tmp/My Bottle", "ANODLLOVERRIDES": "d3d11=n,b;nvapi64="],
             arguments: ["start", "/unix", "/tmp/My Bottle/drive_c/steam.exe", "-applaunch", "1174180"]
         )
 
         let command = Wine.generateRunCommand(for: launch)
         let environment = try await environmentOfPrintedCommand(
-            for: launch, inherited: ["WINEDLLOVERRIDES": "d2d1=n,b"]
+            for: launch, inherited: ["ANODLLOVERRIDES": "d2d1=n,b"]
         )
 
         #expect(!command.contains("env -u"))
-        #expect(environment["WINEDLLOVERRIDES"] == "d3d11=n,b;nvapi64=")
+        #expect(environment["ANODLLOVERRIDES"] == "d3d11=n,b;nvapi64=")
     }
 }

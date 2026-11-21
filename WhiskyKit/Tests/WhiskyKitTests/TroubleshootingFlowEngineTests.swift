@@ -257,7 +257,7 @@ final class TroubleshootingFlowEngineTests: XCTestCase {
     func testFixLifecycleThroughUserReportsFixed() {
         let (engine, store) = makeEngine(nodes: ["start": infoNode("start")])
 
-        engine.applyFix(fixId: "graphics.set_backend_dxvk", beforeValue: "wined3d", afterValue: "dxvk")
+        engine.applyFix(fixId: "graphics.set_backend_dxvk", beforeValue: "anod3d", afterValue: "dxvk")
         XCTAssertNotEqual(engine.session.phase, .verify, "the fix step stays up until the fix lands")
         XCTAssertEqual(engine.session.fixAttempts.last?.result, .pending)
 

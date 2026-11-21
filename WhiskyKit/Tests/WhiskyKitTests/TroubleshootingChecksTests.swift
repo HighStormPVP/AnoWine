@@ -124,11 +124,11 @@ final class TroubleshootingChecksTests: XCTestCase {
     func testGraphicsBackendCheckMismatchIsFail() async {
         let result = await GraphicsBackendCheck().run(
             params: ["expected": "dxvk"],
-            context: makeCheckContext(graphicsBackend: "wined3d")
+            context: makeCheckContext(graphicsBackend: "anod3d")
         )
 
         XCTAssertEqual(result.outcome, .fail)
-        XCTAssertEqual(result.evidence["current"], "wined3d")
+        XCTAssertEqual(result.evidence["current"], "anod3d")
         XCTAssertEqual(result.evidence["expected"], "dxvk")
     }
 

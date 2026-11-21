@@ -135,7 +135,7 @@ final class LauncherScopingTests {
         expectDXVK(recorder.overrides(for: .program("steam.exe")), "steam.exe")
         expectDXVK(recorder.overrides(for: .program("steamwebhelper.exe")), "steamwebhelper.exe")
         #expect(recorder.overrides(for: .program("steamwebhelper.exe"))?["nvapi64"] == "")
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     // MARK: - Matrix row 2: recommended, -applaunch with the client up
@@ -155,7 +155,7 @@ final class LauncherScopingTests {
         expectDXVK(recorder.overrides(for: .program("steam.exe")), "steam.exe")
         // The game resolves the way the bottle's games do, not steered to DXVK,
         // and the environment carries no overrides for anything to inherit.
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     // MARK: - Matrix row 3: -applaunch whose game plan says DXVK
@@ -172,7 +172,7 @@ final class LauncherScopingTests {
         expectNoTranslationLayer(recorder.overrides(for: .bottle))
         expectDXVK(recorder.overrides(for: .program("steamwebhelper.exe")), "steamwebhelper.exe")
         // The plan goes to the game's own entries (SteamGameLaunchScopingTests).
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     // MARK: - Matrix row 4: DXVK chosen for the bottle
@@ -187,7 +187,7 @@ final class LauncherScopingTests {
         expectDXVK(recorder.overrides(for: .bottle), "bottle")
         expectDXVK(recorder.overrides(for: .program("steam.exe")), "steam.exe")
         expectDXVK(recorder.overrides(for: .program("steamwebhelper.exe")), "steamwebhelper.exe")
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     // MARK: - Matrix row 6: any bottle backend on -applaunch
@@ -230,7 +230,7 @@ final class LauncherScopingTests {
         #expect(steamScope?["d3d9"] == "n,b")
         #expect(steamScope?["d3d12"] == nil)
         expectDXVK(recorder.overrides(for: .program("steamwebhelper.exe")), "steamwebhelper.exe")
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
     }
 
     // MARK: - Matrix row 8: Rockstar's chain inside a Steam session

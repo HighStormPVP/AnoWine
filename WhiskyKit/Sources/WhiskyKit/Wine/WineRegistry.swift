@@ -137,7 +137,9 @@ enum WineRegistryFile {
 }
 
 public extension Wine {
-    private enum RegistryKey: String {
+    /// The registry keys this file reads and writes. Internal, not private, so
+    /// tests can check them against the engine's names.
+    internal enum RegistryKey: String {
         case currentVersion = #"HKLM\Software\Microsoft\Windows NT\CurrentVersion"#
         case macDriver = #"HKCU\Software\Wine\Mac Driver"#
         case desktop = #"HKCU\Control Panel\Desktop"#
@@ -314,7 +316,13 @@ public extension Wine {
     @discardableResult
     @MainActor
     static func changeWinVersion(bottle: Bottle, win: WinVersion) async throws -> String {
-        try await Wine.runWine(["winecfg", "-v", win.rawValue], bottle: bottle)
+        try await Wine.runWine(changeWinVersionArguments(win), bottle: bottle)
+    }
+
+    /// What ``changeWinVersion(bottle:win:)`` runs, which is also how a new
+    /// bottle's prefix gets created.
+    internal static func changeWinVersionArguments(_ win: WinVersion) -> [String] {
+        ["winecfg", "-v", win.rawValue]
     }
 
     // MARK: - Virtual Desktop

@@ -104,7 +104,7 @@ final class SessionStalenessLocalizationTests: XCTestCase {
 
     func testBackendChangeUsesTheLocalizedRecommendedName() throws {
         let change = try onlyChange(
-            from: preflight(backend: "recommended"), to: preflight(backend: "wined3d")
+            from: preflight(backend: "recommended"), to: preflight(backend: "anod3d")
         )
         let recommended = GraphicsBackend.recommended.displayName
 

@@ -22,7 +22,7 @@ import Testing
 
 /// Covers the marker bookkeeping around ``Wine/syncAudioRegistry(bottle:)``.
 /// The registry-writing path itself spawns wineserver and is deliberately
-/// not exercised, same policy as the restart-wineserver fix.
+/// not exercised, same policy as the restart-ano-server fix.
 @Suite("Audio Registry Sync Tests")
 struct AudioRegistrySyncTests {
     private func makeBottleDir() -> (url: URL, cleanup: () -> Void) {

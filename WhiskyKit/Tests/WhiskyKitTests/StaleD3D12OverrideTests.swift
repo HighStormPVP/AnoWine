@@ -68,11 +68,11 @@ final class StaleD3D12OverrideTests {
         let userReg = #"""
         WINE REGISTRY Version 2
 
-        [Software\\Wine\\AppDefaults\\RDR2.exe\\DllOverrides] 1788028200
+        [Software\\Ano\\AppDefaults\\RDR2.exe\\DllOverrides] 1788028200
         \#(rdr2D3D11)
         "d3d12"=""
 
-        [Software\\Wine\\AppDefaults\\PlayRDR2.exe\\DllOverrides] 1788028200
+        [Software\\Ano\\AppDefaults\\PlayRDR2.exe\\DllOverrides] 1788028200
         "d3d11"="n,b"
 
         """#
@@ -157,7 +157,7 @@ final class StaleD3D12OverrideTests {
         let document = Wine.registryDocument(for: [
             (key: Wine.DLLOverrideScope.program("RDR2.exe").registryKey, overrides: [:])
         ])
-        #expect(document.contains("[HKCU\\Software\\Wine\\AppDefaults\\RDR2.exe\\DllOverrides]\r\n"))
+        #expect(document.contains("[HKCU\\Software\\Ano\\AppDefaults\\RDR2.exe\\DllOverrides]\r\n"))
         #expect(document.contains(#""d3d12"=-"#))
     }
 }

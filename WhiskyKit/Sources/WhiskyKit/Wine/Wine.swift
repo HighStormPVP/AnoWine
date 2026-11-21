@@ -1058,7 +1058,12 @@ public class Wine {
     /// - Throws: An error if Wine cannot be executed.
     @MainActor
     public static func wineVersion() async throws -> String {
-        var output = try await runWineWithoutBottle(["--version"])
+        try await versionNumber(fromVersionOutput: runWineWithoutBottle(["--version"]))
+    }
+
+    /// The version number in what the loader's `--version` prints.
+    static func versionNumber(fromVersionOutput output: String) -> String {
+        var output = output
         output.replace("wine-", with: "")
 
         // Deal with WineCX version names

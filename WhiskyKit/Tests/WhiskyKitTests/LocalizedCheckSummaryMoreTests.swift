@@ -115,12 +115,12 @@ final class LocalizedCheckSummaryMoreTests: XCTestCase {
 
     // MARK: - RegistryValueCheck
 
-    private static let registryKey = #"HKCU\Software\Wine\Direct3D"#
+    private static let registryKey = #"HKCU\Software\Ano\Direct3D"#
 
     private func writeUserReg() throws {
         let userReg = #"""
         WINE REGISTRY Version 2
-        [Software\\Wine\\Direct3D] 1788028146
+        [Software\\Ano\\Direct3D] 1788028146
         "renderer"="gl"
         """#
         try userReg.write(to: bottleURL.appending(path: "user.reg"), atomically: true, encoding: .utf8)

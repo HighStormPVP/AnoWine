@@ -64,7 +64,7 @@ final class CrashClassifierPatternTests: XCTestCase {
 
     func testClassifyPageFault() {
         let classifier = CrashClassifier()
-        let log = "wine: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
+        let log = "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
         let diagnosis = classifier.classify(log: log)
         XCTAssertFalse(diagnosis.isEmpty)
         XCTAssertEqual(diagnosis.primaryCategory, .coreCrashFatal)
@@ -105,7 +105,7 @@ final class CrashClassifierPatternTests: XCTestCase {
 
     func testClassifyPrefixCorruption() {
         let classifier = CrashClassifier()
-        let log = "wine: could not load user32.dll, status c0000135"
+        let log = "ano: could not load user32.dll, status c0000135"
         let diagnosis = classifier.classify(log: log)
         XCTAssertFalse(diagnosis.isEmpty)
         XCTAssertEqual(diagnosis.primaryCategory, .prefixFilesystem)
@@ -125,7 +125,7 @@ final class CrashClassifierPatternTests: XCTestCase {
         let classifier = CrashClassifier()
         // Log with multiple error types: anti-cheat (0.99 confidence) should be primary
         let log = """
-        wine: could not load user32.dll, status c0000135
+        ano: could not load user32.dll, status c0000135
         EasyAntiCheat.exe: Fatal error - EasyAntiCheat is not installed
         err:d3d11:device_lost D3D11 device lost (DXGI_ERROR_DEVICE_REMOVED)
         """
@@ -252,7 +252,7 @@ final class CrashClassifierPatternTests: XCTestCase {
             "access-violation":
                 "0080:err:seh:NtRaiseException Unhandled exception code c0000005 flags 0 addr 0x7b012345",
             "page-fault":
-                "wine: Unhandled page fault on read access to 0x00000000 at address 0x7b012345",
+                "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345",
             "nt-raise-exception":
                 "err:seh:NtRaiseException Unhandled exception at 0x7b012345",
             "ldr-init-failure":
@@ -268,7 +268,7 @@ final class CrashClassifierPatternTests: XCTestCase {
             "swapchain-failure":
                 "err:vulkan:swapchain creation failed with error",
             "prefix-corruption":
-                "wine: could not load user32.dll, status c0000135",
+                "ano: could not load user32.dll, status c0000135",
             "prefix-user-dirs-missing":
                 "err:shell:init user dirs missing from prefix",
             "network-winhttp-tls":
@@ -280,7 +280,7 @@ final class CrashClassifierPatternTests: XCTestCase {
             "anticheat-battleye":
                 "BattlEye Service: error initializing - BattlEye not supported",
             "wine-nonzero-exit":
-                "wine process exit code 1",
+                "ano-loader exit code 1",
             "steam-download-stall":
                 "Steam content_log: download HTTP timed out"
         ]
@@ -300,5 +300,26 @@ final class CrashClassifierPatternTests: XCTestCase {
             let result = patterns[index].match(line: line)
             XCTAssertNotNil(result, "Pattern \(patternID) should match its sample line")
         }
+    }
+
+    // MARK: - The Engine's Names
+
+    /// The engine's messages start `ano:` and its programs are `ano-loader` and
+    /// `ano-server`. A bare `ano` counts only as a word of its own: `piano` and
+    /// the app's own `Ano.app` are not the engine.
+    func testPatternsMatchTheEngineNamesOnly() {
+        var (patterns, _) = PatternLoader.loadDefaults()
+        func matches(_ id: String, _ line: String) -> Bool {
+            guard let index = patterns.firstIndex(where: { $0.id == id }) else { return false }
+            return patterns[index].match(line: line) != nil
+        }
+
+        let pageFault = "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
+        XCTAssertTrue(matches("page-fault", pageFault))
+        XCTAssertTrue(matches("prefix-corruption", "ano: could not load kernel32.dll, status c0000135"))
+        XCTAssertTrue(matches("wine-nonzero-exit", "ano: exit code 3"))
+        XCTAssertTrue(matches("wine-nonzero-exit", "ano-server exit code 3"))
+        XCTAssertFalse(matches("wine-nonzero-exit", "piano exit code 3"))
+        XCTAssertFalse(matches("wine-nonzero-exit", "/Applications/Ano.app/Contents/MacOS/Ano exit code 3"))
     }
 }

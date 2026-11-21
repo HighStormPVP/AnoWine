@@ -71,7 +71,7 @@ final class AnoWineRuntimeTests: XCTestCase {
 
         let env = Wine.constructWineEnvironment(for: bottle)
 
-        let server = try XCTUnwrap(env["WINESERVER"])
+        let server = try XCTUnwrap(env["ANOSERVER"])
         XCTAssertTrue(server.hasSuffix("/Libraries/Ano/bin/ano-server"), server)
     }
 
@@ -112,7 +112,8 @@ final class AnoWineRuntimeTests: XCTestCase {
             binFolder: URL(filePath: "/tmp/ano-bin"), environment: [:]
         )
         XCTAssertTrue(command.contains(#"alias ano-boot="ano-loader ano-boot""#), command)
-        XCTAssertTrue(command.contains(#"alias wineboot="ano-loader ano-boot""#), command)
+        // Engine 5.x has no wine-named programs, so no wine-named alias either.
+        XCTAssertFalse(command.contains("alias wineboot"), command)
         XCTAssertFalse(command.contains("ano-loader wineboot"), command)
     }
 }

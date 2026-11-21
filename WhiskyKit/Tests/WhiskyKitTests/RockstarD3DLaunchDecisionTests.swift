@@ -152,7 +152,7 @@ final class RockstarD3DLaunchDecisionTests {
     @Test("Another launcher's native-first AppDefaults entry refuses the swap")
     func otherLauncherEntryRefuses() throws {
         try fixture.writeUserReg(#"""
-        [Software\\Wine\\AppDefaults\\EADesktop.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\EADesktop.exe\\DllOverrides] 1731628800
         "d3d11"="n,b"
 
         """#)

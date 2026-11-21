@@ -121,6 +121,6 @@ struct ShellQuotingTests {
     @Test("Command lines and assignments quote every value")
     func commandLineAndAssignment() {
         #expect(ShellQuoting.commandLine(["bash", "/p/w t", "vcrun2019"]) == "'bash' '/p/w t' 'vcrun2019'")
-        #expect(ShellQuoting.assignment("WINEPREFIX", "/Users/me/It's") == "WINEPREFIX='/Users/me/It'\\''s'")
+        #expect(ShellQuoting.assignment("ANOPREFIX", "/Users/me/It's") == "ANOPREFIX='/Users/me/It'\\''s'")
     }
 }

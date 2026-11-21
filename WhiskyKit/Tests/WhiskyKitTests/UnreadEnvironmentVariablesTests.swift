@@ -37,6 +37,9 @@ private let unreadVariables = [
     "WINE_DISABLE_FAST_PATH",
     "WINE_MACH_PORT_TIMEOUT",
     "WINE_MACH_PORT_RETRY_COUNT",
+    // The engine has no fsync (winecx 9f3f644), under either name.
+    "WINEFSYNC",
+    "ANOFSYNC",
     "DXVK_REQUIRED",
     "GPU_VENDOR_ID",
     "GPU_DEVICE_ID",
@@ -50,7 +53,7 @@ final class UnreadEnvironmentVariablesTests: XCTestCase {
         let keys = Set(MacOSCompatibilityFixes.allFixes.map(\.key))
         XCTAssertEqual(
             keys,
-            ["STEAM_DISABLE_CEF_SANDBOX", "CEF_DISABLE_SANDBOX", "MTL_DEBUG_LAYER", "WINEFSYNC", "STEAM_RUNTIME"]
+            ["STEAM_DISABLE_CEF_SANDBOX", "CEF_DISABLE_SANDBOX", "MTL_DEBUG_LAYER", "STEAM_RUNTIME"]
         )
     }
 
@@ -71,7 +74,7 @@ final class UnreadEnvironmentVariablesTests: XCTestCase {
             }
             // The read platform fixes are still there.
             XCTAssertEqual(env["CEF_DISABLE_SANDBOX"], "1")
-            XCTAssertEqual(env["WINEFSYNC"], "0")
+            XCTAssertEqual(env["MTL_DEBUG_LAYER"], "0")
         }
     }
 

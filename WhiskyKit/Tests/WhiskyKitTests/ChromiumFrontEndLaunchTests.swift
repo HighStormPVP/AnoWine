@@ -130,7 +130,7 @@ final class ChromiumFrontEndLaunchTests {
         let bottleScope = recorder.overrides(for: .bottle)
         #expect(bottleScope != nil)
         expectNotDXVK(bottleScope, "the bottle scope")
-        #expect(launch.environment["WINEDLLOVERRIDES"] == nil)
+        #expect(launch.environment["ANODLLOVERRIDES"] == nil)
         #expect(dxvkDeployed, "DXVK's files are copied in for the front end")
         #expect(bottle.settings.graphicsBackend == .recommended)
     }

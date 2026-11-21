@@ -22,7 +22,7 @@ import Testing
 
 @Suite("Wine Registry File Tests")
 struct WineRegistryFileTests {
-    private static let replacementsKey = #"HKCU\Software\Wine\Fonts\Replacements"#
+    private static let replacementsKey = #"HKCU\Software\Ano\Fonts\Replacements"#
 
     /// A `user.reg` as Wine saves it: timestamped headers, `#time` lines, a
     /// default value, an escaped non-ASCII name, and neighbouring keys on
@@ -33,22 +33,22 @@ struct WineRegistryFileTests {
 
     #arch=win64
 
-    [Software\\Wine\\Fonts] 1788028146
+    [Software\\Ano\\Fonts] 1788028146
     #time=1dd37e4465d6628
     "LogPixels"=dword:00000060
     "SimSun"="Not the key"
 
-    [Software\\Wine\\Fonts\\Replacements] 1788028200
+    [Software\\Ano\\Fonts\\Replacements] 1788028200
     #time=1dd37e4465d9a10
     @="ignored default value"
     "Meiryo"="Source Han Sans"
     "SimSun"="Source Han Sans SC"
     "\x30e1\x30a4\x30ea\x30aa"="Source Han Sans"
 
-    [Software\\Wine\\Fonts\\Replacements\\Unrelated] 1788028200
+    [Software\\Ano\\Fonts\\Replacements\\Unrelated] 1788028200
     "Gulim"="Subkey, not the key"
 
-    [Software\\Wine\\WineDbg] 1788028146
+    [Software\\Ano\\AnoDbg] 1788028146
     "Batang"="Another key entirely"
     """#
 
@@ -77,7 +77,7 @@ struct WineRegistryFileTests {
         let prefix = try makePrefix(userReg: Self.userReg)
         defer { try? FileManager.default.removeItem(at: prefix) }
 
-        let long = #"HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements"#
+        let long = #"HKEY_CURRENT_USER\Software\Ano\Fonts\Replacements"#
         #expect(WineRegistryFile.valueNames(bottleURL: prefix, key: long)?.count == 3)
     }
 
@@ -113,7 +113,7 @@ struct WineRegistryFileTests {
                 == "Source Han Sans SC"
         )
         #expect(
-            WineRegistryFile.readValue(bottleURL: prefix, key: #"HKCU\Software\Wine\Fonts"#, valueName: "LogPixels")
+            WineRegistryFile.readValue(bottleURL: prefix, key: #"HKCU\Software\Ano\Fonts"#, valueName: "LogPixels")
                 == "dword:00000060"
         )
         #expect(WineRegistryFile.readValue(bottleURL: prefix, key: Self.replacementsKey, valueName: "Gulim") == nil)

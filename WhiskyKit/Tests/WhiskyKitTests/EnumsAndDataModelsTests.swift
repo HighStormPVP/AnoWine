@@ -175,13 +175,13 @@ final class ProgramSettingsTests: XCTestCase {
         var settings = ProgramSettings()
         settings.locale = .japanese
         settings.arguments = "-windowed -nosound"
-        settings.environment["WINEDEBUG"] = "-all"
+        settings.environment["ANODEBUG"] = "-all"
         settings.environment["CUSTOM_VAR"] = "value"
 
         XCTAssertEqual(settings.locale, .japanese)
         XCTAssertEqual(settings.arguments, "-windowed -nosound")
         XCTAssertEqual(settings.environment.count, 2)
-        XCTAssertEqual(settings.environment["WINEDEBUG"], "-all")
+        XCTAssertEqual(settings.environment["ANODEBUG"], "-all")
         XCTAssertEqual(settings.environment["CUSTOM_VAR"], "value")
     }
 

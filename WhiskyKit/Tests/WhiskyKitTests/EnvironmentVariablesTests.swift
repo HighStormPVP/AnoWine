@@ -35,7 +35,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically).
         // The test runner has no runtime, so no GPTK payload: d3d12 is Wine's own
         // and stays unmentioned. The payload case is pinned in the populator tests.
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
+        XCTAssertEqual(env["ANODLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
         XCTAssertEqual(env["DXVK_HUD"], "full")
     }
 
@@ -50,11 +50,11 @@ final class EnvironmentVariablesTests: XCTestCase {
 
         // The trio is native-then-builtin; anometal pinned builtin for unixlib binding.
         // No runtime here, so no payload either, and d3d12 is left alone.
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;dxgi=n,b")
+        XCTAssertEqual(env["ANODLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;dxgi=n,b")
         // DXMT is not DXVK and not wined3d: none of their env vars may leak.
         XCTAssertNil(env["DXVK_HUD"])
         XCTAssertNil(env["DXVK_ASYNC"])
-        XCTAssertNil(env["WINED3DMETAL"])
+        XCTAssertNil(env["ANOD3DMETAL"])
     }
 
     func testDXVKSettingsDoNotApplyUnderDXMT() {
@@ -114,8 +114,8 @@ final class EnvironmentVariablesTests: XCTestCase {
         var env: [String: String] = [:]
         settings.environmentVariables(wineEnv: &env)
 
-        XCTAssertEqual(env["WINEESYNC"], "1")
-        XCTAssertNil(env["WINEMSYNC"])
+        XCTAssertEqual(env["ANOESYNC"], "1")
+        XCTAssertNil(env["ANOMSYNC"])
     }
 
     func testEnvironmentVariablesWithMSync() {
@@ -125,10 +125,10 @@ final class EnvironmentVariablesTests: XCTestCase {
         var env: [String: String] = [:]
         settings.environmentVariables(wineEnv: &env)
 
-        // When MSync is enabled, both WINEMSYNC and WINEESYNC must be set.
+        // When MSync is enabled, both ANOMSYNC and ANOESYNC must be set.
         // This is required for D3DM compatibility - values are hardcoded in lid3dshared.dylib
-        XCTAssertEqual(env["WINEMSYNC"], "1")
-        XCTAssertEqual(env["WINEESYNC"], "1")
+        XCTAssertEqual(env["ANOMSYNC"], "1")
+        XCTAssertEqual(env["ANOESYNC"], "1")
     }
 
     func testEnvironmentVariablesWithNoEnhancedSync() {
@@ -139,11 +139,11 @@ final class EnvironmentVariablesTests: XCTestCase {
         settings.environmentVariables(wineEnv: &env)
 
         if MacOSVersion.current >= .sequoia15_4 {
-            XCTAssertEqual(env["WINEESYNC"], "1")
-            XCTAssertNil(env["WINEMSYNC"])
+            XCTAssertEqual(env["ANOESYNC"], "1")
+            XCTAssertNil(env["ANOMSYNC"])
         } else {
-            XCTAssertNil(env["WINEESYNC"])
-            XCTAssertNil(env["WINEMSYNC"])
+            XCTAssertNil(env["ANOESYNC"])
+            XCTAssertNil(env["ANOMSYNC"])
         }
     }
 
@@ -250,11 +250,13 @@ final class EnvironmentVariablesTests: XCTestCase {
 
         let env = Wine.constructWineEnvironment(for: bottle)
 
-        // Supported macOS is 15.4+ at minimum, so both fixes apply.
-        // D3DM_VALIDATION is no longer one: no runtime reads it.
+        // Supported macOS is 15.4+ at minimum, so the fix applies.
+        // D3DM_VALIDATION is no longer one: no runtime reads it. Nor is the
+        // fsync switch: the engine has no fsync, so nothing reads it.
         XCTAssertEqual(env["MTL_DEBUG_LAYER"], "0")
         XCTAssertNil(env["D3DM_VALIDATION"])
-        XCTAssertEqual(env["WINEFSYNC"], "0")
+        XCTAssertNil(env["WINEFSYNC"])
+        XCTAssertNil(env["ANOFSYNC"])
     }
 
     @MainActor
@@ -306,9 +308,9 @@ final class EnvironmentVariablesTests: XCTestCase {
             XCTAssertEqual(managedOverrides.contains { $0.entry.dllName == "d3d12" }, builtinD3D12IsD3DMetal)
             XCTAssertTrue(managedOverrides.allSatisfy { $0.source == .dxvk })
 
-            // WINEDLLOVERRIDES should NOT be in the resolved environment (handled by DLLOverrideResolver)
+            // ANODLLOVERRIDES should NOT be in the resolved environment (handled by DLLOverrideResolver)
             let (resolved, _) = builder.resolve()
-            XCTAssertNil(resolved["WINEDLLOVERRIDES"])
+            XCTAssertNil(resolved["ANODLLOVERRIDES"])
         }
     }
 
@@ -365,7 +367,7 @@ final class EnvironmentVariablesTests: XCTestCase {
     // MARK: - Program Override Tests (applyProgramOverrides, direct)
 
     /// Runs the real `applyProgramOverrides` against a bottle-managed layer and
-    /// returns the resolved WINEDLLOVERRIDES string. The runtime is pinned: the
+    /// returns the resolved ANODLLOVERRIDES string. The runtime is pinned: the
     /// stock engine unless the test asks for the GPTK payload, whose builtin
     /// d3d12 is D3DMetal's.
     private func resolvedOverrides(
@@ -524,20 +526,20 @@ final class EnvironmentVariablesTests: XCTestCase {
     func testProgramOverrideEnhancedSyncOverridesBottle() {
         // Bottle has msync, program overrides to esync
         var builder = EnvironmentBuilder()
-        builder.set("WINEMSYNC", "1", layer: .bottleManaged)
-        builder.set("WINEESYNC", "1", layer: .bottleManaged)
+        builder.set("ANOMSYNC", "1", layer: .bottleManaged)
+        builder.set("ANOESYNC", "1", layer: .bottleManaged)
 
         // Program overrides to esync only
-        builder.set("WINEESYNC", "1", layer: .programUser)
-        builder.remove("WINEMSYNC", layer: .programUser)
+        builder.set("ANOESYNC", "1", layer: .programUser)
+        builder.remove("ANOMSYNC", layer: .programUser)
 
         let (resolved, _) = builder.resolve()
-        XCTAssertEqual(resolved["WINEESYNC"], "1")
-        XCTAssertNil(resolved["WINEMSYNC"]) // Removed by programUser layer
+        XCTAssertEqual(resolved["ANOESYNC"], "1")
+        XCTAssertNil(resolved["ANOMSYNC"]) // Removed by programUser layer
     }
 
     func testDLLOverridesComposeCorrectly() {
-        // Bottle DXVK on + program custom DLL override -> both present in WINEDLLOVERRIDES
+        // Bottle DXVK on + program custom DLL override -> both present in ANODLLOVERRIDES
         var dllResolver = DLLOverrideResolver(
             managed: DLLOverrideResolver.dxvkPreset(builtinD3D12IsD3DMetal: false).map {
                 (entry: $0, source: DLLOverrideSource.dxvk)

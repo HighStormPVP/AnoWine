@@ -328,7 +328,7 @@ final class LauncherDiagnosticsTests: XCTestCase {
         // DXVK should be auto-enabled because Rockstar requires it
         // DLL overrides are now composed per-DLL via DLLOverrideResolver (sorted alphabetically).
         // No runtime under test means no GPTK payload, so d3d12 is left alone.
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
+        XCTAssertEqual(env["ANODLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
     }
 
     func testAutoEnableDXVKNotTriggeredForSteam() throws {
@@ -352,7 +352,7 @@ final class LauncherDiagnosticsTests: XCTestCase {
         bottle.settings.environmentVariables(wineEnv: &env)
 
         // DXVK should NOT be auto-enabled (Steam doesn't require it)
-        XCTAssertNil(env["WINEDLLOVERRIDES"])
+        XCTAssertNil(env["ANODLLOVERRIDES"])
     }
 
     // MARK: - Launcher Requirements Tests
@@ -412,8 +412,8 @@ final class LauncherDiagnosticsTests: XCTestCase {
         XCTAssertEqual(env["CEF_DISABLE_SANDBOX"], "1")
 
         // Base Wine environment should be set
-        XCTAssertEqual(env["WINEPREFIX"], tempURL.path)
-        XCTAssertEqual(env["WINEDEBUG"], "fixme-all")
+        XCTAssertEqual(env["ANOPREFIX"], tempURL.path)
+        XCTAssertEqual(env["ANODEBUG"], "fixme-all")
     }
 
     // MARK: - Codable Compliance Tests

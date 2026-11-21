@@ -23,8 +23,8 @@ import Testing
 @Suite("Wine Virtual Desktop Registry Tests")
 @MainActor
 struct WineVirtualDesktopRegistryTests {
-    private static let explorer = #"HKCU\Software\Wine\Explorer"#
-    private static let desktops = #"HKCU\Software\Wine\Explorer\Desktops"#
+    private static let explorer = #"HKCU\Software\Ano\Explorer"#
+    private static let desktops = #"HKCU\Software\Ano\Explorer\Desktops"#
 
     /// A registry query over fixed values, keyed `key\name`.
     private func query(_ values: [String: String]) -> Wine.RegistryStringQuery {

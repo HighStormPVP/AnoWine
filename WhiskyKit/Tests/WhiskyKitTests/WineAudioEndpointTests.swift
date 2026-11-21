@@ -72,11 +72,11 @@ struct WineAudioEndpointTests {
     func renderDeviceKey() {
         #expect(
             WineAudioEndpoint.renderDeviceKey(uid: "BuiltInSpeakerDevice")
-                == #"HKCU\Software\Wine\Drivers\winecoreaudio.drv\devices\0,BuiltInSpeakerDevice"#
+                == #"HKCU\Software\Ano\Drivers\anocoreaudio.drv\devices\0,BuiltInSpeakerDevice"#
         )
         #expect(
             WineAudioEndpoint.renderDeviceKey(uid: "AppleUSBAudioEngine:Vendor:DAC:1234:1")
-                == #"HKCU\Software\Wine\Drivers\winecoreaudio.drv\devices\0,AppleUSBAudioEngine:Vendor:DAC:1234:1"#
+                == #"HKCU\Software\Ano\Drivers\anocoreaudio.drv\devices\0,AppleUSBAudioEngine:Vendor:DAC:1234:1"#
         )
     }
 

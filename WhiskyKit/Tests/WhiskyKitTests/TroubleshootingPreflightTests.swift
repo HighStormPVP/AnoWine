@@ -122,7 +122,7 @@ final class TroubleshootingPreflightTests: XCTestCase {
             inputs, logsFolder: tempDir, audioDevice: { nil }, recommendedBackend: { _ in Self.d3dMetal }
         )
 
-        XCTAssertEqual(preflight.graphicsBackend, "wined3d")
+        XCTAssertEqual(preflight.graphicsBackend, "anod3d")
         XCTAssertEqual(preflight.bottleGraphicsBackend, "dxvk")
         XCTAssertNil(preflight.audioDeviceName)
         XCTAssertNil(preflight.recentLogURL)

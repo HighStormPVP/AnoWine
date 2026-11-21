@@ -48,7 +48,7 @@ final class DiagnosticExporterTests: XCTestCase {
             "AUTH_TOKEN": "bearer-abc",
             "SECRET_VALUE": "hidden",
             "MY_PASSWORD": "pass123",
-            "WINEPREFIX": "/some/path"
+            "ANOPREFIX": "/some/path"
         ]
         let result = Redactor.redactEnvironment(env)
 
@@ -60,7 +60,7 @@ final class DiagnosticExporterTests: XCTestCase {
 
         // Non-sensitive keys should be kept
         XCTAssertNotNil(result["PATH"])
-        XCTAssertNotNil(result["WINEPREFIX"])
+        XCTAssertNotNil(result["ANOPREFIX"])
     }
 
     func testRedactorIncludeSensitive() {
@@ -81,12 +81,12 @@ final class DiagnosticExporterTests: XCTestCase {
         let homePath = FileManager.default.homeDirectoryForCurrentUser.path(percentEncoded: false)
         let normalizedHome = homePath.hasSuffix("/") ? String(homePath.dropLast()) : homePath
         let env = [
-            "WINEPREFIX": "\(normalizedHome)/Library/Bottles/default"
+            "ANOPREFIX": "\(normalizedHome)/Library/Bottles/default"
         ]
         let result = Redactor.redactEnvironment(env)
-        XCTAssertNotNil(result["WINEPREFIX"])
-        XCTAssertTrue(result["WINEPREFIX"]?.contains("<redacted>") ?? false)
-        XCTAssertFalse(result["WINEPREFIX"]?.contains(normalizedHome) ?? true)
+        XCTAssertNotNil(result["ANOPREFIX"])
+        XCTAssertTrue(result["ANOPREFIX"]?.contains("<redacted>") ?? false)
+        XCTAssertFalse(result["ANOPREFIX"]?.contains(normalizedHome) ?? true)
     }
 
     func testRedactorSensitiveKeyCaseInsensitive() {

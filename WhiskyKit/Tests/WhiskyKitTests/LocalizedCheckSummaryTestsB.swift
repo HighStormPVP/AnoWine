@@ -49,12 +49,12 @@ final class LocalizedDiagnosticsGameSummaryTests: XCTestCase {
     func testDiagnosticsActivePresetShowsDisplayNameNotExportName() {
         var summaries: Set<String> = []
         for preset in [WineDebugPreset.crash, .dllLoad, .verbose] {
-            // The evidence the check writes: the English export name and the WINEDEBUG
-            // value. Built by hand because no bottle setting puts WINEDEBUG in the
+            // The evidence the check writes: the English export name and the ANODEBUG
+            // value. Built by hand because no bottle setting puts ANODEBUG in the
             // environment this check reads, so `run` can't reach this branch.
             let result = CheckResult(
                 outcome: .alreadyConfigured,
-                evidence: ["currentPreset": preset.exportName, "winedebug": preset.winedebugValue],
+                evidence: ["currentPreset": preset.exportName, "anodebug": preset.winedebugValue],
                 summary: "Enhanced diagnostics already active: \(preset.exportName)"
             )
             let summary = DiagnosticsEnhanceCheck.localizedSummary(for: result)
@@ -69,10 +69,10 @@ final class LocalizedDiagnosticsGameSummaryTests: XCTestCase {
     func testDiagnosticsUnrecognizedWinedebugFallsBackToStoredPresetName() {
         let custom = CheckResult(
             outcome: .alreadyConfigured,
-            evidence: ["currentPreset": "Custom", "winedebug": "+relay"],
+            evidence: ["currentPreset": "Custom", "anodebug": "+relay"],
             summary: "x"
         )
-        let bare = CheckResult(outcome: .alreadyConfigured, evidence: ["winedebug": "+relay"], summary: "x")
+        let bare = CheckResult(outcome: .alreadyConfigured, evidence: ["anodebug": "+relay"], summary: "x")
 
         assertSummaryLookup(
             DiagnosticsEnhanceCheck.localizedSummary(for: custom),

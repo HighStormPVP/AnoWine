@@ -118,13 +118,13 @@ final class ProgramPrefixBootstrapTests {
         defer { try? FileManager.default.removeItem(at: script) }
 
         // The program's overrides went into the registry, where the printed
-        // command's `env -u WINEDLLOVERRIDES` leaves them in charge.
+        // command's `env -u ANODLLOVERRIDES` leaves them in charge.
         #expect(writes.count == 1)
         #expect(writes.first?.contains { $0.scope == .program("Game.exe") } == true)
         let contents = try String(contentsOf: script, encoding: .utf8)
         #expect(contents.hasPrefix("#!/bin/bash\n"))
         #expect(contents.contains(
-            "env -u WINEDLLOVERRIDES \(Wine.wineBinary.esc) start /unix \(program.url.esc) -windowed"
+            "env -u ANODLLOVERRIDES \(Wine.wineBinary.esc) start /unix \(program.url.esc) -windowed"
         ))
         let permissions = try FileManager.default.attributesOfItem(atPath: script.path)[.posixPermissions] as? Int
         #expect(permissions == 0o755)

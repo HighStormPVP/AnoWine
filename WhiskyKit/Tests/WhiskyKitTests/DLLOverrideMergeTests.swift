@@ -20,9 +20,9 @@ import Foundation
 import Testing
 @testable import WhiskyKit
 
-/// A program's own `WINEDLLOVERRIDES` used to be replaced by the composed
+/// A program's own `ANODLLOVERRIDES` used to be replaced by the composed
 /// value whenever the bottle had any override (ellomehllo/Sangria).
-@Suite("WINEDLLOVERRIDES merging")
+@Suite("ANODLLOVERRIDES merging")
 @MainActor
 struct DLLOverrideMergeTests {
     @Test("Wine's format parses, including several DLLs per mode and disabled ones")
@@ -78,25 +78,25 @@ struct DLLOverrideMergeTests {
     func programDisableSurvives() throws {
         let bottle = try makeBottle(.dxvk)
         let env = Wine.constructWineEnvironment(
-            for: bottle, environment: ["WINEDLLOVERRIDES": "winemenubuilder.exe=d"], builtinD3D12IsD3DMetal: false
+            for: bottle, environment: ["ANODLLOVERRIDES": "winemenubuilder.exe=d"], builtinD3D12IsD3DMetal: false
         )
-        let overrides = Wine.parseDLLOverrides(env["WINEDLLOVERRIDES"] ?? "")
+        let overrides = Wine.parseDLLOverrides(env["ANODLLOVERRIDES"] ?? "")
         #expect(overrides["winemenubuilder.exe"] == "")
         #expect(overrides["d3d11"] == "n,b")
     }
 
-    @Test("A program's own WINEDLLOVERRIDES survives and beats the backend preset")
+    @Test("A program's own ANODLLOVERRIDES survives and beats the backend preset")
     func programValueBeatsPreset() throws {
         let bottle = try makeBottle(.dxmt)
 
         let preset = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: false)
-        #expect(preset["WINEDLLOVERRIDES"]?.contains("d3d11=n,b") == true)
+        #expect(preset["ANODLLOVERRIDES"]?.contains("d3d11=n,b") == true)
 
         let merged = Wine.constructWineEnvironment(
-            for: bottle, environment: ["WINEDLLOVERRIDES": "D3D11=B;xaudio2_7,dinput8=n"],
+            for: bottle, environment: ["ANODLLOVERRIDES": "D3D11=B;xaudio2_7,dinput8=n"],
             builtinD3D12IsD3DMetal: false
         )
-        let overrides = Wine.parseDLLOverrides(merged["WINEDLLOVERRIDES"] ?? "")
+        let overrides = Wine.parseDLLOverrides(merged["ANODLLOVERRIDES"] ?? "")
         #expect(overrides["d3d11"] == "b")
         #expect(overrides["xaudio2_7"] == "n")
         #expect(overrides["dinput8"] == "n")
@@ -111,24 +111,24 @@ struct DLLOverrideMergeTests {
         programOverrides.dllOverrides = [DLLOverrideEntry(dllName: "dinput8", mode: .builtin)]
 
         let env = Wine.constructWineEnvironment(
-            for: bottle, environment: ["WINEDLLOVERRIDES": "dxgi=b;dinput8=n"],
+            for: bottle, environment: ["ANODLLOVERRIDES": "dxgi=b;dinput8=n"],
             programOverrides: programOverrides, builtinD3D12IsD3DMetal: false
         )
-        let overrides = Wine.parseDLLOverrides(env["WINEDLLOVERRIDES"] ?? "")
+        let overrides = Wine.parseDLLOverrides(env["ANODLLOVERRIDES"] ?? "")
         #expect(overrides["dxgi"] == "b")
         #expect(overrides["dinput8"] == "n")
         #expect(overrides["d3d11"] == "n,b")
     }
 
-    @Test("A GameDB profile's WINEDLLOVERRIDES does not outrank the bottle's custom overrides")
+    @Test("A GameDB profile's ANODLLOVERRIDES does not outrank the bottle's custom overrides")
     func gameProfileValueIsNotMerged() throws {
         let bottle = try makeBottle(.d3dMetal)
         bottle.settings.dllOverrides = [DLLOverrideEntry(dllName: "dinput8", mode: .builtin)]
 
         let env = Wine.constructWineEnvironment(
-            for: bottle, gameProfileEnvironment: ["WINEDLLOVERRIDES": "dinput8=n"], builtinD3D12IsD3DMetal: false
+            for: bottle, gameProfileEnvironment: ["ANODLLOVERRIDES": "dinput8=n"], builtinD3D12IsD3DMetal: false
         )
-        #expect(Wine.parseDLLOverrides(env["WINEDLLOVERRIDES"] ?? "")["dinput8"] == "b")
+        #expect(Wine.parseDLLOverrides(env["ANODLLOVERRIDES"] ?? "")["dinput8"] == "b")
     }
 
     private func makeBottle(_ backend: GraphicsBackend) throws -> Bottle {

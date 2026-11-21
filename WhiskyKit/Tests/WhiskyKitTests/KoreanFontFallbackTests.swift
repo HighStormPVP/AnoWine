@@ -34,7 +34,7 @@ struct KoreanFontFallbackTests {
         #"""
         WINE REGISTRY Version 2
 
-        [Software\\Wine\\Fonts\\Replacements] 1788028200
+        [Software\\Ano\\Fonts\\Replacements] 1788028200
         #time=1dd37e4465d9a10
         "Dotum"="Nanum Gothic"
         "LogPixels"=dword:00000060
@@ -42,7 +42,7 @@ struct KoreanFontFallbackTests {
 
         """# + extra + #"""
 
-        [Software\\Wine\\WineDbg] 1788028146
+        [Software\\Ano\\AnoDbg] 1788028146
         "Batang"="Another key entirely"
         """#
     }

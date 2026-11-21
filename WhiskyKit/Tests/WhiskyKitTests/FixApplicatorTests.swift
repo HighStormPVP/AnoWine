@@ -21,7 +21,7 @@ import XCTest
 
 /// Covers the settings-mutating fixes end to end: preview describes the
 /// change, apply performs and records it, undo restores the prior value.
-/// The process-touching fix (restart-wineserver) is deliberately not
+/// The process-touching fix (restart-ano-server) is deliberately not
 /// exercised — it spawns wineserver and is not hermetic.
 @MainActor
 final class FixApplicatorTests: XCTestCase {
@@ -80,7 +80,7 @@ final class FixApplicatorTests: XCTestCase {
         )
 
         XCTAssertEqual(bottle.settings.graphicsBackend, .dxmt)
-        XCTAssertEqual(attempt.beforeValue, "wined3d")
+        XCTAssertEqual(attempt.beforeValue, "anod3d")
         XCTAssertEqual(attempt.afterValue, "dxmt")
         XCTAssertEqual(attempt.result, .applied)
     }
@@ -171,7 +171,7 @@ final class FixApplicatorTests: XCTestCase {
     }
 
     func testUndoNonReversibleFixFails() {
-        let attempt = FixAttempt(fixId: "restart-wineserver", afterValue: "restarted", result: .applied)
+        let attempt = FixAttempt(fixId: "restart-ano-server", afterValue: "restarted", result: .applied)
 
         XCTAssertFalse(FixApplicator.undo(attempt: attempt, bottle: bottle, program: nil))
     }

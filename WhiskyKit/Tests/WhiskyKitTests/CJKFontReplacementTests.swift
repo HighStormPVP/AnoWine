@@ -54,11 +54,11 @@ struct CJKFontReplacementTests {
 
         #arch=win64
 
-        [Software\\Wine\\Fonts] 1788028146
+        [Software\\Ano\\Fonts] 1788028146
         #time=1dd37e4465d6628
         "LogPixels"=dword:00000060
 
-        [Software\\Wine\\Fonts\\Replacements] 1788028200
+        [Software\\Ano\\Fonts\\Replacements] 1788028200
         #time=1dd37e4465d9a10
         @="ignored default value"
         "Batang"="Source Han Sans K"
@@ -70,10 +70,10 @@ struct CJKFontReplacementTests {
 
         """# + extra + #"""
 
-        [Software\\Wine\\Fonts\\Replacements\\Unrelated] 1788028200
+        [Software\\Ano\\Fonts\\Replacements\\Unrelated] 1788028200
         "Noto Sans CJK TC"="Subkey, not the key"
 
-        [Software\\Wine\\WineDbg] 1788028146
+        [Software\\Ano\\AnoDbg] 1788028146
         "Noto Sans CJK KR"="Another key entirely"
         """#
     }
@@ -113,7 +113,7 @@ struct CJKFontReplacementTests {
     @Test("Uses the file winetricks' sourcehansans verb installs")
     func watchesTheWinetricksFile() {
         #expect(CJKFontReplacements.collectionFile == "sourcehansans.ttc")
-        #expect(CJKFontReplacements.registryKey == #"HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements"#)
+        #expect(CJKFontReplacements.registryKey == #"HKEY_CURRENT_USER\Software\Ano\Fonts\Replacements"#)
     }
 
     // MARK: - Decision
@@ -209,7 +209,7 @@ struct CJKFontReplacementTests {
         let lines = document.components(separatedBy: "\r\n")
 
         #expect(lines.first == "Windows Registry Editor Version 5.00")
-        #expect(lines.contains(#"[HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements]"#))
+        #expect(lines.contains(#"[HKEY_CURRENT_USER\Software\Ano\Fonts\Replacements]"#))
         #expect(lines.contains(#""Noto Sans CJK SC"="Source Han Sans SC""#))
         #expect(lines.contains(#""Noto Sans CJK TC"="Source Han Sans TC""#))
         #expect(lines.contains(#""Noto Sans CJK JP"="Source Han Sans""#))

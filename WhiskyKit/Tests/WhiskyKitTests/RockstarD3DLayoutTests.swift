@@ -191,17 +191,17 @@ final class RockstarD3DLayoutTests {
         let userReg = #"""
         WINE REGISTRY Version 2
 
-        [Software\\Wine\\AppDefaults\\Launcher.exe\\Direct3D] 1731628800
+        [Software\\Ano\\AppDefaults\\Launcher.exe\\Direct3D] 1731628800
         "renderer"="gl"
 
-        [Software\\Wine\\AppDefaults\\Launcher.exe\\DllOverrides] 1731628800
+        [Software\\Ano\\AppDefaults\\Launcher.exe\\DllOverrides] 1731628800
         "d3d11"="b"
         "dxgi"="b"
 
         """#
         try userReg.write(to: bottle.url.appending(path: "user.reg"), atomically: true, encoding: .utf8)
         bottle.settings.gameConfigEnvironments = [GameConfigEnvironment(
-            entryId: "test", title: "Test", executables: [], variables: ["WINE_D3D_CONFIG": "renderer=vulkan"]
+            entryId: "test", title: "Test", executables: [], variables: ["ANO_D3D_CONFIG": "renderer=vulkan"]
         )]
 
         let report = section(bottle)
@@ -219,8 +219,8 @@ final class RockstarD3DLayoutTests {
         #expect(report.contains(#"- **AppDefaults Launcher.exe\DllOverrides:** d3d11="b", dxgi="b""#))
         #expect(report.contains(#"- **AppDefaults Launcher.exe\Direct3D:** renderer="gl""#))
         #expect(report.contains(#"- **AppDefaults SocialClubHelper.exe\DllOverrides:** none"#))
-        #expect(report.contains("- **WINEDLLOVERRIDES set for Launcher.exe:** no"))
-        #expect(report.contains("- **WINE_D3D_CONFIG set for Launcher.exe:** yes (game configuration)"))
+        #expect(report.contains("- **ANODLLOVERRIDES set for Launcher.exe:** no"))
+        #expect(report.contains("- **ANO_D3D_CONFIG set for Launcher.exe:** yes (game configuration)"))
     }
 
     @Test("The section names the Launcher.exe program settings that set either variable")
@@ -231,7 +231,7 @@ final class RockstarD3DLayoutTests {
             for: launcher, bottleURL: bottle.url, legacyName: launcher.lastPathComponent
         ).identity
         var settings = ProgramSettings()
-        settings.environment = ["WINE_D3D_CONFIG": "renderer=vulkan", "WINEDLLOVERRIDES": "d3d11=n"]
+        settings.environment = ["ANO_D3D_CONFIG": "renderer=vulkan", "ANODLLOVERRIDES": "d3d11=n"]
         try FileManager.default.createDirectory(
             at: settingsURL.deletingLastPathComponent(), withIntermediateDirectories: true
         )
@@ -239,8 +239,8 @@ final class RockstarD3DLayoutTests {
 
         let report = section(bottle)
 
-        #expect(report.contains("- **WINEDLLOVERRIDES set for Launcher.exe:** yes (program settings)"))
-        #expect(report.contains("- **WINE_D3D_CONFIG set for Launcher.exe:** yes (program settings)"))
+        #expect(report.contains("- **ANODLLOVERRIDES set for Launcher.exe:** yes (program settings)"))
+        #expect(report.contains("- **ANO_D3D_CONFIG set for Launcher.exe:** yes (program settings)"))
     }
 
     @Test("Without the payload the section reports the builtin layout")
