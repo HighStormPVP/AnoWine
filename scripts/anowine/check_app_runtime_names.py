@@ -13,7 +13,8 @@ JSON resources WhiskyKit bundles. Rules, first match per literal:
   registry       Software\\Wine
   folder         a Wine/wine path component: appending(path: "Wine"),
                  Libraries/Wine, lib/wine, share/wine
-  file           winetricks, winetricks.log, WinetricksCache, WhiskyWineVersion
+  file           winetricks, winetricks.log, WinetricksCache, WhiskyWineVersion,
+                 a .wine- suffix (.wine-placeholder)
   program        winecfg, wineboot, winedbg, wineserver, ...
   module         wine*.dll/.drv/.sys/.so/.exe, or a bare wine... module name
   engine output  "wine-" (version), "wine:" (message prefix)
@@ -42,7 +43,8 @@ FOLDER_PATH = re.compile(r"(?:^|/)(?:Libraries/Wine|lib/wine|share/wine)(?:/|$)"
 RULES = (
     ("variable", re.compile(r"(?<![A-Za-z0-9])WINE[A-Z0-9_]*(?![a-z])")),
     ("registry", re.compile(r"Software\\+Wine\b")),
-    ("file", re.compile(r"^winetricks$|winetricks\.log|WinetricksCache|WhiskyWineVersion|whisky-winetricks")),
+    ("file", re.compile(r"^winetricks$|winetricks\.log|WinetricksCache|WhiskyWineVersion|whisky-winetricks"
+                        r"|\.wine-")),
     ("program", re.compile(r"\bwine(?:cfg|boot|dbg|console|path|file|browser|menubuilder|server|loader|64)\b",
                            re.I)),
     ("module", re.compile(r"\b(?i:wine)[a-z0-9_]*\.(?i:dll|drv|sys|so|exe)\b|^wine[a-z0-9_]*$")),

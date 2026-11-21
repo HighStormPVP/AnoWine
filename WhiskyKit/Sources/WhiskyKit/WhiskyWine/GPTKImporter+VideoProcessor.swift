@@ -238,6 +238,8 @@ extension GPTKImporter {
     static func seedPlaceholder(
         for interposer: GPTKInterposer, inBottle bottle: URL, fromLibraryFolder folder: URL
     ) {
+        // An earlier Ano's bottle is never written to (decision 3).
+        guard !OldRuntimeBottle.isOld(at: bottle) else { return }
         let fileManager = FileManager.default
         let source = AnoWineRuntime.moduleFolder("x86_64-windows", inLibraryFolder: folder)
             .appending(path: interposer.renamedName)

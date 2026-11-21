@@ -35,9 +35,9 @@ import os.log
 /// per executable instead of by withholding the DLL from everything, in
 /// ``Wine.disablingNVAPI(in:)``.
 extension GPTKImporter {
-    /// Wine's placeholder, kept beside the deployed bridge so removal can put the
-    /// tree back without consulting the per-runtime originals record.
-    static let nvapiPlaceholderSuffix = ".wine-placeholder"
+    /// The engine's placeholder, kept beside the deployed bridge so removal can put
+    /// the tree back without consulting the per-runtime originals record.
+    static let nvapiPlaceholderSuffix = ".ano-placeholder"
 
     /// Where the bridge lives in the store, or `nil` for a payload without one.
     static func nvapiBridgeSource(inStore store: URL) -> URL? {
