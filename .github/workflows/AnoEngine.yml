@@ -477,6 +477,25 @@ jobs:
         timeout-minutes: 60
         run: scripts/anowine/check-ano-tricks.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle-default"
 
+      # Plan 3c-4a, Task 7: the app's own code (WhiskyKit, through the ano CLI)
+      # drives a bottle on Ano's engine, installed where the app keeps its runtime.
+      - name: Xcode for the app's CLI
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: latest-stable
+
+      - name: The app's CLI on Ano's engine
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 45
+        run: |
+          xcodebuild -project Whisky.xcodeproj -scheme WhiskyCmd -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/dd" build \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            > "$RUNNER_TEMP/reports/cli-build.log" 2>&1 || { tail -n 40 "$RUNNER_TEMP/reports/cli-build.log"; exit 1; }
+          scripts/anowine/check-app-on-engine.sh "$RUNNER_TEMP/dd/Build/Products/Debug/WhiskyCmd" \
+            "$RUNNER_TEMP/ours/Libraries"
+
       # Plan 3c-2: what the app copies from Libraries/DXMT into a bottle
       # (Wine.swift, dxmtPrefixDLLs: the three front ends and the bridge).
       - name: DXMT payload as the app deploys it
