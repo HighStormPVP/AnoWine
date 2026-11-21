@@ -383,7 +383,7 @@ struct InputConfigSection: View {
         let bottleRef = bottle
         let value = enabled ? "Y" : "N"
         Task {
-            let key = #"HKCU\Software\Wine\Mac Driver"#
+            let key = #"HKCU\Software\Ano\Mac Driver"#
             for name in ["LeftCommandIsCtrl", "RightCommandIsCtrl"] {
                 _ = try? await Wine.runWine(
                     ["reg", "add", key, "/v", name, "/t", "REG_SZ", "/d", value, "/f"],

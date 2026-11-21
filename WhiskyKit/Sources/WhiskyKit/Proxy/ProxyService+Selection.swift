@@ -81,7 +81,7 @@ public extension ProxyService {
             let probe = Process()
             probe.executableURL = AnoWineRuntime.serverURL
             probe.arguments = ["-k0"]
-            probe.environment = ["WINEPREFIX": bottle.url.path(percentEncoded: false)]
+            probe.environment = ["ANOPREFIX": bottle.url.path(percentEncoded: false)]
             probe.standardOutput = FileHandle.nullDevice
             probe.standardError = FileHandle.nullDevice
             do {

@@ -34,8 +34,9 @@ public enum GraphicsBackend: String, Codable, CaseIterable, Equatable, Sendable 
     /// DXMT: Direct3D-11-to-Metal translation. Requires a runtime that bundles
     /// the DXMT payload (Wine Libraries ≥ 3.1.0).
     case dxmt
-    /// Wine's built-in OpenGL-based Direct3D translation.
-    case wined3d
+    /// Wine's built-in OpenGL-based Direct3D translation. Stored as the
+    /// engine's name for it.
+    case wined3d = "anod3d"
 
     /// A human-readable display name for this backend.
     public var displayName: String {

@@ -93,7 +93,7 @@ extension Wine {
     /// The edits for every key of settings among `scopes`.
     ///
     /// Each such scope's string names the values it wants in
-    /// `WINEDLLOVERRIDES` syntax (`renderer=gl`); an empty string, or one
+    /// `ANODLLOVERRIDES` syntax (`renderer=gl`); an empty string, or one
     /// leaving a value out, wants none. Only the scope's own
     /// ``DLLOverrideScope/ownedValueNames`` are read from it.
     ///

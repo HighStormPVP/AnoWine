@@ -84,7 +84,7 @@
       "severity": "critical",
       "confidence": 0.95,
       "substringPrefilter": "page fault",
-      "regex": "wine: Unhandled page fault on (?:read|write|execute) access",
+      "regex": "ano: Unhandled page fault on (?:read|write|execute) access",
       "tags": ["crash", "page-fault", "segfault"],
       "captureGroups": null,
       "remediationActionIds": ["switch-backend", "reinstall-prefix"]
@@ -172,7 +172,7 @@
       "severity": "error",
       "confidence": 0.7,
       "substringPrefilter": "could not load",
-      "regex": "wine: could not load .+, status c[0-9a-f]+",
+      "regex": "ano: could not load .+, status c[0-9a-f]+",
       "tags": ["prefix", "corruption", "load-failure"],
       "captureGroups": null,
       "remediationActionIds": ["reinstall-prefix"]
@@ -249,7 +249,7 @@
       "severity": "info",
       "confidence": 0.3,
       "substringPrefilter": "exit code",
-      "regex": "(?:process|wine|wineserver).*exit code (?!0\\b)(\\d+)",
+      "regex": "(?:process|\\bano\\b|ano-server).*exit code (?!0\\b)(\\d+)",
       "tags": ["exit", "nonzero", "unknown"],
       "captureGroups": ["exitCode"],
       "remediationActionIds": null

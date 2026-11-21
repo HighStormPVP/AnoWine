@@ -58,7 +58,7 @@ public struct WinePrefixDiagnostics: Codable, Sendable {
 
     // MARK: - Prefix State
 
-    /// The path to the Wine prefix (WINEPREFIX).
+    /// The path to the Wine prefix (ANOPREFIX).
     public var prefixPath: String?
 
     /// Whether the prefix directory exists.

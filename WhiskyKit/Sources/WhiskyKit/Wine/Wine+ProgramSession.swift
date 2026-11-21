@@ -100,7 +100,7 @@ extension Wine {
         programSettings: ProgramSettings?, bottle: Bottle
     ) -> UUID {
         var entry = RunLogEntry(programName: programName, logFileName: logFileURL.lastPathComponent)
-        if launch.environment.keys.contains("WINEDEBUG") {
+        if launch.environment.keys.contains("ANODEBUG") {
             entry.activeWineDebugPreset = programSettings?.activeWineDebugPreset?.rawValue
         }
 

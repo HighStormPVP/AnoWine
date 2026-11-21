@@ -82,7 +82,7 @@ public struct BottleInputConfig: Codable, Equatable {
     /// Whether the Mac `Command` key acts as Windows `Ctrl` inside Wine windows.
     ///
     /// When `true`, sets `LeftCommandIsCtrl` and `RightCommandIsCtrl` under
-    /// `HKCU\Software\Wine\Mac Driver` so common Cmd+A/Cmd+C/Cmd+V/Cmd+S
+    /// `HKCU\Software\Ano\Mac Driver` so common Cmd+A/Cmd+C/Cmd+V/Cmd+S
     /// keystrokes register inside Wine apps as their Windows equivalents.
     /// Applied at bottle init / on toggle via `winetricks` registry writes.
     var commandActsAsControl: Bool = false

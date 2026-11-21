@@ -38,14 +38,14 @@ public extension Wine {
     @MainActor
     static func isWineserverRunning(for bottle: Bottle) async -> Bool {
         // Deliberately does NOT go through runWineserverProcess: a -k0 probe
-        // only needs WINEPREFIX, while the full path builds the entire launch
+        // only needs ANOPREFIX, while the full path builds the entire launch
         // environment and creates + retention-scans a log file per call — the
         // sidebar repeats this probe every 60 seconds for every visible bottle.
         let running: Bool = await withCheckedContinuation { continuation in
             let process = Process()
             process.executableURL = AnoWineRuntime.serverURL
             process.arguments = ["-k0"]
-            process.environment = ["WINEPREFIX": bottle.url.path]
+            process.environment = ["ANOPREFIX": bottle.url.path]
             process.standardOutput = FileHandle.nullDevice
             process.standardError = FileHandle.nullDevice
             process.terminationHandler = { probe in
@@ -61,7 +61,7 @@ public extension Wine {
         }
 
         processLogger.debug(
-            "Wineserver probe for '\(bottle.settings.name)': \(running ? "active" : "idle")"
+            "ano-server probe for '\(bottle.settings.name)': \(running ? "active" : "idle")"
         )
         return running
     }

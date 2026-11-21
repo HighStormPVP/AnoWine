@@ -80,7 +80,7 @@ extension EscalationView {
         )
     }
 
-    /// Puts the program's WINEDEBUG preset back to what it was before
+    /// Puts the program's ANODEBUG preset back to what it was before
     /// enhanced diagnostics turned it on.
     private func restoreLogging(_ attempt: FixAttempt) {
         if FixApplicator.undo(attempt: attempt, bottle: bottle, program: program) {

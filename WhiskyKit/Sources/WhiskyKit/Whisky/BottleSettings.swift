@@ -1024,31 +1024,35 @@ public struct BottleSettings: Codable, Equatable {
             }
 
         case .wined3d:
-            // Disable D3DMetal, forcing Wine's OpenGL-based wined3d path
-            builder.set("WINED3DMETAL", "0", layer: .bottleManaged)
+            // Disable D3DMetal, forcing Wine's OpenGL-based wined3d path.
+            // D3DMetal reads the old name; the engine copies ANOD3DMETAL to it
+            // inside the process.
+            builder.set("ANOD3DMETAL", "0", layer: .bottleManaged)
         }
 
         // Enhanced sync mode
         switch enhancedSync {
         case .none:
-            // On macOS 15.4+, WINEESYNC is required for stability
+            // On macOS 15.4+, ANOESYNC is required for stability
             if MacOSVersion.current < .sequoia15_4 {
-                builder.remove("WINEESYNC", layer: .bottleManaged)
-                builder.remove("WINEMSYNC", layer: .bottleManaged)
+                builder.remove("ANOESYNC", layer: .bottleManaged)
+                builder.remove("ANOMSYNC", layer: .bottleManaged)
             } else {
                 // Ensure a stable default on newer macOS versions:
                 // enable ESYNC and clear any conflicting MSYNC setting.
-                builder.set("WINEESYNC", "1", layer: .bottleManaged)
-                builder.remove("WINEMSYNC", layer: .bottleManaged)
+                builder.set("ANOESYNC", "1", layer: .bottleManaged)
+                builder.remove("ANOMSYNC", layer: .bottleManaged)
             }
         case .esync:
-            builder.set("WINEESYNC", "1", layer: .bottleManaged)
+            builder.set("ANOESYNC", "1", layer: .bottleManaged)
         case .msync:
-            builder.set("WINEMSYNC", "1", layer: .bottleManaged)
+            builder.set("ANOMSYNC", "1", layer: .bottleManaged)
             // D3DM detects ESYNC and changes behaviour accordingly
             // so we have to lie to it so that it doesn't break
-            // under MSYNC. Values hardcoded in lid3dshared.dylib
-            builder.set("WINEESYNC", "1", layer: .bottleManaged)
+            // under MSYNC. Values hardcoded in lid3dshared.dylib, which
+            // reads the old name: the engine copies ANOESYNC to it inside
+            // the process.
+            builder.set("ANOESYNC", "1", layer: .bottleManaged)
         }
 
         if metalHud {
@@ -1078,8 +1082,8 @@ public struct BottleSettings: Codable, Equatable {
         }
 
         // The old sequoiaCompatMode block is gone: of the three values it set,
-        // MTL_DEBUG_LAYER and WINEFSYNC are platform-layer fixes on every
-        // supported macOS and D3DM_VALIDATION is read by no runtime, so the
+        // MTL_DEBUG_LAYER is a platform-layer fix on every supported macOS, and
+        // the fsync switch and D3DM_VALIDATION are read by no runtime, so the
         // toggle's off position changed nothing and its on position only hid
         // the provenance.
 
@@ -1223,13 +1227,13 @@ public struct BottleSettings: Codable, Equatable {
     /// Populates the audio layer of the environment builder.
     ///
     /// Audio configuration in Wine is **registry-backed**, not environment-variable-backed.
-    /// The audio driver (`HKCU\Software\Wine\Drivers\Audio`) and DirectSound buffer size
-    /// (`HKCU\Software\Wine\DirectSound\HelBuflen`) are applied via ``WineAudioRegistry``
+    /// The audio driver (`HKCU\Software\Ano\Drivers\Audio`) and DirectSound buffer size
+    /// (`HKCU\Software\Ano\DirectSound\HelBuflen`) are applied via ``WineAudioRegistry``
     /// methods, not through this layer populator.
     ///
     /// This method exists as the EnvironmentBuilder integration point for audio settings,
     /// following the pattern of ``populateInputCompatibilityLayer(builder:)``. It is reserved
-    /// for future audio-related environment variables (e.g., `WINEDEBUG` channels for audio
+    /// for future audio-related environment variables (e.g., `ANODEBUG` channels for audio
     /// debugging).
     ///
     /// - Parameter builder: The environment builder to populate.
@@ -1260,14 +1264,14 @@ public struct BottleSettings: Codable, Equatable {
         // Handle explicit key removals that the builder encoded as nil entries.
         // Since resolve() omits removed keys, we must also remove them from the caller's dict.
         if enhancedSync == .none, MacOSVersion.current < .sequoia15_4 {
-            wineEnv.removeValue(forKey: "WINEESYNC")
-            wineEnv.removeValue(forKey: "WINEMSYNC")
+            wineEnv.removeValue(forKey: "ANOESYNC")
+            wineEnv.removeValue(forKey: "ANOMSYNC")
         }
 
         // Merge resolved values into caller's dict (new values overwrite existing)
         wineEnv.merge(resolved) { _, new in new }
 
-        // Compose WINEDLLOVERRIDES via DLLOverrideResolver
+        // Compose ANODLLOVERRIDES via DLLOverrideResolver
         let resolver = DLLOverrideResolver(
             managed: managedOverrides + launcherOverrides,
             bottleCustom: dllOverrides,
@@ -1275,7 +1279,7 @@ public struct BottleSettings: Codable, Equatable {
         )
         let (overrideString, _) = resolver.resolve()
         if !overrideString.isEmpty {
-            wineEnv["WINEDLLOVERRIDES"] = overrideString
+            wineEnv["ANODLLOVERRIDES"] = overrideString
         }
     }
 }

@@ -21,14 +21,14 @@ import Foundation
 // MARK: - Enhanced Diagnostics
 
 public extension FixApplicator {
-    /// The WINEDEBUG preset `run-enhanced-diagnostics` turns on when its
+    /// The ANODEBUG preset `run-enhanced-diagnostics` turns on when its
     /// flow node names none.
     static let enhancedDiagnosticsPreset: WineDebugPreset = .verbose
 
     /// Whether running enhanced diagnostics would change a program's
     /// logging: not when the program already logs with the enhanced preset.
     ///
-    /// - Parameter currentPreset: The program's WINEDEBUG preset, `nil` for
+    /// - Parameter currentPreset: The program's ANODEBUG preset, `nil` for
     ///   the default.
     /// - Returns: `true` when the fix would turn on more logging.
     static func enhancedDiagnosticsAddsLogging(to currentPreset: WineDebugPreset?) -> Bool {

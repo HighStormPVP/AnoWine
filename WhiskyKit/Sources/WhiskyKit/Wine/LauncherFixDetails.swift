@@ -53,7 +53,7 @@ extension LauncherType {
         case .rockstar:
             [
                 LauncherFixDetail(
-                    key: "WINE_LARGE_ADDRESS_AWARE", value: "1",
+                    key: "ANO_LARGE_ADDRESS_AWARE", value: "1",
                     reason: LauncherFixReason.largeAddressAware,
                     category: .compatibility
                 ),

@@ -119,7 +119,7 @@ public enum Locales: String, Codable, CaseIterable, Sendable {
 /// var settings = ProgramSettings()
 /// settings.locale = .japanese
 /// settings.arguments = "-windowed -nosound"
-/// settings.environment["WINEDEBUG"] = "-all"
+/// settings.environment["ANODEBUG"] = "-all"
 /// ```
 public struct ProgramSettings: Codable {
     /// The locale to use when running this program.
@@ -147,7 +147,7 @@ public struct ProgramSettings: Codable {
 
     // MARK: - Diagnostics
 
-    /// The active WINEDEBUG preset for this program.
+    /// The active ANODEBUG preset for this program.
     ///
     /// When `nil`, the default `fixme-all` is used. Set to a non-normal preset
     /// before a diagnostic re-run, then clear it afterward. This is transient:

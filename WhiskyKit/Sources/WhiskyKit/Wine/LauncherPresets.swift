@@ -217,7 +217,7 @@ public enum LauncherType: String, Codable, CaseIterable, Sendable, Identifiable 
             // Note: CEF_DISABLE_SANDBOX is set globally in MacOSCompatibility.swift
 
             // Launcher initialization improvements
-            env["WINE_LARGE_ADDRESS_AWARE"] = "1"
+            env["ANO_LARGE_ADDRESS_AWARE"] = "1"
 
             // Locale for launcher UI
             env["LC_ALL"] = "en_US.UTF-8"

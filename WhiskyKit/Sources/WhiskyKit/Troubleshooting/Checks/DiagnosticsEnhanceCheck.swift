@@ -18,9 +18,9 @@
 
 import Foundation
 
-/// Checks whether enhanced diagnostics (WINEDEBUG preset) can provide additional info.
+/// Checks whether enhanced diagnostics (ANODEBUG preset) can provide additional info.
 ///
-/// Reads the current WINEDEBUG environment setting from the bottle. Returns
+/// Reads the current ANODEBUG environment setting from the bottle. Returns
 /// `.pass` if enhanced diagnostics would add value (default/normal preset),
 /// `.alreadyConfigured` if a debug preset is already active, or `.fail`
 /// if not applicable.
@@ -49,14 +49,14 @@ public struct DiagnosticsEnhanceCheck: TroubleshootingCheck {
             )
         }
 
-        // Build the environment to check for WINEDEBUG
+        // Build the environment to check for ANODEBUG
         var builder = EnvironmentBuilder()
         _ = settings.populateBottleManagedLayer(builder: &builder)
         let (environment, _) = builder.resolve()
 
-        let currentDebug = environment["WINEDEBUG"]
+        let currentDebug = environment["ANODEBUG"]
 
-        // Check if a non-default WINEDEBUG preset is active
+        // Check if a non-default ANODEBUG preset is active
         let nonDefaultPresets = [
             WineDebugPreset.crash.winedebugValue,
             WineDebugPreset.dllLoad.winedebugValue,
@@ -77,7 +77,7 @@ public struct DiagnosticsEnhanceCheck: TroubleshootingCheck {
                 outcome: .alreadyConfigured,
                 evidence: [
                     "currentPreset": presetName,
-                    "winedebug": currentDebug
+                    "anodebug": currentDebug
                 ],
                 summary: "Enhanced diagnostics already active: \(presetName)",
                 confidence: .high
@@ -112,7 +112,7 @@ public struct DiagnosticsEnhanceCheck: TroubleshootingCheck {
             return String(localized: "troubleshooting.check.settingsUnreadable")
         case .alreadyConfigured:
             let preset = WineDebugPreset.allCases.first {
-                $0.winedebugValue == result.evidence["winedebug"]
+                $0.winedebugValue == result.evidence["anodebug"]
             }
             guard let presetName = preset?.displayName ?? result.evidence["currentPreset"] else {
                 return nil

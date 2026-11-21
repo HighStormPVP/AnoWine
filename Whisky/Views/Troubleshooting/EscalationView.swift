@@ -22,7 +22,7 @@ import WhiskyKit
 /// Unresolved outcome view with enhanced diagnostics, export, support draft, and retry options.
 ///
 /// Shown when the flow reaches escalation (unresolved after 3 fix attempts or dead end).
-/// Per locked escalation path decisions: offers WINEDEBUG preset re-run, diagnostic
+/// Per locked escalation path decisions: offers ANODEBUG preset re-run, diagnostic
 /// export, GitHub issue draft, and retry from a previous step.
 struct EscalationView: View {
     @ObservedObject var engine: TroubleshootingFlowEngine
@@ -189,7 +189,7 @@ extension EscalationView {
             if let audio = preflight.audioDeviceName {
                 lines.append("Audio: \(audio)")
             }
-            lines.append("Wineserver: \(preflight.isWineserverRunning ? "running" : "stopped")")
+            lines.append("ano-server: \(preflight.isWineserverRunning ? "running" : "stopped")")
             lines.append("Processes: \(preflight.processCount)")
         }
 

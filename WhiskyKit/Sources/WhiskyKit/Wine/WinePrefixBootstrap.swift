@@ -103,7 +103,7 @@ public extension Wine {
 
     /// Creates a bottle's Wine prefix the way the app does for a new bottle.
     ///
-    /// Sets the bottle's Windows version with `winecfg`, which has Wine create
+    /// Sets the bottle's Windows version with `ano-cfg`, which has Wine create
     /// the prefix first, records the runtime version in the bottle settings and
     /// copies the host fonts in.
     ///

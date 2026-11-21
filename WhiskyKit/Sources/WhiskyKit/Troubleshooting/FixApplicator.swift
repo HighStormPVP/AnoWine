@@ -90,8 +90,8 @@ public struct FixPreview: Sendable {
 /// | `enable-esync` | Enhanced sync mode (none to MSync) | Yes |
 /// | `enable-controller-compat` | Controller compatibility mode | Yes |
 /// | `install-winetricks-verb` | Winetricks verb installation | No |
-/// | `run-enhanced-diagnostics` | Program WINEDEBUG preset | Yes |
-/// | `restart-wineserver` | Wineserver process restart | No |
+/// | `run-enhanced-diagnostics` | Program ANODEBUG preset | Yes |
+/// | `restart-ano-server` | ano-server process restart | No |
 /// | `set-registry-value` | Arbitrary Wine registry value | Yes |
 /// | `apply-launcher-fixes` | Launcher compatibility settings | No |
 /// | `apply-game-config` | GameDB recommended configuration | Yes |
@@ -108,7 +108,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
         "switch-backend", "enable-dxvk-async", "set-audio-driver",
         "set-buffer-size", "enable-esync", "enable-controller-compat",
         "install-winetricks-verb", "run-enhanced-diagnostics",
-        "restart-wineserver", "set-registry-value", "apply-launcher-fixes",
+        "restart-ano-server", "set-registry-value", "apply-launcher-fixes",
         "apply-game-config"
     ]
 
@@ -210,7 +210,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
             guard let program else { return nil }
             let preset = params["preset"].flatMap(WineDebugPreset.init(rawValue:)) ?? enhancedDiagnosticsPreset
             return FixPreview(
-                settingName: String(localized: "WINEDEBUG Preset"),
+                settingName: String(localized: "ANODEBUG Preset"),
                 currentValue: (program.settings.activeWineDebugPreset ?? .normal).displayName,
                 newValue: preset.displayName,
                 scope: "program",
@@ -267,9 +267,9 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
                 isReversible: true
             )
 
-        case "restart-wineserver":
+        case "restart-ano-server":
             return FixPreview(
-                settingName: "Wineserver",
+                settingName: AnoWineRuntime.serverName,
                 currentValue: String(localized: "console.running"),
                 newValue: String(localized: "troubleshooting.fix.value.restarted"),
                 scope: "bottle",
@@ -492,7 +492,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
                 return FixAttempt(fixId: fixId, result: .failed)
             }
 
-        case "restart-wineserver":
+        case "restart-ano-server":
             // Non-reversible: kills the wineserver process
             Wine.killBottle(bottle: bottle)
             return FixAttempt(
@@ -616,7 +616,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
 
         case "install-winetricks-verb",
              "apply-launcher-fixes",
-             "restart-wineserver":
+             "restart-ano-server":
             // Non-reversible fixes cannot be undone
             logger.info("Fix '\(attempt.fixId)' is not reversible")
             return false

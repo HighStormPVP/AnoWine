@@ -41,7 +41,7 @@ public struct DiagnosisHistoryEntry: Codable, Sendable {
     /// IDs of suggested remediation cards.
     public let remediationCardIds: [String]
 
-    /// The WINEDEBUG preset active during the run, if any.
+    /// The ANODEBUG preset active during the run, if any.
     public let wineDebugPreset: WineDebugPreset?
 
     /// Identifier for the bottle that was analyzed.

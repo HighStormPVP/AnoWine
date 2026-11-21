@@ -44,10 +44,10 @@ public struct RunLogEntry: Codable, Identifiable, Equatable, Sendable {
     /// Display name of the program that was launched.
     public let programName: String
 
-    /// Name of the WINEDEBUG preset active during this run, if any.
+    /// Name of the ANODEBUG preset active during this run, if any.
     public var activeWineDebugPreset: String?
 
-    /// Whether WINEDEBUG output was captured during this run.
+    /// Whether ANODEBUG output was captured during this run.
     public var hasWineDebugOutput: Bool = false
 
     /// Whether the program is still running (no end time recorded yet).
@@ -111,7 +111,7 @@ public struct RunLogHistory: Codable, Equatable {
     /// - Parameters:
     ///   - id: The UUID of the entry to update.
     ///   - exitCode: The process exit code.
-    ///   - hasWineDebug: Whether WINEDEBUG output was captured.
+    ///   - hasWineDebug: Whether ANODEBUG output was captured.
     public mutating func markCompleted(id: UUID, exitCode: Int32, hasWineDebug: Bool) {
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
         entries[index].endTime = Date()

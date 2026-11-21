@@ -31,7 +31,7 @@ extension Wine {
         let environment: [String: String]
         /// Per-program setting overrides. `nil` fields inherit from the bottle.
         let programOverrides: ProgramOverrides?
-        /// The program's settings, which carry its diagnostic `WINEDEBUG` preset.
+        /// The program's settings, which carry its diagnostic `ANODEBUG` preset.
         let programSettings: ProgramSettings?
         /// Environment variables from the game's GameDB profile.
         let gameProfileEnvironment: [String: String]

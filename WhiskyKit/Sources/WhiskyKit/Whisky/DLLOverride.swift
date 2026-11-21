@@ -103,7 +103,7 @@ public struct DLLOverrideWarning: Sendable {
     public let message: String
 }
 
-/// Resolves DLL overrides from multiple sources into a `WINEDLLOVERRIDES` string.
+/// Resolves DLL overrides from multiple sources into an `ANODLLOVERRIDES` string.
 ///
 /// The resolver composes per-DLL overrides with clear precedence:
 /// `programCustom[dll] ?? bottleCustom[dll] ?? managed[dll]`
@@ -144,7 +144,7 @@ public struct DLLOverrideResolver: Sendable {
         self.programCustom = programCustom
     }
 
-    /// Parses a `WINEDLLOVERRIDES` value into entries, the way Wine reads it.
+    /// Parses an `ANODLLOVERRIDES` value into entries, the way Wine reads it.
     ///
     /// Entries are separated by `;`, and each is `dll[,dll...]=mode`: one mode
     /// can name several DLLs. A mode is read the way Wine's loader reads it
@@ -153,7 +153,7 @@ public struct DLLOverrideResolver: Sendable {
     /// `=` or no DLL name is skipped, so one typo does not cost the rest of
     /// the value.
     ///
-    /// - Parameter value: A `WINEDLLOVERRIDES`-syntax string.
+    /// - Parameter value: An `ANODLLOVERRIDES`-syntax string.
     /// - Returns: One entry per DLL named, in order.
     public static func parse(_ value: String) -> [DLLOverrideEntry] {
         let separators = CharacterSet(charactersIn: ", \t")
@@ -168,7 +168,7 @@ public struct DLLOverrideResolver: Sendable {
         }
     }
 
-    /// The mode a `WINEDLLOVERRIDES` mode string names, read as Wine's
+    /// The mode an `ANODLLOVERRIDES` mode string names, read as Wine's
     /// `parse_load_order` does.
     ///
     /// Only the first letter of each word counts, and words starting with
@@ -258,7 +258,7 @@ public struct DLLOverrideResolver: Sendable {
     /// The DLL overrides a graphics backend contributes at bottle level.
     ///
     /// D3DMetal and WineD3D contribute none: both run on Wine's builtin D3D and
-    /// pick between themselves with `WINED3DMETAL`. Resolve `.recommended`
+    /// pick between themselves with `ANOD3DMETAL`. Resolve `.recommended`
     /// before calling, or a bottle gets credited with the wrong set.
     ///
     /// - Parameters:
@@ -280,7 +280,7 @@ public struct DLLOverrideResolver: Sendable {
 
     // swiftlint:disable cyclomatic_complexity
 
-    /// Resolves all override sources into a `WINEDLLOVERRIDES` string and warnings.
+    /// Resolves all override sources into an `ANODLLOVERRIDES` string and warnings.
     ///
     /// Per-DLL resolution: the most specific source wins per DLL name.
     /// The output string is sorted alphabetically by DLL name for deterministic output.
@@ -340,7 +340,7 @@ public struct DLLOverrideResolver: Sendable {
             }
         }
 
-        // Render the WINEDLLOVERRIDES string
+        // Render the ANODLLOVERRIDES string
         guard !effectiveMode.isEmpty else {
             return (overrides: "", warnings: warnings)
         }

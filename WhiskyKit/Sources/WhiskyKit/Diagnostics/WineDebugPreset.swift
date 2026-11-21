@@ -18,7 +18,7 @@
 
 import Foundation
 
-/// Curated WINEDEBUG presets for diagnostic logging.
+/// Curated ANODEBUG presets for diagnostic logging.
 ///
 /// Each preset configures the Wine debug channels to capture specific
 /// categories of diagnostic information. The ``normal`` preset preserves
@@ -37,7 +37,7 @@ public enum WineDebugPreset: String, Codable, Sendable, CaseIterable {
     /// Full verbose output. Warning: very noisy.
     case verbose
 
-    /// The WINEDEBUG environment variable value for this preset.
+    /// The ANODEBUG environment variable value for this preset.
     public var winedebugValue: String {
         switch self {
         case .normal:

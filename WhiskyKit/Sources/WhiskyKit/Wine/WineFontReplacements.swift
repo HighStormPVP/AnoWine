@@ -42,7 +42,7 @@ struct FontReplacement: Equatable, Sendable {
 /// with the fonts installed until the Noto names were aliased too.
 enum CJKFontReplacements {
     /// Where Wine reads family aliases, for GDI and DirectWrite alike.
-    static let registryKey = #"HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements"#
+    static let registryKey = #"HKEY_CURRENT_USER\Software\Ano\Fonts\Replacements"#
 
     /// The collection winetricks' `sourcehansans` verb installs, which
     /// `cjkfonts` and the `fake` verbs above all pull in.

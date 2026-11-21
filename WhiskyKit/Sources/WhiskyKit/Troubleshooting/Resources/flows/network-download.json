@@ -60,7 +60,7 @@
       "phase": "fix",
       "title": "Restart Steam",
       "description": "Killing the Wine server and relaunching Steam can resolve download stalls caused by stuck processes.",
-      "fixId": "restart-wineserver",
+      "fixId": "restart-ano-server",
       "isReversible": false,
       "requiresConfirmation": true,
       "on": {

@@ -93,8 +93,6 @@ public struct MacOSFix: Sendable {
             String(localized: "launcher.platformFix.reason.cefSandbox")
         case "MTL_DEBUG_LAYER":
             String(localized: "launcher.platformFix.reason.metalDebugLayer")
-        case "WINEFSYNC":
-            String(localized: "launcher.platformFix.reason.fsync")
         case "STEAM_RUNTIME":
             String(localized: "launcher.platformFix.reason.steamRuntime")
         default:
@@ -148,12 +146,8 @@ public enum MacOSCompatibilityFixes {
             appliesFrom: .sequoia15_3, category: .graphics
         ),
 
-        // macOS 15.4+ fixes
-        MacOSFix(
-            key: "WINEFSYNC", value: "0",
-            reason: "Disables fsync due to 15.4 security model changes",
-            appliesFrom: .sequoia15_4, category: .threading
-        ),
+        // macOS 15.4+ fixes. The fsync switch is gone: the engine has no fsync,
+        // so nothing read it.
         MacOSFix(
             key: "STEAM_RUNTIME", value: "0",
             reason: "Disables Steam Runtime (incompatible with Wine on macOS 15.4+)",
@@ -189,7 +183,7 @@ extension Wine {
     /// and frankea/Whisky#41 (launcher compatibility tracking issue).
     ///
     /// This method iterates the ``MacOSCompatibilityFixes/allFixes`` registry, filtering
-    /// by the current macOS version. The WINEESYNC conditional logic is preserved as a
+    /// by the current macOS version. The ANOESYNC conditional logic is preserved as a
     /// special case since it depends on existing environment state.
     static func applyMacOSCompatibilityFixes(to environment: inout [String: String]) {
         let currentVersion = MacOSVersion.current
@@ -202,11 +196,11 @@ extension Wine {
             environment[fix.key] = fix.value
         }
 
-        // Special case: WINEESYNC is conditional on other sync settings not being set.
+        // Special case: ANOESYNC is conditional on other sync settings not being set.
         // This cannot be expressed as a simple registry entry because it depends on state.
         if currentVersion >= .sequoia15_4 {
-            if environment["WINEMSYNC"] == nil, environment["WINEESYNC"] == nil {
-                environment["WINEESYNC"] = "1"
+            if environment["ANOMSYNC"] == nil, environment["ANOESYNC"] == nil {
+                environment["ANOESYNC"] = "1"
             }
         }
 

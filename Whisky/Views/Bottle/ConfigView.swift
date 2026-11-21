@@ -252,12 +252,12 @@ struct ConfigView: View {
                         }
                     }
                 }
-                Button("config.winecfg") {
+                Button("config.ano-cfg") {
                     Task(priority: .userInitiated) {
                         do {
                             try await Wine.cfg(bottle: bottle)
                         } catch {
-                            logger.error("Failed to launch winecfg: \(error.localizedDescription)")
+                            logger.error("Failed to launch ano-cfg: \(error.localizedDescription)")
                         }
                     }
                 }

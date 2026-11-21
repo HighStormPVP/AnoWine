@@ -19,14 +19,14 @@
 import Foundation
 
 /// Whether a bottle's programs run in Wine's virtual desktop is decided by the
-/// registry: a `Desktop` value in `HKCU\Software\Wine\Explorer` names the
+/// registry: a `Desktop` value in `HKCU\Software\Ano\Explorer` names the
 /// desktop, and `Explorer\Desktops` optionally holds its size. The bottle's
 /// `virtualDesktopEnabled` setting only mirrors it, and goes stale when the
-/// registry changes elsewhere, for example in winecfg.
+/// registry changes elsewhere, for example in ano-cfg.
 public extension Wine {
     internal enum VirtualDesktopRegistryKey: String {
-        case explorer = #"HKCU\Software\Wine\Explorer"#
-        case desktops = #"HKCU\Software\Wine\Explorer\Desktops"#
+        case explorer = #"HKCU\Software\Ano\Explorer"#
+        case desktops = #"HKCU\Software\Ano\Explorer\Desktops"#
     }
 
     /// Reads one registry string value: `(key, value name)` to its data, or

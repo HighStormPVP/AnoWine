@@ -20,7 +20,7 @@ import SwiftUI
 import WhiskyKit
 
 /// View showing per-program crash diagnosis history with view/re-analyze/clear actions
-/// and an enhanced logging section with WINEDEBUG preset picker.
+/// and an enhanced logging section with ANODEBUG preset picker.
 struct DiagnosisHistoryView: View {
     @ObservedObject var bottle: Bottle
     @ObservedObject var program: Program
@@ -195,7 +195,7 @@ extension DiagnosisHistoryView {
             Text("Enhanced Logging")
                 .font(.headline)
 
-            Picker("WINEDEBUG Preset", selection: $selectedPreset) {
+            Picker("ANODEBUG Preset", selection: $selectedPreset) {
                 ForEach(WineDebugPreset.allCases, id: \.self) { preset in
                     Text(preset.displayName).tag(preset)
                 }

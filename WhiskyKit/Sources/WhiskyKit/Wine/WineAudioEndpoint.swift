@@ -28,7 +28,7 @@ import Foundation
 /// generates one when none is stored, so Whisky can read or seed it.
 enum WineAudioEndpoint {
     /// The per-driver key holding `DefaultOutput` and the `devices` subkeys.
-    static let driverKey = #"HKCU\Software\Wine\Drivers\winecoreaudio.drv"#
+    static let driverKey = #"HKCU\Software\Ano\Drivers\anocoreaudio.drv"#
 
     /// The registry value Wine reads to pick the default output endpoint.
     static let defaultOutputValue = "DefaultOutput"

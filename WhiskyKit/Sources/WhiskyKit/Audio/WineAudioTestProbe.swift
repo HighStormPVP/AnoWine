@@ -32,7 +32,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
     public let id = "wine-audio-test"
     public let displayName = "Wine Audio Stack Test"
 
-    /// Curated WINEDEBUG preset for audio troubleshooting channels.
+    /// Curated ANODEBUG preset for audio troubleshooting channels.
     private static let audioDebugPreset = "+mmdevapi,+dsound,+winmm"
 
     private let bottle: Bottle
@@ -73,7 +73,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
             args.append("--beep")
         }
 
-        let environment = ["WINEDEBUG": Self.audioDebugPreset]
+        let environment = ["ANODEBUG": Self.audioDebugPreset]
 
         guard let processResult = await executeWineProcess(args: args, environment: environment, exePath: exePath)
         else {

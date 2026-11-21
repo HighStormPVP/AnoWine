@@ -31,7 +31,7 @@ extension Wine {
     ) -> Bool {
         let overrides = constructWineEnvironment(
             for: bottle, recommendedBackend: recommendedBackend, builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
-        )["WINEDLLOVERRIDES"] ?? ""
+        )["ANODLLOVERRIDES"] ?? ""
         return asksNativeFirst("d3d11", in: overrides)
     }
 
@@ -66,11 +66,11 @@ extension Wine {
         let composed = constructWineEnvironment(
             for: bottle, programOverrides: overrides, recommendedBackend: recommendedBackend,
             builtinD3D12IsD3DMetal: true
-        )["WINEDLLOVERRIDES"] ?? ""
+        )["ANODLLOVERRIDES"] ?? ""
         return asksNativeFirst("d3d11", in: composed)
     }
 
-    /// Whether `overrides`, in `WINEDLLOVERRIDES` syntax, load `dll` native
+    /// Whether `overrides`, in `ANODLLOVERRIDES` syntax, load `dll` native
     /// first. A clause may name several DLLs (`d3d11,dxgi=n,b`); the last
     /// clause naming `dll` wins, as in Wine.
     static func asksNativeFirst(_ dll: String, in overrides: String) -> Bool {

@@ -82,7 +82,7 @@ public enum PreflightCollector {
 
         logger.debug(
             """
-            Preflight: wineserver=\(isRunning), procs=\(preflight.processCount), \
+            Preflight: ano-server=\(isRunning), procs=\(preflight.processCount), \
             backend=\(preflight.graphicsBackend), launcher=\(preflight.launcherType ?? "none")
             """
         )

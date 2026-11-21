@@ -3739,7 +3739,7 @@
             "sequoiaCompatMode": false
           },
           "environmentVariables": {
-            "WINE_LARGE_ADDRESS_AWARE": "1"
+            "ANO_LARGE_ADDRESS_AWARE": "1"
           },
           "dllOverrides": [],
           "winetricksVerbs": [
@@ -5072,7 +5072,7 @@
             "No additional components needed"
           ],
           "settings": {
-            "graphicsBackend": "wined3d",
+            "graphicsBackend": "anod3d",
             "dxvk": false,
             "dxvkAsync": false,
             "enhancedSync": "msync",
@@ -6246,7 +6246,7 @@
             "WinXP version setting matches the game's expectations"
           ],
           "settings": {
-            "graphicsBackend": "wined3d",
+            "graphicsBackend": "anod3d",
             "dxvk": false,
             "dxvkAsync": false,
             "enhancedSync": "msync",
@@ -6308,7 +6308,7 @@
             "DXVK shader compile causes 2-5min loads; wineD3D bypasses"
           ],
           "settings": {
-            "graphicsBackend": "wined3d",
+            "graphicsBackend": "anod3d",
             "dxvk": false,
             "dxvkAsync": false,
             "enhancedSync": "msync",

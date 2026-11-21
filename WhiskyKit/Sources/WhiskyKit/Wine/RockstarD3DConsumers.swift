@@ -323,7 +323,7 @@ extension Wine {
     /// of games long uninstalled, and a generic name among them would refuse
     /// the swap forever.
     static func otherLauncherConsumers(bottleURL: URL) -> [String] {
-        guard let file = WineRegistryFile.contents(for: #"HKCU\Software\Wine\AppDefaults"#, bottleURL: bottleURL)
+        guard let file = WineRegistryFile.contents(for: #"HKCU\Software\Ano\AppDefaults"#, bottleURL: bottleURL)
         else { return [] }
         let others = LauncherType.allCases.filter { $0 != .steam && $0 != .rockstar }
         let helpers = Set(others.flatMap(\.helperExecutables).map { $0.lowercased() })
@@ -341,7 +341,7 @@ extension Wine {
     /// The executables with a `DllOverrides` key under `AppDefaults` in the
     /// text of `user.reg`, as its section headers spell them.
     static func appDefaultsDLLOverrideExecutables(in text: String) -> [String] {
-        let prefix = #"[software\\wine\\appdefaults\\"#
+        let prefix = #"[software\\ano\\appdefaults\\"#
         let suffix = #"\\dlloverrides]"#
         var executables: [String] = []
         for line in text.split(separator: "\n") {

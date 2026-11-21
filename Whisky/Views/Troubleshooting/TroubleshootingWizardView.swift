@@ -369,7 +369,7 @@ extension FixAttempt {
         case "set-registry-value": String(localized: "troubleshooting.fixName.setRegistryValue")
         case "apply-launcher-fixes": String(localized: "troubleshooting.fixName.applyLauncherFixes")
         case "apply-game-config": String(localized: "troubleshooting.fixName.applyGameConfig")
-        case "restart-wineserver": String(localized: "troubleshooting.fixName.restartWineserver")
+        case "restart-ano-server": String(localized: "troubleshooting.fixName.restartWineserver")
         default: fixId
         }
     }

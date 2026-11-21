@@ -63,7 +63,7 @@
       "phase": "fix",
       "title": "Restart launcher processes",
       "description": "Launcher processes appear to be stuck or not running. Restarting the Wine server and relaunching may resolve the issue.",
-      "fixId": "restart-wineserver",
+      "fixId": "restart-ano-server",
       "isReversible": false,
       "requiresConfirmation": true,
       "on": {

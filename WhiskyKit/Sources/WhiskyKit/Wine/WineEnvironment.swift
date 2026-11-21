@@ -32,7 +32,7 @@ extension Wine {
     /// Each Wine process launch resolves through this method, which populates
     /// an ``EnvironmentBuilder`` with base, platform, bottleManaged, launcherManaged,
     /// bottleUser, programUser, featureRuntime, and callsiteOverride layers.
-    /// WINEDLLOVERRIDES is composed per-DLL via ``DLLOverrideResolver``.
+    /// ANODLLOVERRIDES is composed per-DLL via ``DLLOverrideResolver``.
     ///
     /// Invalid environment variable keys (those not matching `[A-Za-z_][A-Za-z0-9_]*`)
     /// are filtered out with a debug log message, as macOS silently ignores them.
@@ -63,16 +63,16 @@ extension Wine {
         var builder = EnvironmentBuilder()
         var dllResolver = DLLOverrideResolver(managed: [], bottleCustom: [], programCustom: [])
 
-        // Layer 1: Base -- WINEPREFIX, default WINEDEBUG, GST_DEBUG
-        builder.set("WINEPREFIX", bottle.url.path, layer: .base)
+        // Layer 1: Base -- ANOPREFIX, default ANODEBUG, GST_DEBUG
+        builder.set("ANOPREFIX", bottle.url.path, layer: .base)
         // Ano's runtime renames wineserver; this is how the loader finds it.
-        builder.set("WINESERVER", AnoWineRuntime.serverURL.path(percentEncoded: false), layer: .base)
-        builder.set("WINEDEBUG", "fixme-all", layer: .base)
+        builder.set("ANOSERVER", AnoWineRuntime.serverURL.path(percentEncoded: false), layer: .base)
+        builder.set("ANODEBUG", "fixme-all", layer: .base)
         builder.set("GST_DEBUG", "1", layer: .base)
 
         // Layer 2: Platform -- macOS compatibility fixes
         // Apply fixes from the MacOSCompatibilityFixes registry with reason strings.
-        // applyMacOSCompatibilityFixes() is still called for the conditional WINEESYNC logic.
+        // applyMacOSCompatibilityFixes() is still called for the conditional ANOESYNC logic.
         for fix in MacOSCompatibilityFixes.activeFixes() {
             builder.set(fix.key, fix.value, layer: .platform, reason: fix.reason)
         }
@@ -84,12 +84,12 @@ extension Wine {
                 reason: "Host timezone forwarding"
             )
         }
-        // Handle conditional WINEESYNC (depends on existing environment state)
+        // Handle conditional ANOESYNC (depends on existing environment state)
         var platformConditional: [String: String] = [:]
         applyMacOSCompatibilityFixes(to: &platformConditional)
-        if let esync = platformConditional["WINEESYNC"] {
+        if let esync = platformConditional["ANOESYNC"] {
             builder.set(
-                "WINEESYNC", esync, layer: .platform,
+                "ANOESYNC", esync, layer: .platform,
                 reason: "Fallback sync mode for macOS 15.4+ (esync/msync not otherwise set)"
             )
         }
@@ -160,19 +160,19 @@ extension Wine {
             )
         }
 
-        // The program's own WINEDLLOVERRIDES, merged rather than replaced: the
+        // The program's own ANODLLOVERRIDES, merged rather than replaced: the
         // composed value used to be assigned over it, so it did nothing whenever
         // the bottle had any override at all. Program-custom, after the program's
         // overrides, so the DLLs it names beat every preset and the rest of the
         // composition stands. Only the program's own value: a GameDB profile's
         // must not outrank the user's bottle overrides.
-        if let programValue = environment["WINEDLLOVERRIDES"] {
+        if let programValue = environment["ANODLLOVERRIDES"] {
             dllResolver.programCustom.append(contentsOf: DLLOverrideResolver.parse(programValue))
         }
 
-        // Layer 8: featureRuntime -- diagnostic WINEDEBUG preset override
+        // Layer 8: featureRuntime -- diagnostic ANODEBUG preset override
         if let preset = programSettings?.activeWineDebugPreset, preset != .normal {
-            builder.set("WINEDEBUG", preset.winedebugValue, layer: .featureRuntime)
+            builder.set("ANODEBUG", preset.winedebugValue, layer: .featureRuntime)
         }
         // Ano proxy: where the interceptor finds the helper. DYLD_INSERT_LIBRARIES
         // is added later, only for the process that runs Wine itself.
@@ -189,10 +189,10 @@ extension Wine {
         let (resolved, provenance) = builder.resolve()
         var result = resolved
 
-        // Compose WINEDLLOVERRIDES from DLLOverrideResolver (outside the builder)
+        // Compose ANODLLOVERRIDES from DLLOverrideResolver (outside the builder)
         let (overrideString, _) = dllResolver.resolve()
         if !overrideString.isEmpty {
-            result["WINEDLLOVERRIDES"] = overrideString
+            result["ANODLLOVERRIDES"] = overrideString
         }
 
         // Launch logging: safe summary of bottle, active layers, and whitelisted keys
@@ -277,7 +277,7 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 removeConcurrentCompile()
-                builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("ANOD3DMETAL", layer: .programUser)
                 // One program on D3DMetal inside a bottle running something else
                 // still has to claim scheduling itself; see the bottle layer.
                 // Gated on the same setting, or turning frame generation off
@@ -290,7 +290,7 @@ extension Wine {
                 // Enable DXVK DLLs at program level
                 dllResolver.programCustom.append(contentsOf: dxvkPreset)
                 addDXVKEnvironment()
-                builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("ANOD3DMETAL", layer: .programUser)
                 // CX_ACTIVE_GRAPHICS_BACKEND deliberately survives. It selects no
                 // backend: win32u is the only thing in the runtime that reads it,
                 // and all it does is answer KMTQAITYPE_WDDM_2_7_CAPS. Stripping it
@@ -311,13 +311,13 @@ extension Wine {
                 builder.remove("DXVK_HUD", layer: .programUser)
                 builder.remove("DXVK_ASYNC", layer: .programUser)
                 removeConcurrentCompile()
-                builder.remove("WINED3DMETAL", layer: .programUser)
+                builder.remove("ANOD3DMETAL", layer: .programUser)
                 // Survives for the reason given under .dxvk: DXMT translates d3d11
                 // only, so d3d12 is still D3DMetal here.
 
             case .wined3d:
                 // Force wined3d: disable D3DMetal + undo DXVK/DXMT DLLs
-                builder.set("WINED3DMETAL", "0", layer: .programUser)
+                builder.set("ANOD3DMETAL", "0", layer: .programUser)
                 // The one branch that really has no D3DMetal behind it, so the
                 // capability claim would be a lie.
                 builder.remove("CX_ACTIVE_GRAPHICS_BACKEND", layer: .programUser)
@@ -369,19 +369,19 @@ extension Wine {
             switch enhancedSync {
             case .none:
                 if MacOSVersion.current < .sequoia15_4 {
-                    builder.remove("WINEESYNC", layer: .programUser)
-                    builder.remove("WINEMSYNC", layer: .programUser)
+                    builder.remove("ANOESYNC", layer: .programUser)
+                    builder.remove("ANOMSYNC", layer: .programUser)
                 } else {
                     // On 15.4+ ESYNC is required for stability
-                    builder.set("WINEESYNC", "1", layer: .programUser)
-                    builder.remove("WINEMSYNC", layer: .programUser)
+                    builder.set("ANOESYNC", "1", layer: .programUser)
+                    builder.remove("ANOMSYNC", layer: .programUser)
                 }
             case .esync:
-                builder.set("WINEESYNC", "1", layer: .programUser)
-                builder.remove("WINEMSYNC", layer: .programUser)
+                builder.set("ANOESYNC", "1", layer: .programUser)
+                builder.remove("ANOMSYNC", layer: .programUser)
             case .msync:
-                builder.set("WINEMSYNC", "1", layer: .programUser)
-                builder.set("WINEESYNC", "1", layer: .programUser)
+                builder.set("ANOMSYNC", "1", layer: .programUser)
+                builder.set("ANOESYNC", "1", layer: .programUser)
             }
         }
 
@@ -458,7 +458,7 @@ extension Wine {
     /// Logs a safe launch summary at info level.
     ///
     /// Only logs the bottle name, active layers, and whitelisted non-sensitive keys.
-    /// Does NOT log full environment dict, WINEPREFIX paths, or user-set custom env vars.
+    /// Does NOT log full environment dict, ANOPREFIX paths, or user-set custom env vars.
     private static func logLaunchSummary(
         bottleName: String,
         provenance: EnvironmentProvenance,
@@ -480,8 +480,8 @@ extension Wine {
 
         // Non-sensitive keys allowed in the launch summary
         let allowedKeys = [
-            "DXVK_ASYNC", "DXVK_HUD", "WINEESYNC", "WINEMSYNC",
-            "D3DM_MTL4", "MTL_HUD_ENABLED", "WINED3DMETAL"
+            "DXVK_ASYNC", "DXVK_HUD", "ANOESYNC", "ANOMSYNC",
+            "D3DM_MTL4", "MTL_HUD_ENABLED", "ANOD3DMETAL"
         ]
         let safeEntries = allowedKeys.compactMap { key -> String? in
             guard let value = environment[key] else { return nil }

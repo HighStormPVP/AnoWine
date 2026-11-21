@@ -139,14 +139,14 @@ extension DiagnosticExporter {
             }
         }
         // Either variable outvotes the registry. Whisky composes the bottle's
-        // WINEDLLOVERRIDES itself and moves it into the registry at launch, so
+        // ANODLLOVERRIDES itself and moves it into the registry at launch, so
         // only a game configuration's or the program's own counts there.
         let sources: [(name: String, environment: [String: String])] = [
             ("program settings", rockstarLauncherProgramEnvironment(bottleURL: bottle.url)),
             ("game configuration", bottle.settings.gameConfigEnvironment(forExecutable: "Launcher.exe")),
-            ("bottle", Wine.constructWineEnvironment(for: bottle).filter { $0.key == "WINE_D3D_CONFIG" })
+            ("bottle", Wine.constructWineEnvironment(for: bottle).filter { $0.key == "ANO_D3D_CONFIG" })
         ]
-        for variable in ["WINEDLLOVERRIDES", "WINE_D3D_CONFIG"] {
+        for variable in ["ANODLLOVERRIDES", "ANO_D3D_CONFIG"] {
             let setBy = sources.filter { $0.environment[variable] != nil }.map(\.name)
             section += "- **\(variable) set for Launcher.exe:** "
             section += setBy.isEmpty ? "no\n" : "yes (\(setBy.joined(separator: ", ")))\n"

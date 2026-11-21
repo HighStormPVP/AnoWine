@@ -63,7 +63,7 @@ public enum ShellQuoting {
     }
 
     /// A `NAME=value` assignment with the value quoted, for prefixing a command
-    /// (`WINEPREFIX='...' wine ...`). `name` must be a valid identifier; it is
+    /// (`ANOPREFIX='...' ano-loader ...`). `name` must be a valid identifier; it is
     /// the caller's constant, never data.
     public static func assignment(_ name: String, _ value: String) -> String {
         "\(name)=\(quoted(value))"

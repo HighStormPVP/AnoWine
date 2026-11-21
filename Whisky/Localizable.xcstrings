@@ -11226,138 +11226,138 @@
         }
       }
     },
-    "WINEDEBUG Preset" : {
+    "ANODEBUG Preset" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إعداد WINEDEBUG المسبق"
+            "value" : "إعداد ANODEBUG المسبق"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Předvolba WINEDEBUG"
+            "value" : "Předvolba ANODEBUG"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG-forindstilling"
+            "value" : "ANODEBUG-forindstilling"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG-Voreinstellung"
+            "value" : "ANODEBUG-Voreinstellung"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preajuste de WINEDEBUG"
+            "value" : "Preajuste de ANODEBUG"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG-esiasetus"
+            "value" : "ANODEBUG-esiasetus"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Préréglage WINEDEBUG"
+            "value" : "Préréglage ANODEBUG"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Preset WINEDEBUG"
+            "value" : "Preset ANODEBUG"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG プリセット"
+            "value" : "ANODEBUG プリセット"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG 프리셋"
+            "value" : "ANODEBUG 프리셋"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG-voorinstelling"
+            "value" : "ANODEBUG-voorinstelling"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profil WINEDEBUG"
+            "value" : "Profil ANODEBUG"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Predefinição WINEDEBUG"
+            "value" : "Predefinição ANODEBUG"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Predefinição WINEDEBUG"
+            "value" : "Predefinição ANODEBUG"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Presetare WINEDEBUG"
+            "value" : "Presetare ANODEBUG"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Пресет WINEDEBUG"
+            "value" : "Пресет ANODEBUG"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG-förinställning"
+            "value" : "ANODEBUG-förinställning"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG Ön Ayarı"
+            "value" : "ANODEBUG Ön Ayarı"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Пресет WINEDEBUG"
+            "value" : "Пресет ANODEBUG"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cài đặt sẵn WINEDEBUG"
+            "value" : "Cài đặt sẵn ANODEBUG"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG 预设"
+            "value" : "ANODEBUG 预设"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WINEDEBUG 預設集"
+            "value" : "ANODEBUG 預設集"
           }
         }
       }
@@ -37713,7 +37713,7 @@
         }
       }
     },
-    "config.winecfg" : {
+    "config.ano-cfg" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {

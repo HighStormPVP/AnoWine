@@ -106,7 +106,7 @@ enum WineRegistryFile {
         }
 
         // Normalize the key path for .reg file format
-        // HKCU\Software\Wine\Drivers -> [Software\\Wine\\Drivers]
+        // HKCU\Software\Ano\Drivers -> [Software\\Ano\\Drivers]
         let normalizedKey = key
             .replacingOccurrences(of: "HKCU\\", with: "")
             .replacingOccurrences(of: "HKEY_CURRENT_USER\\", with: "")
@@ -141,10 +141,10 @@ public extension Wine {
     /// tests can check them against the engine's names.
     internal enum RegistryKey: String {
         case currentVersion = #"HKLM\Software\Microsoft\Windows NT\CurrentVersion"#
-        case macDriver = #"HKCU\Software\Wine\Mac Driver"#
+        case macDriver = #"HKCU\Software\Ano\Mac Driver"#
         case desktop = #"HKCU\Control Panel\Desktop"#
-        case explorer = #"HKCU\Software\Wine\Explorer"#
-        case explorerDesktops = #"HKCU\Software\Wine\Explorer\Desktops"#
+        case explorer = #"HKCU\Software\Ano\Explorer"#
+        case explorerDesktops = #"HKCU\Software\Ano\Explorer\Desktops"#
     }
 
     @MainActor
@@ -215,7 +215,7 @@ public extension Wine {
 
     @MainActor
     static func winVersion(bottle: Bottle) async throws -> WinVersion {
-        let output = try await Wine.runWine(["winecfg", "-v"], bottle: bottle)
+        let output = try await Wine.runWine([AnoWineRuntime.configProgramName, "-v"], bottle: bottle)
         let lines = output.split(whereSeparator: \.isNewline)
 
         if let lastLine = lines.last {
@@ -310,7 +310,7 @@ public extension Wine {
     @MainActor
     static func cfg(bottle: Bottle) async throws -> String {
         Wine.noteUserLaunch(in: bottle)
-        return try await Wine.runWine(["winecfg"], bottle: bottle)
+        return try await Wine.runWine([AnoWineRuntime.configProgramName], bottle: bottle)
     }
 
     @discardableResult
@@ -322,7 +322,7 @@ public extension Wine {
     /// What ``changeWinVersion(bottle:win:)`` runs, which is also how a new
     /// bottle's prefix gets created.
     internal static func changeWinVersionArguments(_ win: WinVersion) -> [String] {
-        ["winecfg", "-v", win.rawValue]
+        [AnoWineRuntime.configProgramName, "-v", win.rawValue]
     }
 
     // MARK: - Virtual Desktop
@@ -330,8 +330,8 @@ public extension Wine {
     /// Enables Wine's virtual desktop mode with the given resolution.
     ///
     /// Writes two registry values:
-    /// - `Desktop = "Default"` in `HKCU\Software\Wine\Explorer`
-    /// - `Default = "{width}x{height}"` in `HKCU\Software\Wine\Explorer\Desktops`
+    /// - `Desktop = "Default"` in `HKCU\Software\Ano\Explorer`
+    /// - `Default = "{width}x{height}"` in `HKCU\Software\Ano\Explorer\Desktops`
     ///
     /// - Parameters:
     ///   - bottle: The bottle whose registry to modify.

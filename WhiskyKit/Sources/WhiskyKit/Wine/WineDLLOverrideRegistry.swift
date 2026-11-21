@@ -33,13 +33,13 @@ public extension Wine {
         var registryKey: String {
             switch self {
             case .bottle:
-                #"HKCU\Software\Wine\DllOverrides"#
+                #"HKCU\Software\Ano\DllOverrides"#
             case let .program(executable):
                 // \\#( is a literal backslash then the interpolation; \#( alone
                 // would swallow the path separator.
-                #"HKCU\Software\Wine\AppDefaults\\#(executable)\DllOverrides"#
+                #"HKCU\Software\Ano\AppDefaults\\#(executable)\DllOverrides"#
             case let .direct3D(executable):
-                #"HKCU\Software\Wine\AppDefaults\\#(executable)\Direct3D"#
+                #"HKCU\Software\Ano\AppDefaults\\#(executable)\Direct3D"#
             }
         }
     }
@@ -48,7 +48,7 @@ public extension Wine {
         subsystem: "com.isaacmarovitz.WhiskyKit", category: "dll-overrides"
     )
 
-    /// Writes each scope's `WINEDLLOVERRIDES`-syntax overrides into a bottle's
+    /// Writes each scope's `ANODLLOVERRIDES`-syntax overrides into a bottle's
     /// registry: ``syncDLLOverrides(bottle:scopes:)`` outside of tests.
     typealias DLLOverrideWriter = @MainActor (
         _ bottle: Bottle, _ scopes: [(scope: DLLOverrideScope, overrides: String)]
@@ -65,7 +65,7 @@ public extension Wine {
     ///
     /// - Parameters:
     ///   - bottle: The bottle whose prefix registry is written.
-    ///   - scopes: Each scope and the `WINEDLLOVERRIDES`-syntax string it
+    ///   - scopes: Each scope and the `ANODLLOVERRIDES`-syntax string it
     ///     should hold. An empty string takes back what Whisky wrote there.
     @MainActor
     static func syncDLLOverrides(
@@ -155,7 +155,7 @@ public extension Wine {
 
     /// Moves this launch's DLL overrides from the environment into the registry.
     ///
-    /// Registry, not `WINEDLLOVERRIDES`: the variable is inherited by every child,
+    /// Registry, not `ANODLLOVERRIDES`: the variable is inherited by every child,
     /// so a launcher's backend became every game's, and wine reads it before the
     /// registry, which left `AppDefaults` entries dead while it was set.
     ///
@@ -201,7 +201,7 @@ public extension Wine {
         let resolveRockstarLayout = { rockstarLayout ?? .resolve(payloadDeployed: builtinD3D12IsD3DMetal) }
         let bottleOverrides = constructWineEnvironment(
             for: bottle, recommendedBackend: recommendedBackend, builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
-        )["WINEDLLOVERRIDES"] ?? ""
+        )["ANODLLOVERRIDES"] ?? ""
         var scopes = DLLOverrideScopes(bottle: bottleOverrides)
         let launcher = LauncherType.detect(from: url)
         let launcherSet = { (userOverrides: ProgramOverrides?) in
@@ -227,12 +227,12 @@ public extension Wine {
         // a helper restarting after a game launch would crash-loop on it (#276).
         var gamePlan: String?
         if applyToDescendants, let launcher {
-            gamePlan = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
+            gamePlan = wineEnvironment.removeValue(forKey: "ANODLLOVERRIDES") ?? ""
             let own = launcherSet(Program.persistedOverrides(for: url, bottleURL: bottle.url))
             scopes.add(launcher.helperExecutables, disablingNVAPI(in: own))
             scopes.add([url.lastPathComponent], own)
         } else if !applyToDescendants {
-            let own = wineEnvironment.removeValue(forKey: "WINEDLLOVERRIDES") ?? ""
+            let own = wineEnvironment.removeValue(forKey: "ANODLLOVERRIDES") ?? ""
             // Rockstar's launcher gets the chain's entries ahead of `own`, per-program overrides too.
             addRockstarDirectLaunchScopes(url, to: &scopes, layout: resolveRockstarLayout, launcherSet: launcherSet)
             scopes.add(helperExecutables(for: url), disablingNVAPI(in: own))
@@ -353,12 +353,12 @@ public extension Wine {
         return constructWineEnvironment(
             for: bottle, programOverrides: pinned,
             recommendedBackend: recommendedBackend, builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
-        )["WINEDLLOVERRIDES"] ?? ""
+        )["ANODLLOVERRIDES"] ?? ""
     }
 
     /// Adds `nvapi64=`, `nvapi=`, and `nvngx=` to an override string, keeping whatever else it holds.
     ///
-    /// - Parameter overrides: A `WINEDLLOVERRIDES`-syntax string, possibly empty.
+    /// - Parameter overrides: An `ANODLLOVERRIDES`-syntax string, possibly empty.
     /// - Returns: The same string with NVIDIA bridges disabled.
     static func disablingNVAPI(in overrides: String) -> String {
         var parsed = parseDLLOverrides(overrides)
@@ -370,7 +370,7 @@ public extension Wine {
 
     /// Adds `d3d12=` to an override string, keeping whatever else it holds.
     ///
-    /// - Parameter overrides: A `WINEDLLOVERRIDES`-syntax string, possibly empty.
+    /// - Parameter overrides: An `ANODLLOVERRIDES`-syntax string, possibly empty.
     /// - Returns: The same string with `d3d12` disabled.
     static func disablingD3D12(in overrides: String) -> String {
         var parsed = parseDLLOverrides(overrides)
@@ -378,7 +378,7 @@ public extension Wine {
         return parsed.keys.sorted().map { "\($0)=\(parsed[$0] ?? "")" }.joined(separator: ";")
     }
 
-    /// Parses a `WINEDLLOVERRIDES` string into DLL name to load-order pairs.
+    /// Parses an `ANODLLOVERRIDES` string into DLL name to load-order pairs.
     ///
     /// The registry takes the same syntax, so values pass through unchanged.
     /// `dll=` is kept: an empty value is how a DLL is disabled in both forms.

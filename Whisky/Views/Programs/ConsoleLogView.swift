@@ -23,7 +23,7 @@ import WhiskyKit
 
 /// Displays console log output for a specific run with channel filtering and export actions.
 ///
-/// Log lines are classified into channels: output (stdout), stderr, and WINEDEBUG.
+/// Log lines are classified into channels: output (stdout), stderr, and ANODEBUG.
 /// Users can toggle visibility of each channel, copy/export filtered content, and
 /// open the logs folder. For running processes, the view polls for new content.
 struct ConsoleLogView: View {
@@ -39,10 +39,10 @@ struct ConsoleLogView: View {
     @State private var logFollower: WineLogFollower?
     @State private var refreshTimer: Timer?
 
-    /// Regex patterns that indicate WINEDEBUG output.
+    /// Regex patterns that indicate ANODEBUG output.
     private static let wineDebugPatterns: [String] = [
         "^[0-9a-f]{4}:",
-        "^wine:",
+        "^ano:",
         "^fixme:",
         "^err:",
         "^trace:",
@@ -395,7 +395,7 @@ extension ConsoleLogView {
                         .filter { $0.channel == .wineDebug }
                         .map(\.text)
                     if !debugLines.isEmpty {
-                        exportContent += "\n\n--- WINEDEBUG Output ---\n"
+                        exportContent += "\n\n--- ANODEBUG Output ---\n"
                         exportContent += debugLines.joined(separator: "\n")
                     }
                 }
@@ -435,7 +435,7 @@ enum ConsoleLogChannel {
     case output
     /// Standard error (stderr) content.
     case stderr
-    /// WINEDEBUG diagnostic output.
+    /// ANODEBUG diagnostic output.
     case wineDebug
 }
 

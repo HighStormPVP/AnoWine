@@ -227,7 +227,7 @@ public class Wine {
     struct PreparedLaunch: Equatable, Sendable {
         /// The environment `wine64` runs with.
         ///
-        /// Holds no `WINEDLLOVERRIDES` unless the overrides are meant for a
+        /// Holds no `ANODLLOVERRIDES` unless the overrides are meant for a
         /// process this launch spawns: preparation moved the launch's own
         /// overrides into the prefix registry, where no child inherits them.
         let environment: [String: String]
@@ -267,7 +267,7 @@ public class Wine {
     ///   - bottle: The ``Bottle`` in which to run the program.
     ///   - environment: Additional environment variables for this execution.
     ///   - programOverrides: Optional per-program setting overrides. `nil` fields inherit from bottle.
-    ///   - programSettings: The program's settings, which carry its diagnostic `WINEDEBUG` preset.
+    ///   - programSettings: The program's settings, which carry its diagnostic `ANODEBUG` preset.
     ///   - gameProfileEnvironment: Environment variables from the game's GameDB profile.
     ///   - overridesApplyToDescendants: Whether the DLL overrides belong to a process this
     ///     one spawns rather than to `url` itself, as when `steam.exe` launches a game.
@@ -322,7 +322,7 @@ public class Wine {
     /// - Parameters:
     ///   - url: The URL to the Windows executable (.exe) file.
     ///   - bottle: The ``Bottle`` in which to run the program.
-    ///   - programSettings: The program's settings, whose `WINEDEBUG` preset the run log records.
+    ///   - programSettings: The program's settings, whose `ANODEBUG` preset the run log records.
     ///   - onOutput: Receives the launch's output events as they arrive, including what
     ///     arrives after ``ProcessOutput/terminated(_:)``, until `outputCompletion` completes.
     ///   - prepare: Prepares the bottle for the launch and returns what the launch runs.
@@ -388,7 +388,7 @@ public class Wine {
         let completion = session.finish { [exitCode] in
             recordRunEnd(
                 id: runLogEntryId, programName: programName, exitCode: exitCode,
-                hasWineDebug: launch.environment.keys.contains("WINEDEBUG"), bottle: bottle
+                hasWineDebug: launch.environment.keys.contains("ANODEBUG"), bottle: bottle
             )
             activity.end()
         }
@@ -416,7 +416,7 @@ public class Wine {
     ///   - bottle: The ``Bottle`` in which the program will run.
     ///   - environment: Additional environment variables for this execution.
     ///   - programOverrides: Optional per-program setting overrides. `nil` fields inherit from bottle.
-    ///   - programSettings: The program's settings, which carry its diagnostic `WINEDEBUG` preset.
+    ///   - programSettings: The program's settings, which carry its diagnostic `ANODEBUG` preset.
     ///   - gameProfileEnvironment: Environment variables from the game's GameDB profile.
     ///   - overridesApplyToDescendants: Whether the DLL overrides belong to a process this one
     ///     spawns. For a launcher they go to `descendantExecutables` and the environment keeps
@@ -484,7 +484,7 @@ public class Wine {
         // The effective backend for this launch: a program-level override wins
         // over the bottle setting, and `.recommended` resolves to its concrete
         // backend. This decides which translation layer's files are deployed;
-        // the matching WINEDLLOVERRIDES come from the environment layers.
+        // the matching ANODLLOVERRIDES come from the environment layers.
         // `.recommended` resolves against what is being launched, not just the
         // machine: a launcher is steered to DXVK. Not when the overrides are a
         // descendant's, as with `steam.exe -applaunch`: steam.exe is only the
@@ -647,7 +647,7 @@ public class Wine {
                 for: bottle, programOverrides: own,
                 recommendedBackend: recommendedBackend, builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal
             )
-            return (url.lastPathComponent, environment["WINEDLLOVERRIDES"] ?? "")
+            return (url.lastPathComponent, environment["ANODLLOVERRIDES"] ?? "")
         }
     }
 
@@ -815,12 +815,12 @@ public class Wine {
     /// Unlike ``generateRunCommand(at:bottle:args:environment:preEscaped:)``, which
     /// builds the environment from the bottle again, this prints the launch's
     /// environment and arguments exactly as they are, so the command runs the way
-    /// the launch would have: without the `WINEDLLOVERRIDES` that preparation moved
+    /// the launch would have: without the `ANODLLOVERRIDES` that preparation moved
     /// into the prefix registry. Leaving the variable out is not enough for that,
     /// since the command only adds to the environment of the shell it runs in, and
     /// that shell may export the bottle's overrides already (`WhiskyCmd shellenv`
     /// and Open in Terminal do). So unless the launch sets the variable itself,
-    /// `wine64` runs through `env -u WINEDLLOVERRIDES`.
+    /// `wine64` runs through `env -u ANODLLOVERRIDES`.
     ///
     /// - Parameters:
     ///   - launch: A launch from `prepareProgramLaunch`.
@@ -829,8 +829,8 @@ public class Wine {
     static func generateRunCommand(for launch: PreparedLaunch, wineBinary: URL = Wine.wineBinary) -> String {
         var words = [loader(for: launch.environment, default: wineBinary).path(percentEncoded: false)]
             + launch.arguments
-        if launch.environment["WINEDLLOVERRIDES"] == nil {
-            words = ["env", "-u", "WINEDLLOVERRIDES"] + words
+        if launch.environment["ANODLLOVERRIDES"] == nil {
+            words = ["env", "-u", "ANODLLOVERRIDES"] + words
         }
         return shellCommand(words.map(\.esc).joined(separator: " "), environment: launch.environment)
     }
@@ -864,8 +864,8 @@ public class Wine {
     /// ```bash
     /// eval "$(WhiskyCmd shellenv MyBottle)"
     /// # Afterwards you can use:
-    /// wine myprogram.exe
-    /// winecfg
+    /// ano-loader myprogram.exe
+    /// ano-cfg
     /// regedit
     /// ```
     ///
@@ -883,7 +883,7 @@ public class Wine {
     ///
     /// Every value, and the bin folder path, is quoted through ``ShellQuoting``, so nothing
     /// in it expands and `eval` sets each variable to exactly the string given here,
-    /// control characters included. Apart from the constant `WINE` and alias lines,
+    /// control characters included. Apart from the constant `ANO` and alias lines,
     /// only the existing `$PATH` is left in double quotes, because it has to expand.
     /// Variables are emitted in key order so the output is stable from run to run.
     ///
@@ -899,21 +899,13 @@ public class Wine {
             let wrapper = loader(for: environment, default: Wine.wineBinary).deletingLastPathComponent()
             path = ShellQuoting.quoted(wrapper.path(percentEncoded: false)) + ":" + path
         }
-        var cmd = """
-        export PATH=\(path):\"$PATH\"
-        export WINE=\"ano-loader\"
-        alias wine=\"ano-loader\"
-        alias winecfg=\"ano-loader winecfg\"
-        alias msiexec=\"ano-loader msiexec\"
-        alias regedit=\"ano-loader regedit\"
-        alias regsvr32=\"ano-loader regsvr32\"
-        alias wineboot=\"ano-loader ano-boot\"
-        alias ano-boot=\"ano-loader ano-boot\"
-        alias wineconsole=\"ano-loader wineconsole\"
-        alias winedbg=\"ano-loader winedbg\"
-        alias winefile=\"ano-loader winefile\"
-        alias winepath=\"ano-loader winepath\"
-        """
+        // The engine's programs and Windows' own, each through the loader. No
+        // alias is named `ano`: that is the command line tool, /usr/local/bin/ano.
+        let loaderName = AnoWineRuntime.loaderName
+        let programs = AnoWineRuntime.terminalProgramNames + ["msiexec", "regedit", "regsvr32"]
+        var lines = ["export PATH=\(path):\"$PATH\"", "export ANO=\"\(loaderName)\""]
+        lines += programs.map { "alias \($0)=\"\(loaderName) \($0)\"" }
+        var cmd = lines.joined(separator: "\n")
 
         for (key, value) in environment.sorted(by: { $0.key < $1.key }) {
             if isValidEnvKey(key) {
@@ -1061,10 +1053,11 @@ public class Wine {
         try await versionNumber(fromVersionOutput: runWineWithoutBottle(["--version"]))
     }
 
-    /// The version number in what the loader's `--version` prints.
+    /// The version number in what the loader's `--version` prints: `ano-11.19`
+    /// on engine 5.x.
     static func versionNumber(fromVersionOutput output: String) -> String {
         var output = output
-        output.replace("wine-", with: "")
+        output.replace("ano-", with: "")
 
         // Deal with WineCX version names
         if let index = output.firstIndex(where: { $0.isWhitespace }) {

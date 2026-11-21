@@ -78,8 +78,8 @@ private enum AudioRegistrySyncQueue {
 public extension Wine {
     /// Internal, not private, so tests can check the keys against the engine's names.
     internal enum AudioRegistryKey: String {
-        case drivers = #"HKCU\Software\Wine\Drivers"#
-        case directSound = #"HKCU\Software\Wine\DirectSound"#
+        case drivers = #"HKCU\Software\Ano\Drivers"#
+        case directSound = #"HKCU\Software\Ano\DirectSound"#
         case mmDevices = #"HKLM\Software\Microsoft\Windows\CurrentVersion\MMDevices"#
     }
 

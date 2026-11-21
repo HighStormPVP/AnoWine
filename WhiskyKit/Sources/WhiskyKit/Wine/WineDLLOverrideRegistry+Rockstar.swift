@@ -114,7 +114,7 @@ extension Wine {
     ///
     /// Every role starts from the launcher set without the user's own
     /// overrides, a launch of Rockstar's launcher from the Programs tab
-    /// included: its per-program DLL overrides and a `WINEDLLOVERRIDES` in its
+    /// included: its per-program DLL overrides and an `ANODLLOVERRIDES` in its
     /// environment are not written for it. The Direct3D DLLs, `d3d12` and the
     /// NVIDIA bridges are what decide whether it draws at all.
     ///
@@ -199,7 +199,7 @@ extension Wine {
     /// - Parameters:
     ///   - role: What the executable draws with.
     ///   - layout: What `Launcher.exe` can be given.
-    ///   - launcherSet: The launcher set, in `WINEDLLOVERRIDES` syntax.
+    ///   - launcherSet: The launcher set, in `ANODLLOVERRIDES` syntax.
     static func rockstarChainOverrides(
         role: LauncherChainRole, layout: RockstarD3DLayout, launcherSet: String
     ) -> String {

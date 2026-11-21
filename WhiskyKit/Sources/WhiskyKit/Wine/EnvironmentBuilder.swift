@@ -26,7 +26,7 @@ import Foundation
 ///
 /// ## Layer Order
 ///
-/// 1. ``base`` -- WINEPREFIX, default WINEDEBUG, PATH-related defaults
+/// 1. ``base`` -- ANOPREFIX, default ANODEBUG, PATH-related defaults
 /// 2. ``platform`` -- macOS compatibility fixes
 /// 3. ``bottleManaged`` -- Toggles/presets Whisky owns (DXVK, Metal, sync, performance)
 /// 4. ``launcherManaged`` -- Launcher compatibility mode and detected overrides
@@ -91,7 +91,7 @@ public struct EnvironmentProvenance: Sendable {
 ///
 /// ```swift
 /// var builder = EnvironmentBuilder()
-/// builder.set("WINEPREFIX", bottlePath, layer: .base)
+/// builder.set("ANOPREFIX", bottlePath, layer: .base)
 /// builder.set("DXVK_ASYNC", "1", layer: .bottleManaged)
 /// builder.set("DXVK_ASYNC", "0", layer: .programUser)
 /// let result = builder.resolve()

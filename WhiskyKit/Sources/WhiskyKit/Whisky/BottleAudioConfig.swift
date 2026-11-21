@@ -43,7 +43,7 @@ public enum AudioDriverMode: String, Codable, CaseIterable, Equatable, Sendable 
         }
     }
 
-    /// The Wine registry value for `HKCU\Software\Wine\Drivers` Audio key.
+    /// The Wine registry value for `HKCU\Software\Ano\Drivers` Audio key.
     ///
     /// Returns `nil` for `.auto`, which means the registry key should be
     /// removed to let Wine auto-detect the driver.
