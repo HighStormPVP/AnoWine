@@ -301,25 +301,4 @@ final class CrashClassifierPatternTests: XCTestCase {
             XCTAssertNotNil(result, "Pattern \(patternID) should match its sample line")
         }
     }
-
-    // MARK: - The Engine's Names
-
-    /// The engine's messages start `ano:` and its programs are `ano-loader` and
-    /// `ano-server`. A bare `ano` counts only as a word of its own: `piano` and
-    /// the app's own `Ano.app` are not the engine.
-    func testPatternsMatchTheEngineNamesOnly() {
-        var (patterns, _) = PatternLoader.loadDefaults()
-        func matches(_ id: String, _ line: String) -> Bool {
-            guard let index = patterns.firstIndex(where: { $0.id == id }) else { return false }
-            return patterns[index].match(line: line) != nil
-        }
-
-        let pageFault = "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
-        XCTAssertTrue(matches("page-fault", pageFault))
-        XCTAssertTrue(matches("prefix-corruption", "ano: could not load kernel32.dll, status c0000135"))
-        XCTAssertTrue(matches("wine-nonzero-exit", "ano: exit code 3"))
-        XCTAssertTrue(matches("wine-nonzero-exit", "ano-server exit code 3"))
-        XCTAssertFalse(matches("wine-nonzero-exit", "piano exit code 3"))
-        XCTAssertFalse(matches("wine-nonzero-exit", "/Applications/Ano.app/Contents/MacOS/Ano exit code 3"))
-    }
 }

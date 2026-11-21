@@ -215,4 +215,39 @@ struct EngineNamesTests {
         #expect(Wine.versionNumber(fromVersionOutput: "ano-11.19\n") == "11.19")
         #expect(Wine.versionNumber(fromVersionOutput: "ano-11.19 (CrossOver FOSS 25.1.1)\n") == "11.19")
     }
+
+    /// The engine's messages start `ano:` and its programs are `ano-loader` and
+    /// `ano-server`. A bare `ano` counts only as a word of its own: `piano` and
+    /// the app's own `Ano.app` are not the engine.
+    @Test("Crash patterns match the engine's messages and names, not piano or Ano.app")
+    func crashPatternsMatchTheEngineNames() {
+        var (patterns, _) = PatternLoader.loadDefaults()
+        func matches(_ id: String, _ line: String) -> Bool {
+            guard let index = patterns.firstIndex(where: { $0.id == id }) else { return false }
+            return patterns[index].match(line: line) != nil
+        }
+
+        let pageFault = "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
+        #expect(matches("page-fault", pageFault))
+        #expect(matches("prefix-corruption", "ano: could not load kernel32.dll, status c0000135"))
+        #expect(matches("wine-nonzero-exit", "ano: exit code 3"))
+        #expect(matches("wine-nonzero-exit", "ano-server exit code 3"))
+        #expect(!matches("wine-nonzero-exit", "piano exit code 3"))
+        #expect(!matches("wine-nonzero-exit", "/Applications/Ano.app/Contents/MacOS/Ano exit code 3"))
+    }
+
+    @Test("The server restart fix is restart-ano-server and names ano-server")
+    @MainActor func serverRestartFixNamesAnoServer() throws {
+        let tempDir = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+        let bottle = Bottle(bottleUrl: tempDir, inFlight: false, isAvailable: true)
+
+        #expect(FixApplicator.knownFixIds.contains("restart-ano-server"))
+        #expect(!FixApplicator.knownFixIds.contains("restart-wineserver"))
+        let fix = try #require(
+            FixApplicator.preview(fixId: "restart-ano-server", params: [:], bottle: bottle, program: nil)
+        )
+        #expect(fix.settingName == "ano-server")
+    }
 }

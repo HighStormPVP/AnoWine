@@ -297,10 +297,6 @@ final class FixApplicatorLocalizationTests: XCTestCase {
     func testRestartWineserverPreviewIsLocalized() throws {
         let fix = try preview("restart-ano-server")
 
-        // The engine's server is ano-server; the fix names the program it restarts.
-        XCTAssertEqual(fix.settingName, "ano-server")
-        XCTAssertTrue(FixApplicator.knownFixIds.contains("restart-ano-server"))
-        XCTAssertFalse(FixApplicator.knownFixIds.contains("restart-wineserver"))
         XCTAssertEqual(fix.currentValue, String(localized: "console.running"))
         XCTAssertEqual(fix.newValue, String(localized: "troubleshooting.fix.value.restarted"))
         assertCatalogKey(fix.currentValue)
