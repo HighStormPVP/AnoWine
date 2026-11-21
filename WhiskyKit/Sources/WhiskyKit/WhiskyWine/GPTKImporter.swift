@@ -215,21 +215,21 @@ public enum GPTKImporter {
     ) throws -> GPTKPayload {
         let fileManager = FileManager.default
         let modules = moduleFolder(inPayload: libRoot)
-        let peDir = modules?.appending(path: "x86_64-windows")
+        let windowsDir = modules?.appending(path: "x86_64-windows")
         let external = libRoot.appending(path: "external")
         // The folder as the payload names it, so a missing path matches the disk.
         let peDirPath = (modules.map { "\($0.lastPathComponent)/" } ?? "") + "x86_64-windows"
 
         var missing: [String] = []
         for name in forwarderDLLNames
-            where !fileManager.fileExists(atPath: peDir?.appending(path: name).path(percentEncoded: false) ?? "") {
+            where !fileManager.fileExists(atPath: windowsDir?.appending(path: name).path(percentEncoded: false) ?? "") {
             missing.append("\(peDirPath)/\(name)")
         }
         for path in ["libd3dshared.dylib", "D3DMetal.framework"]
             where !fileManager.fileExists(atPath: external.appending(path: path).path(percentEncoded: false)) {
             missing.append("external/\(path)")
         }
-        guard missing.isEmpty, let peDir else {
+        guard missing.isEmpty, let peDir = windowsDir else {
             throw GPTKImportError.payloadIncomplete(missing: missing)
         }
 

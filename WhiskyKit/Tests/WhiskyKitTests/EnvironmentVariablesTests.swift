@@ -50,7 +50,7 @@ final class EnvironmentVariablesTests: XCTestCase {
 
         // The trio is native-then-builtin; anometal pinned builtin for unixlib binding.
         // No runtime here, so no payload either, and d3d12 is left alone.
-        XCTAssertEqual(env["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(env["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;dxgi=n,b")
         // DXMT is not DXVK and not wined3d: none of their env vars may leak.
         XCTAssertNil(env["DXVK_HUD"])
         XCTAssertNil(env["DXVK_ASYNC"])
@@ -403,8 +403,8 @@ final class EnvironmentVariablesTests: XCTestCase {
         overrides.graphicsBackend = .dxmt
 
         for (builtinD3D12IsD3DMetal, expected) in [
-            (false, "d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b;anometal=b"),
-            (true, "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b;anometal=b")
+            (false, "anometal=b;d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b"),
+            (true, "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b")
         ] {
             let resolved = resolvedOverrides(
                 bottleSettings: settings, programOverrides: overrides,
@@ -426,8 +426,8 @@ final class EnvironmentVariablesTests: XCTestCase {
         overrides.graphicsBackend = .dxmt
 
         for (builtinD3D12IsD3DMetal, expected) in [
-            (false, "d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b;anometal=b"),
-            (true, "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b;anometal=b")
+            (false, "anometal=b;d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b"),
+            (true, "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=b;dxgi=n,b")
         ] {
             let resolved = resolvedOverrides(
                 bottleSettings: settings, programOverrides: overrides,
@@ -475,7 +475,7 @@ final class EnvironmentVariablesTests: XCTestCase {
         overrides.dxvk = false
 
         let resolved = resolvedOverrides(bottleSettings: settings, programOverrides: overrides)
-        XCTAssertEqual(resolved, "d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(resolved, "anometal=b;d3d10core=n,b;d3d11=n,b;d3d9=b;dxgi=n,b")
     }
 
     func testLegacyDXVKTrueDoesNotResurrectDXVKUnderD3DMetalOverride() {

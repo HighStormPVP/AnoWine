@@ -177,8 +177,8 @@ final class DLLOverrideTests: XCTestCase {
 
     func testDXMTPresetResolvesToPinnedOverrideString() {
         for (builtinD3D12IsD3DMetal, expected) in [
-            (false, "d3d10core=n,b;d3d11=n,b;dxgi=n,b;anometal=b"),
-            (true, "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;anometal=b")
+            (false, "anometal=b;d3d10core=n,b;d3d11=n,b;dxgi=n,b"),
+            (true, "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b")
         ] {
             let preset = DLLOverrideResolver.dxmtPreset(builtinD3D12IsD3DMetal: builtinD3D12IsD3DMetal)
             let resolver = DLLOverrideResolver(
@@ -296,10 +296,10 @@ final class DLLOverrideTests: XCTestCase {
         bottle.settings.graphicsBackend = .dxmt
 
         let stock = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: false)
-        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;dxgi=n,b")
 
         let gptk = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: true)
-        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b;anometal=b")
+        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=;dxgi=n,b")
     }
 
     /// The launch composition `runProgram` uses. A bottle on DXMT, which is what
@@ -318,12 +318,12 @@ final class DLLOverrideTests: XCTestCase {
         let stock = Wine.constructWineEnvironment(
             for: bottle, programOverrides: steamPin, builtinD3D12IsD3DMetal: false
         )
-        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(stock["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;d3d9=n,b;dxgi=n,b")
 
         let gptk = Wine.constructWineEnvironment(
             for: bottle, programOverrides: steamPin, builtinD3D12IsD3DMetal: true
         )
-        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(gptk["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=;d3d9=n,b;dxgi=n,b")
     }
 
     /// Custom entries keep the precedence they had: the bottle's beats the
@@ -337,7 +337,7 @@ final class DLLOverrideTests: XCTestCase {
 
         bottle.settings.dllOverrides = [DLLOverrideEntry(dllName: "d3d12", mode: .builtin)]
         let direct = Wine.constructWineEnvironment(for: bottle, builtinD3D12IsD3DMetal: true)
-        XCTAssertEqual(direct["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(direct["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=b;dxgi=n,b")
 
         bottle.settings.dllOverrides = []
         var gameUnderSteam = ProgramOverrides()
@@ -346,7 +346,7 @@ final class DLLOverrideTests: XCTestCase {
         let steam = Wine.constructWineEnvironment(
             for: bottle, programOverrides: gameUnderSteam, builtinD3D12IsD3DMetal: true
         )
-        XCTAssertEqual(steam["WINEDLLOVERRIDES"], "d3d10core=n,b;d3d11=n,b;d3d12=b;d3d9=n,b;dxgi=n,b;anometal=b")
+        XCTAssertEqual(steam["WINEDLLOVERRIDES"], "anometal=b;d3d10core=n,b;d3d11=n,b;d3d12=b;d3d9=n,b;dxgi=n,b")
     }
 
     @MainActor
