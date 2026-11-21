@@ -55,6 +55,26 @@ for verb in $VERBS; do
   esac
 done
 run_verb remove_mono -q
+
+# 0. A wrapper first on PATH, as the app's proxy puts its own ano-loader there
+#    (ProxyEnvironment.swift), and no ANO_BIN: a script's architecture cannot be
+#    read, so ano-tricks falls back to the loader's name, which must stay
+#    ano-loader (renamed, upstream's fallback made it ano64-loader).
+mkdir -p "$LOGS/wrapper"
+printf '#!/bin/sh\nexec "%s/bin/ano-loader" "$@"\n' "$A" > "$LOGS/wrapper/ano-loader"
+chmod +x "$LOGS/wrapper/ano-loader"
+persistent_server
+code=0
+perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 300 \
+  env -i HOME="$HOME" ANOPREFIX="$B" ANO=ano-loader ANOSERVER="$A/bin/ano-server" \
+  PATH="$LOGS/wrapper:$A/bin:$ROOT/Libraries:/usr/bin:/bin" bash "$T" list-installed \
+  > "$LOGS/wrapper.log" 2>&1 || code=$?
+if [ "$code" != 0 ] || ! grep -qw vcrun2022 "$LOGS/wrapper.log"; then
+  tail -n 20 "$LOGS/wrapper.log"
+  fail "with a wrapper ano-loader first on PATH, list-installed failed (exit $code)"
+else
+  echo "wrapper first on PATH: list-installed works"
+fi
 "$A/bin/ano-server" -k 2> /dev/null || true
 
 # 1. The log ano-tricks keeps in the bottle, under its new name.

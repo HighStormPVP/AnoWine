@@ -74,6 +74,11 @@ class EditTests(unittest.TestCase):
         out = stub_function(text, "winetricks_selfupdate", "    return\n")
         self.assertEqual(out, "a()\n{\n    x\n}\n\nwinetricks_selfupdate()\n{\n    return\n}\n\nb()\n{\n}\n")
 
+    def test_stub_handles_a_brace_on_the_same_line(self):
+        text = "winetricks_dl_warning() {\n    curl https://ipinfo.io/ip\n}\n"
+        self.assertEqual(stub_function(text, "winetricks_dl_warning", "    return\n"),
+                         "winetricks_dl_warning()\n{\n    return\n}\n")
+
     def test_stub_refuses_a_missing_function(self):
         with self.assertRaisesRegex(ValueError, "winetricks_stats_report"):
             stub_function("a()\n{\n}\n", "winetricks_stats_report", "    return\n")
@@ -149,15 +154,31 @@ class CommittedFileTests(unittest.TestCase):
         path = Path(HERE).parent.parent / "Libraries" / "ano-tricks"
         self.assertTrue(path.is_file(), f"{path} is missing: run scripts/anowine/make_ano_tricks.py")
 
-    def test_vcrun2022_extracts_msvcp140_by_its_name_in_the_cabinet(self):
+    def committed(self):
+        return (Path(HERE).parent.parent / "Libraries" / "ano-tricks").read_text(encoding="utf-8")
+
+    def test_vcrun2022_copies_msvcp140_through_the_helper(self):
         # In the pinned VC++ 2022 redistributables the file is msvcp140.dll_x86 (a10)
         # and msvcp140.dll_amd64 (a12); upstream's -F 'msvcp140.dll' extracts nothing.
-        text = (Path(HERE).parent.parent / "Libraries" / "ano-tricks").read_text(encoding="utf-8")
+        # w_ano_msvcp140 takes any msvcp140.dll* and keeps the builtin if there is none
+        # (test-ano-tricks.sh runs it both ways).
+        text = self.committed()
         body = text[text.index("load_vcrun2022()"):]
         body = body[:body.index("\n}\n")]
-        self.assertIn("-F 'msvcp140.dll_x86'", body)
-        self.assertIn("-F 'msvcp140.dll_amd64'", body)
-        self.assertNotIn("-F 'msvcp140.dll'\n", body)
+        self.assertIn('w_ano_msvcp140 "${W_TMP}/win32/a10" "${W_TMP}/win32" "${W_SYSTEM32_DLLS}"', body)
+        self.assertIn('w_ano_msvcp140 "${W_TMP}/win64/a12" "${W_TMP}/win64" "${W_SYSTEM64_DLLS}"', body)
+        self.assertNotIn("-F 'msvcp140.dll'", body)
+
+    def test_the_64_bit_loader_keeps_its_name(self):
+        # Renamed, upstream's sed 's/^wine/wine64/' turns ano-loader into ano64-loader.
+        self.assertNotIn("sed 's/^ano/ano64/'", self.committed())
+
+    def test_it_says_it_is_a_modified_copy(self):
+        # LGPL 2.1 section 2(b): prominent notice of the change and its date.
+        head = self.committed()[:4000]
+        self.assertIn("a modified copy of Winetricks 20260125", head)
+        self.assertIn("2026-11-21", head)
+        self.assertIn("Copyright (C) 2007-2014 Dan Kegel", head)
 
 
 if __name__ == "__main__":

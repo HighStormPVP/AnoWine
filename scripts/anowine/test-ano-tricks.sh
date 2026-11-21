@@ -21,6 +21,16 @@ for tool in curl wget aria2c fetch; do
   printf '#!/bin/sh\necho "%s $*" >> "%s/net.log"\nexit 1\n' "$tool" "$work" > "$work/bin/$tool"
   chmod +x "$work/bin/$tool"
 done
+# A cabextract that makes msvcp140.dll_x86 in its --directory when the cabinet's
+# path says "present", and nothing otherwise (as for a cabinet that lacks it).
+cat > "$work/bin/cabextract" << 'EOF'
+#!/bin/sh
+for arg; do case $arg in --directory=*) dir=${arg#--directory=} ;; esac; done
+case "$*" in *present*) mkdir -p "$dir" && : > "$dir/msvcp140.dll_x86" ;; esac
+exit 0
+EOF
+chmod +x "$work/bin/cabextract"
+mkdir -p "$work/cab/present" "$work/cab/absent" "$work/sys/present" "$work/sys/absent"
 run() { env -i HOME="$work/home" PATH="$work/bin:/usr/bin:/bin" LANG=C "$@"; }
 
 # 1. The version is upstream's (after an "Executing cd" line of its own).
@@ -55,14 +65,23 @@ anotricks_latest_version_check
 ANOTRICKS_STATS_REPORT=1 anotricks_stats_report
 (anotricks_selfupdate) > /dev/null 2>&1 && echo "self-update returned 0"
 (anotricks_selfupdate_rollback) > /dev/null 2>&1 && echo "rollback returned 0"
+# The download-failure hint looked the user's country up at ipinfo.io.
+anotricks_dl_warning
+# vcrun2022's msvcp140.dll: copied whatever the cabinet calls it; none, the builtin stays.
+w_ano_msvcp140 "$2/cab/present/a10" "$2/cab/present" "$2/sys/present" > /dev/null 2>&1 \
+  && [ -f "$2/sys/present/msvcp140.dll" ] && echo "msvcp140: copied"
+w_ano_msvcp140 "$2/cab/absent/a10" "$2/cab/absent" "$2/sys/absent" > /dev/null 2>&1 \
+  && [ ! -e "$2/sys/absent/msvcp140.dll" ] && echo "msvcp140: builtin kept"
 echo "library: done"
 EOF
-run ANOTRICKS_LIB=1 bash "$work/lib.sh" "$T" > "$work/lib.out" 2> "$work/lib.err" || true
+run ANOTRICKS_LIB=1 bash "$work/lib.sh" "$T" "$work" > "$work/lib.out" 2> "$work/lib.err" || true
 cat "$work/lib.out"
 grep -qx "library: done" "$work/lib.out" || fail "sourcing ano-tricks as a library did not finish: $(tail -5 "$work/lib.err")"
 grep -qx "cache=$work/home/Library/Caches/io.github.highstormpvp.Ano/ano-tricks" "$work/lib.out" \
   || fail "the default cache is not Ano's cache folder"
 if grep -q "returned 0" "$work/lib.out"; then fail "self-update or rollback did not refuse"; fi
+grep -qx "msvcp140: copied" "$work/lib.out" || fail "w_ano_msvcp140 did not copy msvcp140.dll_x86"
+grep -qx "msvcp140: builtin kept" "$work/lib.out" || fail "w_ano_msvcp140 failed when the cabinet lacks msvcp140"
 if [ -s "$work/net.log" ]; then fail "reached for the network: $(cat "$work/net.log")"; fi
 
 # 4. No link to a GitHub account named after ano-tricks (the rule's rename of
