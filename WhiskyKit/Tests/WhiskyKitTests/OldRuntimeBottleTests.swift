@@ -124,7 +124,8 @@ final class OldRuntimeBottleTests {
         let url = try makeOldBottle()
         let before = try BottleFilesSnapshot(url)
         var registry = BottleData(entriesFile: root.appending(path: "BottleVM.plist"))
-        #expect(registry.registerBottlePath(url))
+        let registered = registry.registerBottlePath(url)
+        #expect(registered)
 
         for _ in 0 ..< 2 {
             let bottles = registry.loadBottles()
