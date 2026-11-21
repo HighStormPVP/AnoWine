@@ -1,5 +1,13 @@
-/* The Mac half of aliastest.dll: it exports only the old unix-call table name. */
+/* The Mac half of aliastest.dll: it exports only the old unix-call table name.
+ * env_values reads the environment from inside the process, as Apple's
+ * libd3dshared.dylib does (Plan 3c-4a, Task 6: D3DMetal reads WINED3DMETAL
+ * and WINEESYNC itself). */
+#include <stdlib.h>
+#include <string.h>
+
 typedef int NTSTATUS;
+
+struct env_args { char d3dmetal[16]; char esync[16]; };
 
 static NTSTATUS twice(void *args)
 {
@@ -7,4 +15,24 @@ static NTSTATUS twice(void *args)
     return 0;
 }
 
-__attribute__((visibility("default"))) const void *__wine_unix_call_funcs[] = { (const void *)twice };
+static void copy_env(char *out, const char *name)
+{
+    const char *value = getenv(name);
+
+    strncpy(out, value ? value : "-", 15);
+    out[15] = 0;
+}
+
+static NTSTATUS env_values(void *args)
+{
+    struct env_args *env = args;
+
+    copy_env(env->d3dmetal, "WINED3DMETAL");
+    copy_env(env->esync, "WINEESYNC");
+    return 0;
+}
+
+__attribute__((visibility("default"))) const void *__wine_unix_call_funcs[] = {
+    (const void *)twice,
+    (const void *)env_values,
+};

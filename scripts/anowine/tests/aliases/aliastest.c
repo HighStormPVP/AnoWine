@@ -32,3 +32,15 @@ __declspec(dllexport) int WINAPI alias_call(int value)
     if (__wine_unix_call(handle, 0, &other)) return -4;
     return value == other ? value : -5;
 }
+
+/* Plan 3c-4a, Task 6: what the Mac half sees of WINED3DMETAL and WINEESYNC. */
+struct env_args { char d3dmetal[16]; char esync[16]; };
+
+__declspec(dllexport) int WINAPI alias_env(struct env_args *env)
+{
+    unixlib_handle_t handle = 0;
+
+    if (NtQueryVirtualMemory(GetCurrentProcess(), &__ImageBase, MEMORY_UNIX_FUNCS,
+                             &handle, sizeof(handle), NULL)) return -1;
+    return __wine_unix_call(handle, 1, env) ? -2 : 0;
+}

@@ -361,6 +361,16 @@ jobs:
           brew list --versions mingw-w64 > /dev/null || brew install -q mingw-w64
           scripts/anowine/check-aliases.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle"
 
+      # Plan 3c-4a, Task 6: Apple's D3DMetal reads WINED3DMETAL and WINEESYNC
+      # itself; the engine sets them from ANOD3DMETAL and ANOESYNC inside each
+      # process only (patches/rename/0005), never in an environment anyone sees.
+      - name: D3DMetal's variables, a hidden alias
+        if: always() && steps.bottle.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 15
+        run: |
+          brew list --versions mingw-w64 > /dev/null || brew install -q mingw-w64
+          scripts/anowine/check-env-aliases.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle"
+
       # Plan 3c-2: DXVK and DXMT, rebuilt from source, load as themselves.
       - name: DXVK and DXMT load
         if: always() && steps.bottle.outcome == 'success'
