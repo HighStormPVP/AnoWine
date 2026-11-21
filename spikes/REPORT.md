@@ -346,7 +346,7 @@ warning, as upstream did, instead of failing the app's main verb. vcrun2019's ca
 `msvcp140.dll` and work.
 
 **In a bottle** (`check-ano-tricks.sh`, engine 5.0.0's default bottle, called as the app calls
-it: one verb per call, `--force` for vcrun, the app's environment only; run 44847281515):
+it: one verb per call, `--force` for vcrun, the app's environment only; run 44862494158):
 
 | verb | result | time on the runner |
 |---|---|---|
@@ -359,7 +359,8 @@ it: one verb per call, `--force` for vcrun, the app's environment only; run 4484
 
 Each verb is in the bottle's `ano-tricks.log`; there is no `winetricks.log` and no
 `Software\Wine` key. The downloads (142 MB) sit in Ano's cache folder and nothing goes under
-`~/.cache`. The bottle passes the gate.
+`~/.cache`. With a wrapper `ano-loader` first on PATH and no `ANO_BIN`, `list-installed` still
+works. The bottle passes the gate.
 
 **For 3c-4 (the app)**: call `Libraries/ano-tricks` with `ANO`, `ANOSERVER`, `ANOPREFIX`
 (`Winetricks+Install.swift`, `Winetricks+InstalledVerbs.swift`, the Terminal script in
