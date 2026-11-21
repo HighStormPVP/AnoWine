@@ -108,20 +108,10 @@ extension Winetricks {
     ) -> Process {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        process.arguments = WinetricksInstallArguments.arguments(verb: verb, winetricksPath: winetricksPath)
-        process.environment = ProxyEnvironment.applying(proxy, to: [
-            "WINEPREFIX": bottleURL.path(percentEncoded: false),
-            "WINE": AnoWineRuntime.loaderName,
-            "WINESERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
-            "PATH": [
-                WhiskyWineInstaller.binFolder.path(percentEncoded: false),
-                resourcesURL.path(percentEncoded: false),
-                "/usr/bin",
-                "/bin"
-            ].joined(separator: ":"),
-            "HOME": NSHomeDirectory()
-        ])
+        process.arguments = WinetricksInstallArguments.arguments(verb: verb, resourcesURL: resourcesURL)
+        process.environment = WinetricksInstallArguments.environment(
+            bottleURL: bottleURL, resourcesURL: resourcesURL, proxy: proxy
+        )
         return process
     }
 

@@ -1,7 +1,7 @@
 /*
  * Native test for libano_net.dylib, run by scripts/anowine/check-proxy.sh under
  * Rosetta (x86_64) with DYLD_INSERT_LIBRARIES, ANO_PROXY_PORT and
- * ANO_WINE_DIR=/nonexistent, against ano-proxy, a real Xray SOCKS inbound and
+ * ANO_RUNTIME_DIR=/nonexistent, against ano-proxy, a real Xray SOCKS inbound and
  * the echo servers. Prints one "ok"/"FAIL" line per check; exits 1 on any FAIL.
  *
  *   interposer_native               checks 1-7 and 9-11 (helper running)
@@ -220,12 +220,12 @@ static void wine_folder(const char *self)
         return;
     }
 
-    setenv("ANO_WINE_DIR", link, 1);
+    setenv("ANO_RUNTIME_DIR", link, 1);
     check("11 resolved path under a symlinked Wine folder keeps the interposer", spawn_self(real, 0) == 0);
     snprintf(path, sizeof(path), "%s:%s", dir, getenv("PATH") ? getenv("PATH") : "/usr/bin:/bin");
     setenv("PATH", path, 1);
     check("11 bare name found in the Wine folder keeps the interposer", spawn_self(basename(real), 1) == 0);
-    setenv("ANO_WINE_DIR", "/nonexistent", 1);
+    setenv("ANO_RUNTIME_DIR", "/nonexistent", 1);
     check("11 program outside the Wine folder loses the interposer", spawn_self(real, 0) == 3);
     unlink(link);
 }

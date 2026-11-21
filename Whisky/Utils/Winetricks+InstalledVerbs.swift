@@ -44,20 +44,10 @@ extension Winetricks {
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        process.arguments = ["bash", winetricksPath, "list-installed"]
-        process.environment = ProxyEnvironment.applying(proxy, to: [
-            "WINEPREFIX": bottleURL.path(percentEncoded: false),
-            "WINE": AnoWineRuntime.loaderName,
-            "WINESERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
-            "PATH": [
-                WhiskyWineInstaller.binFolder.path(percentEncoded: false),
-                resourcesURL.path(percentEncoded: false),
-                "/usr/bin",
-                "/bin"
-            ].joined(separator: ":"),
-            "HOME": NSHomeDirectory()
-        ])
+        process.arguments = WinetricksInstallArguments.listInstalledArguments(resourcesURL: resourcesURL)
+        process.environment = WinetricksInstallArguments.environment(
+            bottleURL: bottleURL, resourcesURL: resourcesURL, proxy: proxy
+        )
 
         let stdout = Pipe()
         process.standardOutput = stdout
@@ -118,44 +108,7 @@ extension Winetricks {
     /// - Returns: A set of verb names found in the log (best-effort).
     static func parseWinetricksLog(for bottle: Bottle) async -> Set<String> {
         let bottleURL = await MainActor.run { bottle.url }
-        let prefixLogURL = bottleURL.appending(path: "winetricks.log")
-        let driveCLogURL = bottleURL
-            .appending(path: "drive_c")
-            .appending(path: "winetricks.log")
-
-        var contents: String?
-        if let data = try? Data(contentsOf: prefixLogURL) {
-            contents = String(data: data, encoding: .utf8)
-        } else if let data = try? Data(contentsOf: driveCLogURL) {
-            contents = String(data: data, encoding: .utf8)
-        }
-
-        guard let logContents = contents else {
-            return []
-        }
-
-        var verbs = Set<String>()
-        for line in logContents.components(separatedBy: .newlines) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.isEmpty { continue }
-
-            if trimmed.hasPrefix("Executing load_") {
-                let verb = String(trimmed.dropFirst("Executing load_".count))
-                if !verb.isEmpty {
-                    verbs.insert(verb)
-                }
-            } else if trimmed.hasPrefix("Installed ") {
-                let verb = String(trimmed.dropFirst("Installed ".count))
-                    .trimmingCharacters(in: .whitespaces)
-                if !verb.isEmpty {
-                    verbs.insert(verb)
-                }
-            } else if !trimmed.contains(" ") {
-                verbs.insert(trimmed)
-            }
-        }
-
-        return verbs
+        return WinetricksVerbCache.verbsFromLog(in: bottleURL)
     }
 
     /// Loads installed verbs for a bottle, using the cache when possible.

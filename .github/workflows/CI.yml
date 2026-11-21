@@ -164,7 +164,7 @@ jobs:
           done
 
       # Guards against the class of regression fixed in #134: a resource that the
-      # app expects at runtime silently not making it into the bundle. winetricks
+      # app expects at runtime silently not making it into the bundle. ano-tricks
       # and its verb catalog are shipped in Contents/Resources (like cabextract);
       # if the "Embed WhiskyCmd" copy phase drops them, dependency installs break
       # at runtime but the build stays green — so assert on the built artifact.
@@ -184,14 +184,19 @@ jobs:
           fi
           echo "Checking $app"
           missing=0
-          for res in winetricks verbs.txt cabextract; do
+          for res in ano-tricks verbs.txt cabextract; do
             if [ ! -f "$app/Contents/Resources/$res" ]; then
               echo "::error::missing bundled resource: Contents/Resources/$res"
               missing=1
             fi
           done
+          # Plan 3c-4a: ano-tricks replaces upstream's winetricks in the bundle.
+          if [ -e "$app/Contents/Resources/winetricks" ]; then
+            echo "::error::Contents/Resources/winetricks is still bundled (ano-tricks replaces it)"
+            missing=1
+          fi
           [ "$missing" -eq 0 ] || exit 1
-          echo "Bundled resources present: winetricks, verbs.txt, cabextract"
+          echo "Bundled resources present: ano-tricks, verbs.txt, cabextract"
 
           # Every compiled localization must carry every en key, or untranslated
           # strings render as raw identifiers (#291). The "Fill Missing

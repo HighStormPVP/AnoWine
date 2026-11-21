@@ -50,6 +50,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-ano-tricks.sh" "$GITHUB_WORKSPACE"
 
+      # Plan 3c-4a: Libraries/verbs.txt, the verb list the app shows, is what
+      # Libraries/ano-tricks list-all prints in a clean environment, in the
+      # format the app reads, with no "wine". Make it with
+      # python3 scripts/anowine/make_ano_tricks.py --verbs
+      - name: verbs.txt is ano-tricks list-all
+        if: ${{ !cancelled() }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/anowine/make_ano_tricks.py" --verbs --check
+
       # Plan 3c-4a: the names the app passes to or expects from the engine,
       # the runtime, ano-tricks and a bottle are the renamed engine's.
       - name: The app's runtime names

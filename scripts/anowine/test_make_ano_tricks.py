@@ -1,6 +1,8 @@
 """Tests for make_ano_tricks.py. Run: python3 -m unittest discover -s scripts/anowine -p 'test_*.py'"""
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -8,8 +10,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from make_ano_tricks import (  # noqa: E402
-    SEPARATOR, drop_verbs, load_tricks_rules, rename, replace_in_function, replace_once, stub_function,
-    wine_urls_left)
+    SEPARATOR, drop_verbs, load_tricks_rules, make_verbs, rename, replace_in_function, replace_once,
+    run_list_all, stub_function, verbs_problems, verbs_text, wine_urls_left)
 
 KEPT = """w_metadata vcrun2022 dlls \\
     title="Visual C++"
@@ -147,6 +149,110 @@ class UrlTests(unittest.TestCase):
         text = ("# https://bugs.winehq.org/show_bug.cgi?id=1\n# https://appdb.winehq.org/x\n"
                 "# https://github.com/Winetricks/winetricks/issues/1\nw_download https://example.com/a.exe\n")
         self.assertEqual(wine_urls_left(text, self.rules), [])
+
+
+LIST = """===== apps =====
+3m_library               3M Cloud Library (3M Company, 2015) [downloadable]
+===== benchmarks =====
+3dmark2000               3DMark2000 (MadOnion.com, 2000) [downloadable]
+===== dlls =====
+vcrun2022                Visual C++ 2015-2022 libraries (Microsoft, 2022) [downloadable]
+===== fonts =====
+corefonts                MS Arial, Courier, Times fonts (Microsoft, 2008) [downloadable]
+===== prefix =====
+apps
+dlls
+===== settings =====
+"""
+# The title list-all prints for isolate_home ends in a space (it has no flags).
+LIST += "isolate_home             Remove anoprefix links to /home/x \n"
+
+
+class VerbsTextTests(unittest.TestCase):
+    def test_starts_at_the_first_header_and_shows_home_as_a_tilde(self):
+        made = verbs_text("warning: taskset/cpuset not available on your platform!\n" + LIST, "/home/x")
+        self.assertTrue(made.startswith("===== apps =====\n"), made[:60])
+        self.assertIn("isolate_home             Remove anoprefix links to ~ \n", made)
+        self.assertNotIn("/home/x", made)
+        self.assertTrue(made.endswith("~ \n"))
+
+    def test_refuses_output_without_a_header(self):
+        with self.assertRaisesRegex(ValueError, "no category header"):
+            verbs_text("Executing cd /x\n", "/home/x")
+
+
+class VerbsProblemTests(unittest.TestCase):
+    def test_the_apps_format_has_no_problems(self):
+        self.assertEqual(verbs_problems(LIST), [])
+
+    def test_a_missing_category_or_a_verb_without_title(self):
+        problems = verbs_problems(LIST.replace("===== fonts =====\n", "").replace(
+            "3dmark2000               3DMark2000 (MadOnion.com, 2000) [downloadable]", "3dmark2000"))
+        self.assertEqual(len(problems), 2, problems)
+        self.assertIn("not '<verb>  <title>'", problems[0])
+        self.assertIn("no ===== fonts ===== header", problems[1])
+
+    def test_wine_is_reported_and_autohotkey_is_not(self):
+        text = LIST + "hidewineexports=enable  Enable hiding Wine exports from applications\n"
+        problems = verbs_problems(text)
+        self.assertEqual([p.split(": ")[1] for p in problems], ["says 'hidewineexports'", "says 'Wine'"])
+        self.assertEqual(verbs_problems(LIST + "ahk  ifwinexist, IfWinExist and winevent\n"), [])
+
+
+# A stand-in for ano-tricks: a warning before the list, then what its
+# environment was. ANOPREFIX is set in the test's environment, curl is real.
+FAKE_TRICKS = """#!/bin/bash
+[ "$1" = list-all ] || exit 3
+echo "warning: taskset/cpuset not available on your platform!"
+echo "Executing cd /x" >&2
+echo "===== apps ====="
+printf '%-24s %s\\n' isolate_home "Remove anoprefix links to $HOME"
+printf '%-24s %s\\n' environment "ANOPREFIX=${ANOPREFIX:-unset} LANG=$LANG"
+if curl -fsS https://example.com > /dev/null 2>&1; then reach=reached; else reach=blocked; fi
+printf '%-24s %s\\n' network "$reach"
+[ -d "$HOME" ] && [ -z "$(ls -A "$HOME")" ] && printf '%-24s %s\\n' home empty
+for category in benchmarks dlls fonts settings; do echo "===== $category ====="; done
+"""
+
+
+@unittest.skipUnless(shutil.which("bash"), "needs bash")
+class ListAllTests(unittest.TestCase):
+    def setUp(self):
+        self.work = Path(tempfile.mkdtemp())
+        self.tricks = self.work / "ano-tricks"
+        self.tricks.write_bytes(FAKE_TRICKS.encode())
+        self.verbs = self.work / "verbs.txt"
+        self.old = os.environ.get("ANOPREFIX")
+        os.environ["ANOPREFIX"] = "/leaked"
+
+    def tearDown(self):
+        if self.old is None:
+            os.environ.pop("ANOPREFIX", None)
+        else:
+            os.environ["ANOPREFIX"] = self.old
+        shutil.rmtree(self.work, ignore_errors=True)
+
+    def test_runs_list_all_in_a_clean_environment(self):
+        self.assertEqual(run_list_all(self.tricks).splitlines()[:5], [
+            "===== apps =====",
+            "isolate_home             Remove anoprefix links to ~",
+            "environment              ANOPREFIX=unset LANG=C",
+            "network                  blocked",
+            "home                     empty",
+        ])
+
+    def test_writes_then_checks_verbs_txt(self):
+        self.assertEqual(make_verbs(self.tricks, self.verbs, check=False), 0)
+        self.assertTrue(self.verbs.read_bytes().startswith(b"===== apps =====\nisolate_home "))
+        self.assertNotIn(b"\r", self.verbs.read_bytes())
+        self.assertEqual(make_verbs(self.tricks, self.verbs, check=True), 0)
+        self.verbs.write_bytes(self.verbs.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertEqual(make_verbs(self.tricks, self.verbs, check=True), 1)
+
+    def test_refuses_a_list_that_names_wine(self):
+        self.tricks.write_bytes(FAKE_TRICKS.replace("anoprefix", "wineprefix").encode())
+        self.assertEqual(make_verbs(self.tricks, self.verbs, check=False), 1)
+        self.assertFalse(self.verbs.exists())
 
 
 class CommittedFileTests(unittest.TestCase):

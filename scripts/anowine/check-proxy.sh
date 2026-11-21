@@ -6,7 +6,9 @@
 #          --lib <libano_net.dylib> --native <interposer_native> \
 #          [--runtime <Libraries-dir> --netprobe <netprobe.exe>]
 # With --runtime, a Windows program also runs under the Ano runtime through the
-# ano-loader wrapper, as a proxied bottle's programs do.
+# ano-loader wrapper, as a proxied bottle's programs do. The runtime is engine
+# 5.x (Libraries/Ano, run with the ANO* variables) or runtime 4.x (Libraries/Wine,
+# upstream's WINE* variables); the interposer gets ANO_RUNTIME_DIR either way.
 # Needs sudo for tcpdump (GitHub's macOS runners have it). macOS only.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -28,6 +30,19 @@ done
 for f in "$XRAY" "$HELPER" "$LIB" "$NATIVE"; do
   [ -x "$f" ] || [ -f "$f" ] || { echo "missing: $f" >&2; exit 2; }
 done
+ENGINE="" BIN="" V=""
+if [ -n "$RUNTIME" ]; then
+  if [ -d "$RUNTIME/Ano" ]; then
+    ENGINE="$RUNTIME/Ano" V=ANO     # engine 5.x: the renamed engine's variables
+  else
+    ENGINE="$RUNTIME/Wine" V=WINE   # runtime 4.x: upstream's
+  fi
+  BIN="$ENGINE/bin"
+  [ -x "$BIN/ano-loader" ] && [ -x "$BIN/ano-server" ] || { echo "no ano-loader or ano-server in $BIN" >&2; exit 2; }
+  echo "engine: $ENGINE ($V* variables)"
+fi
+# ano-server for the bottle at $1, with the rest of the arguments.
+server() { local prefix="$1"; shift; env "${V}PREFIX=$prefix" "$BIN/ano-server" "$@"; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/anowine-proxy-XXXXXX")"
 PIDS=()
@@ -35,7 +50,7 @@ cleanup() {
   for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null; done
   if [ -n "$RUNTIME" ]; then
     for prefix in "$WORK"/prefix-*; do
-      [ -d "$prefix" ] && WINEPREFIX="$prefix" "$RUNTIME/Wine/bin/ano-server" -k 2>/dev/null
+      [ -d "$prefix" ] && server "$prefix" -k 2>/dev/null
     done
   fi
   sudo pkill -INT -f "tcpdump.*$WORK" 2>/dev/null
@@ -44,7 +59,6 @@ cleanup() {
 trap cleanup EXIT
 fail=0
 check() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
-with_timeout() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 wait_port() { for _ in $(seq 1 50); do nc -z 127.0.0.1 "$1" 2>/dev/null && return 0; sleep 0.2; done; return 1; }
 
 echo "== start echo servers, Xray, helper and packet capture"
@@ -70,28 +84,26 @@ sudo tcpdump -i lo0 -U -w "$WORK/lo0.pcap" "$FILTER" > /dev/null 2>&1 &
 sleep 2
 
 echo "== native program with the interposer (helper running)"
-DYLD_INSERT_LIBRARIES="$LIB" ANO_PROXY_PORT="$PORT" ANO_WINE_DIR=/nonexistent "$NATIVE"; rc=$?
+DYLD_INSERT_LIBRARIES="$LIB" ANO_PROXY_PORT="$PORT" ANO_RUNTIME_DIR=/nonexistent "$NATIVE"; rc=$?
 check "native checks 1-7" '[ "$rc" -eq 0 ]'
 check "Xray received anotest.example.com:7000 by name" 'grep -q "anotest.example.com:7000" "$WORK/xray-access.log"'
 
 echo "== native program with the interposer (helper down)"
-DYLD_INSERT_LIBRARIES="$LIB" ANO_PROXY_PORT=1 ANO_WINE_DIR=/nonexistent "$NATIVE" --helper-down; rc=$?
+DYLD_INSERT_LIBRARIES="$LIB" ANO_PROXY_PORT=1 ANO_RUNTIME_DIR=/nonexistent "$NATIVE" --helper-down; rc=$?
 check "native check 8" '[ "$rc" -eq 0 ]'
 
 if [ -n "$RUNTIME" ]; then
-  BIN="$RUNTIME/Wine/bin"
   WRAP="$("$HELPER" --write-wrapper "$WORK/wrapper")" || { echo "helper could not write the wrapper"; exit 1; }
   # Runs netprobe.exe (or anything) in a bottle. Proxied runs go through the
   # wrapper with the four ANO_* variables, like the app's proxied launches.
   in_bottle() { # <prefix> <proxied 0|1> <program> <args...>; output in $WORK/wine.out
     local prefix="$1" proxied="$2"; shift 2
+    local engine=("${V}PREFIX=$prefix" "${V}SERVER=$BIN/ano-server" "${V}DEBUG=-all" "${V}DLLOVERRIDES=mscoree,mshtml=")
     if [ "$proxied" -eq 1 ]; then
-      WINEPREFIX="$prefix" WINESERVER="$BIN/ano-server" WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml=" \
-        ANO_PROXY_PORT="$PORT" ANO_NET_LIB="$LIB" ANO_WINE_DIR="$RUNTIME/Wine" ANO_REAL_LOADER="$BIN/ano-loader" \
-        with_timeout 300 "$WRAP" "$@" > "$WORK/wine.out" 2>&1
+      env "${engine[@]}" ANO_PROXY_PORT="$PORT" ANO_NET_LIB="$LIB" ANO_RUNTIME_DIR="$ENGINE" \
+        ANO_REAL_LOADER="$BIN/ano-loader" perl -e 'alarm shift; exec @ARGV' 300 "$WRAP" "$@" > "$WORK/wine.out" 2>&1
     else
-      WINEPREFIX="$prefix" WINESERVER="$BIN/ano-server" WINEDEBUG=-all WINEDLLOVERRIDES="mscoree,mshtml=" \
-        with_timeout 300 "$BIN/ano-loader" "$@" > "$WORK/wine.out" 2>&1
+      env "${engine[@]}" perl -e 'alarm shift; exec @ARGV' 300 "$BIN/ano-loader" "$@" > "$WORK/wine.out" 2>&1
     fi
   }
   probe() { in_bottle "$@"; local rc=$?; sed 's/^/     wine: /' "$WORK/wine.out" | tr -d '\r' | head -5; return "$rc"; }
@@ -122,12 +134,12 @@ if [ -n "$RUNTIME" ]; then
 
   echo "== Windows program under Wine, proxied (helper down)"
   kill "$HELPER_PID" 2>/dev/null; wait "$HELPER_PID" 2>/dev/null
-  WINEPREFIX="$P" "$BIN/ano-server" -k 2>/dev/null; WINEPREFIX="$P" "$BIN/ano-server" -w 2>/dev/null
+  server "$P" -k 2>/dev/null; server "$P" -w 2>/dev/null
   probe "$P" 1 "$NETPROBE" tcp anotest.example.com 7000; rc=$?
   check "wine 7 helper down: TCP by hostname fails" '[ "$rc" -eq 1 ]'
   probe "$P" 1 "$NETPROBE" tcp 192.0.2.1 7000; rc=$?
   check "wine 7 helper down: TCP to 192.0.2.1 fails" '[ "$rc" -eq 1 ]'
-  WINEPREFIX="$P" "$BIN/ano-server" -k 2>/dev/null
+  server "$P" -k 2>/dev/null
 
   echo "== Windows program under Wine, proxy off"
   "$HELPER" --socks5 127.0.0.1:10808 > "$WORK/helper2.out" 2> "$WORK/helper2.err" &
@@ -139,7 +151,7 @@ if [ -n "$RUNTIME" ]; then
   probe "$Q" 0 "$NETPROBE" tcp 127.0.0.1 7000; rc=$?
   check "wine 8 proxy off: TCP to 127.0.0.1:7000 works" '[ "$rc" -eq 0 ]'
   check "wine 8 proxy off: the helper saw nothing" '! grep -q "^accepted" "$WORK/helper2.err"'
-  WINEPREFIX="$Q" "$BIN/ano-server" -k 2>/dev/null
+  server "$Q" -k 2>/dev/null
 fi
 
 echo "== packet capture"

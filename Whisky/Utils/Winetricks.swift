@@ -136,27 +136,16 @@ class Winetricks {
     /// syntax; the script is tracked for cleanup like the bottle terminal's.
     @MainActor
     private static func writeTerminalScript(command: String, bottle: Bottle, resourcesURL: URL) throws -> URL {
-        let winetricksPath = resourcesURL.appending(path: "winetricks").path(percentEncoded: false)
-        // A proxied bottle's winetricks reaches Wine through the proxy wrapper.
-        let proxy = ProxyEnvironment.shellAdditions(for: bottle)
-        let pathValue = ([proxy.pathPrefix].compactMap { $0 } + [
-            WhiskyWineInstaller.binFolder.path, resourcesURL.path(percentEncoded: false)
-        ]).joined(separator: ":")
-        let proxyExports = proxy.variables.sorted { $0.key < $1.key }
-            .map { "export " + ShellQuoting.assignment($0.key, $0.value) }
-        let scriptContent = ([
-            "#!/bin/bash",
-            "export PATH=\(ShellQuoting.quoted(pathValue)):\"$PATH\"",
-            "export WINE=\(AnoWineRuntime.loaderName)",
-            "export " + ShellQuoting.assignment("WINESERVER", AnoWineRuntime.serverURL.path(percentEncoded: false)),
-            "export " + ShellQuoting.assignment("WINEPREFIX", bottle.url.path(percentEncoded: false))
-        ] + proxyExports + [
-            ShellQuoting.commandLine(["bash", winetricksPath, command]),
-            ""
-        ]).joined(separator: "\n")
+        // A proxied bottle's script reaches the engine through the proxy wrapper.
+        let scriptContent = WinetricksInstallArguments.terminalScript(
+            command: command,
+            bottleURL: bottle.url,
+            resourcesURL: resourcesURL,
+            proxy: ProxyEnvironment.shellAdditions(for: bottle)
+        )
 
         let scriptURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("whisky-winetricks-\(UUID().uuidString).sh")
+            .appendingPathComponent(WinetricksInstallArguments.terminalScriptName())
         try scriptContent.write(to: scriptURL, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptURL.path)
         TempFileTracker.shared.register(file: scriptURL)

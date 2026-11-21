@@ -114,11 +114,55 @@ public struct WinetricksVerbCache: Codable, Sendable {
         try data.write(to: cacheURL)
     }
 
-    /// Reads the file attributes of the winetricks.log in the bottle.
+    // MARK: - The bottle's log
+
+    /// The log the bundled script keeps in a bottle, naming each verb it installed.
+    public static let logFileName = "winetricks.log"
+
+    /// Where a bottle's log may be: the prefix root (`<bottleURL>/<log>`, the
+    /// standard location) first, then `<bottleURL>/drive_c/<log>`, where some
+    /// configurations write it.
+    public static func logURLs(for bottleURL: URL) -> [URL] {
+        [
+            bottleURL.appending(path: logFileName),
+            bottleURL.appending(path: "drive_c").appending(path: logFileName)
+        ]
+    }
+
+    /// The verbs the bottle's log names, read from the first of
+    /// ``logURLs(for:)`` that can be read (best-effort; empty without a log).
     ///
-    /// Checks both the prefix root (`<bottleURL>/winetricks.log`) and the
-    /// drive_c location (`<bottleURL>/drive_c/winetricks.log`), preferring
-    /// whichever exists (prefix root first, which is the standard location).
+    /// Each installed verb is on its own line; `Executing load_<verb>` and
+    /// `Installed <verb>` lines count too.
+    public static func verbsFromLog(in bottleURL: URL) -> Set<String> {
+        let data = logURLs(for: bottleURL).lazy.compactMap { try? Data(contentsOf: $0) }.first
+        guard let data, let contents = String(data: data, encoding: .utf8) else { return [] }
+
+        var verbs = Set<String>()
+        for line in contents.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { continue }
+
+            if trimmed.hasPrefix("Executing load_") {
+                let verb = String(trimmed.dropFirst("Executing load_".count))
+                if !verb.isEmpty {
+                    verbs.insert(verb)
+                }
+            } else if trimmed.hasPrefix("Installed ") {
+                let verb = String(trimmed.dropFirst("Installed ".count))
+                    .trimmingCharacters(in: .whitespaces)
+                if !verb.isEmpty {
+                    verbs.insert(verb)
+                }
+            } else if !trimmed.contains(" ") {
+                verbs.insert(trimmed)
+            }
+        }
+        return verbs
+    }
+
+    /// Reads the file attributes of the bottle's log: the first of
+    /// ``logURLs(for:)`` that exists.
     ///
     /// - Parameter bottleURL: The URL of the bottle directory.
     /// - Returns: A tuple of the file size in bytes and the modification date,
@@ -126,25 +170,11 @@ public struct WinetricksVerbCache: Codable, Sendable {
     public static func winetricksLogInfo(
         for bottleURL: URL
     ) -> (size: Int64?, modDate: Date?) {
-        // Standard winetricks.log location is at the prefix root
-        let prefixLogURL = bottleURL.appending(path: "winetricks.log")
-        // Some configurations write to drive_c
-        let driveCLogURL = bottleURL
-            .appending(path: "drive_c")
-            .appending(path: "winetricks.log")
-
-        let logURL: URL
-        if FileManager.default.fileExists(atPath: prefixLogURL.path(percentEncoded: false)) {
-            logURL = prefixLogURL
-        } else if FileManager.default.fileExists(atPath: driveCLogURL.path(percentEncoded: false)) {
-            logURL = driveCLogURL
-        } else {
-            return (nil, nil)
+        let existing = logURLs(for: bottleURL).first {
+            FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
         }
-
-        guard let attrs = try? FileManager.default.attributesOfItem(
-            atPath: logURL.path(percentEncoded: false)
-        )
+        guard let logURL = existing,
+              let attrs = try? FileManager.default.attributesOfItem(atPath: logURL.path(percentEncoded: false))
         else {
             return (nil, nil)
         }

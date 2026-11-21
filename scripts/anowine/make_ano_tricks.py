@@ -2,6 +2,7 @@
 """Make Libraries/ano-tricks from winetricks 20260125 (Plan 3c-3).
 
 Usage: make_ano_tricks.py [--check] [--upstream FILE] [--out FILE]
+       make_ano_tricks.py --verbs [--check] [--out FILE]
 
 1. Take upstream's src/winetricks at tag 20260125 (downloaded, or the copy
    --upstream names) and check its SHA-256.
@@ -19,13 +20,24 @@ Usage: make_ano_tricks.py [--check] [--upstream FILE] [--out FILE]
    rename-protect-tricks.txt.
 6. Write Libraries/ano-tricks, or with --check exit 1 if the committed file
    differs from what this makes.
+
+With --verbs (Plan 3c-4a): write Libraries/verbs.txt, the verb list the app
+shows (Winetricks.parseVerbs), from `bash <ano-tricks> list-all` run as
+test-ano-tricks.sh runs it: a clean environment, an empty HOME (shown as ~ in
+the two titles that name it) and downloaders that fail. The file must keep the
+format the app reads and say no "wine" (AutoHotkey's IfWinExist excepted).
+With --check, exit 1 if the committed verbs.txt differs from what this makes.
+--out names the ano-tricks file to run (it is read, not written).
 """
 import argparse
 import difflib
 import hashlib
 import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 import urllib.request
 from pathlib import Path
 
@@ -37,6 +49,7 @@ from rename_sources import FOREIGN_HOST, load_rules, rename_text  # noqa: E402
 UPSTREAM_URL = "https://raw.githubusercontent.com/Winetricks/winetricks/20260125/src/winetricks"
 UPSTREAM_SHA256 = "431f82fc74000e6c864409f1d8fb495d696c03928808e3e8acffc45179312a7b"
 OUT = HERE.parent.parent / "Libraries" / "ano-tricks"
+VERBS = HERE.parent.parent / "Libraries" / "verbs.txt"
 REPO = "https://github.com/HighStormPVP/AnoWine"
 SEPARATOR = "#" + "-" * 64 + "\n"
 
@@ -251,12 +264,107 @@ def read_upstream(path) -> str:
     return data.decode("utf-8")
 
 
+# The categories the app shows (Whisky/Utils/Winetricks.swift, WinetricksCategories;
+# it has `games` too, which list-all no longer prints). list-all also prints
+# `prefix`, whose lines are bare category names; the app skips it.
+APP_CATEGORIES = ("apps", "benchmarks", "dlls", "fonts", "settings")
+HEADER = re.compile(r"^===== (\S+) =====$")
+VERB_LINE = re.compile(r"^\S+ +\S")
+WINE_WORD = re.compile(r"\w*wine\w*", re.I)
+# Words with "wine" in them that are not Wine: AutoHotkey's IfWinExist, the
+# winevent API set (as in wine-allowlist.txt).
+NOT_WINE = frozenset(["ifwinexist", "winexist", "winevent"])
+
+# Run by bash: $1 a work folder, $2 the ano-tricks file. Prints the HOME it gives
+# ano-tricks (as bash spells it), then list-all's output.
+LIST_ALL = r"""
+cd "$1" || exit 2
+mkdir -p home bin || exit 2
+for tool in curl wget aria2c fetch; do
+  printf '#!/bin/sh\nexit 1\n' > "bin/$tool" && chmod +x "bin/$tool" || exit 2
+done
+printf '%s\n' "$PWD/home"
+exec env -i HOME="$PWD/home" PATH="$PWD/bin:/usr/bin:/bin" LANG=C bash "$2" list-all
+"""
+
+
+def verbs_text(output: str, home: str) -> str:
+    """verbs.txt from list-all's output: from the first category header on
+    (anything before it is a warning), with the HOME it ran with shown as ~."""
+    lines = output.splitlines()
+    start = next((i for i, line in enumerate(lines) if HEADER.match(line)), None)
+    if start is None:
+        raise ValueError("list-all printed no category header")
+    text = "\n".join(lines[start:]) + "\n"
+    return text.replace(home, "~") if home else text
+
+
+def verbs_problems(text: str) -> list:
+    """What would break the app's reading of verbs.txt, and every word naming Wine."""
+    problems, seen, category = [], set(), None
+    for number, line in enumerate(text.splitlines(), 1):
+        header = HEADER.match(line)
+        if header:
+            category = header.group(1)
+            seen.add(category)
+        elif category in APP_CATEGORIES and not VERB_LINE.match(line):
+            problems.append(f"line {number}: not '<verb>  <title>': {line!r}")
+        for word in WINE_WORD.findall(line):
+            if word.lower() not in NOT_WINE:
+                problems.append(f"line {number}: says {word!r}: {line.strip()}")
+    problems += [f"no ===== {name} ===== header" for name in APP_CATEGORIES if name not in seen]
+    return problems
+
+
+def run_list_all(tricks: Path) -> str:
+    """verbs.txt as `bash <tricks> list-all` makes it (see LIST_ALL)."""
+    bash = shutil.which("bash") or "bash"
+    with tempfile.TemporaryDirectory() as work:
+        result = subprocess.run(
+            [bash, "-c", LIST_ALL, "list-all", Path(work).as_posix(), Path(tricks).resolve().as_posix()],
+            capture_output=True, encoding="utf-8", errors="replace", check=False, timeout=900)
+    if result.returncode != 0:
+        raise ValueError(f"{Path(tricks).name} list-all exited {result.returncode}: {result.stderr[-2000:]}")
+    home, _, output = result.stdout.partition("\n")
+    return verbs_text(output, home)
+
+
+def make_verbs(tricks: Path, verbs: Path, check: bool) -> int:
+    """Write verbs.txt from list-all, or with check compare it with the committed one."""
+    try:
+        made = run_list_all(tricks)
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        print(f"make_ano_tricks.py: {error}", file=sys.stderr)
+        return 1
+    problems = verbs_problems(made)
+    if problems:
+        print(f"make_ano_tricks.py: list-all's output does not make a {verbs.name} the app can use:",
+              *problems[:40], sep="\n  ", file=sys.stderr)
+        return 1
+    if check:
+        committed = verbs.read_bytes().decode("utf-8", "replace") if verbs.is_file() else ""
+        if committed == made:
+            print(f"{verbs.name}: equal to {Path(tricks).name} list-all")
+            return 0
+        diff = difflib.unified_diff(committed.splitlines(), made.splitlines(), "committed", "made", lineterm="", n=0)
+        print(f"{verbs}: differs from {Path(tricks).name} list-all (make it with --verbs):", file=sys.stderr)
+        print("\n".join(list(diff)[:60]), file=sys.stderr)
+        return 1
+    verbs.write_bytes(made.encode("utf-8"))
+    print(f"wrote {verbs} ({made.count(chr(10))} lines)")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Make Libraries/ano-tricks from winetricks 20260125.")
     parser.add_argument("--check", action="store_true", help="exit 1 if the committed file differs")
     parser.add_argument("--upstream", type=Path, help="a local copy of upstream's src/winetricks")
     parser.add_argument("--out", type=Path, default=OUT)
+    parser.add_argument("--verbs", action="store_true",
+                        help="make Libraries/verbs.txt from the ano-tricks file's list-all instead")
     args = parser.parse_args(argv)
+    if args.verbs:
+        return make_verbs(args.out, VERBS, args.check)
     try:
         made = generate(read_upstream(args.upstream))
     except ValueError as error:

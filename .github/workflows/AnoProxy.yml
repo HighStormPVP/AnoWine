@@ -20,6 +20,10 @@ on:
         description: 'AnoWine Runtime run whose anowine-runtime artifact to test (empty: the published runtime)'
         type: string
         default: ''
+      engine_run:
+        description: 'Ano Engine run whose ano-engine artifact (engine 5.x, Libraries/Ano) to test instead'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -71,8 +75,11 @@ jobs:
           brew install mingw-w64
           x86_64-w64-mingw32-gcc -O2 -o "$RUNNER_TEMP/bin/netprobe.exe"             "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/netprobe.c" -lws2_32 -ldnsapi
 
+      # The runtime: the published one (4.9.0, Libraries/Wine), an AnoWine Runtime
+      # build (runtime_run_id), or an Ano Engine build (engine_run: engine 5.x,
+      # Libraries/Ano). check-proxy.sh picks the engine's variables by layout.
       - name: Cache runtime
-        if: inputs.runtime_run_id == ''
+        if: inputs.runtime_run_id == '' && inputs.engine_run == ''
         id: runtime-cache
         uses: actions/cache@v5
         with:
@@ -80,13 +87,13 @@ jobs:
           key: ano-runtime-${{ env.RUNTIME_SHA256 }}
 
       - name: Runtime (published)
-        if: inputs.runtime_run_id == ''
+        if: inputs.runtime_run_id == '' && inputs.engine_run == ''
         run: |
           [ -f "$RUNNER_TEMP/runtime.tar.gz" ] || curl -fsSL -o "$RUNNER_TEMP/runtime.tar.gz" "$RUNTIME_URL"
           echo "$RUNTIME_SHA256  $RUNNER_TEMP/runtime.tar.gz" | shasum -a 256 -c -
 
       - name: Runtime from a build
-        if: inputs.runtime_run_id != ''
+        if: inputs.runtime_run_id != '' && inputs.engine_run == ''
         uses: actions/download-artifact@v8
         with:
           name: anowine-runtime
@@ -94,13 +101,30 @@ jobs:
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/built
 
+      - name: Engine from a build
+        if: inputs.engine_run != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-engine
+          run-id: ${{ inputs.engine_run }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/engine
+
       - name: Unpack runtime
         run: |
+          if [ -f "$RUNNER_TEMP/engine/Libraries.tar.gz" ]; then
+            (cd "$RUNNER_TEMP/engine" && shasum -a 256 -c Libraries.tar.gz.sha256)
+            mv "$RUNNER_TEMP/engine/Libraries.tar.gz" "$RUNNER_TEMP/runtime.tar.gz"
+          fi
           [ -f "$RUNNER_TEMP/built/Libraries.tar.gz" ] && mv "$RUNNER_TEMP/built/Libraries.tar.gz" "$RUNNER_TEMP/runtime.tar.gz"
           mkdir -p "$RUNNER_TEMP/runtime"
           tar -xzf "$RUNNER_TEMP/runtime.tar.gz" -C "$RUNNER_TEMP/runtime"
-          ls -la "$RUNNER_TEMP/runtime/Libraries/Wine/bin"
-          plist="$RUNNER_TEMP/runtime/Libraries/WhiskyWineVersion.plist"
+          if [ -d "$RUNNER_TEMP/runtime/Libraries/Ano" ]; then
+            engine=Ano plist="$RUNNER_TEMP/runtime/Libraries/AnoRuntimeVersion.plist"
+          else
+            engine=Wine plist="$RUNNER_TEMP/runtime/Libraries/WhiskyWineVersion.plist"
+          fi
+          ls -la "$RUNNER_TEMP/runtime/Libraries/$engine/bin"
           echo "runtime version $(/usr/libexec/PlistBuddy -c 'Print :version:major' "$plist").$(/usr/libexec/PlistBuddy -c 'Print :version:minor' "$plist").$(/usr/libexec/PlistBuddy -c 'Print :version:patch' "$plist")"
 
       - name: Build ano-proxy

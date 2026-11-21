@@ -69,6 +69,14 @@ final class ProxyEnvironmentTests: XCTestCase {
         )
     }
 
+    /// Plan 3c-4a: the interceptor (`AnoNet/ano_net.c`) reads the runtime folder
+    /// from `ANO_RUNTIME_DIR`; no proxy variable says WINE.
+    func testRuntimeFolderVariableIsAnoRuntimeDir() {
+        XCTAssertEqual(ProxyEnvironment.wineDirKey, "ANO_RUNTIME_DIR")
+        let names = ProxyEnvironment.variables(port: 1).keys
+        XCTAssertEqual(names.filter { $0.contains("WINE") }, [], "\(names.sorted())")
+    }
+
     @MainActor
     func testProxiedBottleWithoutHelperFailsClosed() {
         let env = Wine.constructWineEnvironment(for: makeBottle(proxied: true), proxyPort: { _ in nil })
@@ -162,10 +170,10 @@ final class ProxyEnvironmentTests: XCTestCase {
     func testApplyingAdditionsPrefixesPathAndDropsDyld() {
         let additions = (variables: [ProxyEnvironment.portKey: "4242"], pathPrefix: Optional("/w"))
         let env = ProxyEnvironment.applying(
-            additions, to: ["PATH": "/bin:/usr/bin", "WINE": "ano-loader", "DYLD_INSERT_LIBRARIES": "/x"]
+            additions, to: ["PATH": "/bin:/usr/bin", "ANO": "ano-loader", "DYLD_INSERT_LIBRARIES": "/x"]
         )
         XCTAssertEqual(env["PATH"], "/w:/bin:/usr/bin")
-        XCTAssertEqual(env["WINE"], "ano-loader")
+        XCTAssertEqual(env["ANO"], "ano-loader")
         XCTAssertEqual(env[ProxyEnvironment.portKey], "4242")
         XCTAssertNil(env["DYLD_INSERT_LIBRARIES"])
         XCTAssertEqual(ProxyEnvironment.applying(([:], nil), to: ["PATH": "/bin"]), ["PATH": "/bin"])
@@ -179,7 +187,45 @@ final class ProxyEnvironmentTests: XCTestCase {
         let additions = ProxyEnvironment.shellAdditions(for: makeBottle(proxied: true), proxyPort: { _ in 4_242 })
         XCTAssertEqual(additions.variables[ProxyEnvironment.portKey], "4242")
         XCTAssertEqual(additions.pathPrefix, ProxyEnvironment.wrapperFolder.path(percentEncoded: false))
-        // Winetricks inspects the Wine binary; the wrapper is a script, so it is told the real one.
-        XCTAssertEqual(additions.variables["WINE_BIN"], AnoWineRuntime.loaderURL.path(percentEncoded: false))
+        // ano-tricks inspects the loader binary; the wrapper is a script, so it is told the real one.
+        XCTAssertEqual(additions.variables["ANO_BIN"], AnoWineRuntime.loaderURL.path(percentEncoded: false))
+        XCTAssertEqual(additions.variables.keys.filter { $0.contains("WINE") }, [], "\(additions.variables.keys)")
+    }
+
+    /// Plan 3c-4a: a proxied bottle's ano-tricks run (an install, `list-installed`
+    /// or the Terminal script) reaches the engine through the wrapper first on
+    /// `PATH`, and is told the real loader in `ANO_BIN` (3c-3: without it, a
+    /// wrapper's architecture cannot be read).
+    @MainActor
+    func testAnoTricksForProxiedBottleGetsTheWrapperAndTheRealLoader() {
+        let bottle = makeBottle(proxied: true)
+        let additions = ProxyEnvironment.shellAdditions(for: bottle, proxyPort: { _ in 4_242 })
+        let resources = URL(filePath: "/Resources")
+        let env = WinetricksInstallArguments.environment(
+            bottleURL: bottle.url, resourcesURL: resources, proxy: additions, home: "/Users/me"
+        )
+        XCTAssertEqual(env["ANO_BIN"], AnoWineRuntime.loaderURL.path(percentEncoded: false))
+        XCTAssertEqual(env["ANO"], AnoWineRuntime.loaderName)
+        XCTAssertEqual(env["ANOPREFIX"], bottle.url.path(percentEncoded: false))
+        XCTAssertEqual(env["ANOSERVER"], AnoWineRuntime.serverURL.path(percentEncoded: false))
+        XCTAssertEqual(env[ProxyEnvironment.portKey], "4242")
+        XCTAssertEqual(
+            env["ANO_RUNTIME_DIR"],
+            AnoWineRuntime.runtimeFolder(inLibraryFolder: WhiskyWineInstaller.libraryFolder).path(percentEncoded: false)
+        )
+        XCTAssertTrue(
+            env["PATH"]?.hasPrefix(ProxyEnvironment.wrapperFolder.path(percentEncoded: false) + ":") == true,
+            env["PATH"] ?? "no PATH"
+        )
+        XCTAssertNil(env["DYLD_INSERT_LIBRARIES"])
+        XCTAssertEqual(env.keys.filter { $0.contains("WINE") }, [], "\(env.keys.sorted())")
+
+        let script = WinetricksInstallArguments.terminalScript(
+            command: "list-installed", bottleURL: bottle.url, resourcesURL: resources, proxy: additions
+        )
+        XCTAssertTrue(script.contains("\nexport ANO_BIN="), script)
+        XCTAssertTrue(script.contains("\nexport ANO_RUNTIME_DIR="), script)
+        XCTAssertFalse(script.contains("WINE"), script)
+        XCTAssertFalse(script.contains("DYLD_"), script)
     }
 }
