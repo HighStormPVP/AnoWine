@@ -368,3 +368,48 @@ works. The bottle passes the gate.
 (`ProxyEnvironment.swift`); read `ano-tricks.log` (`Winetricks+InstalledVerbs.swift`); make
 `Libraries/verbs.txt` again from `ano-tricks list-all` (today it is upstream's list: the dropped
 verbs and 82 "wine"s); then drop `Libraries/winetricks`.
+
+## Plan 3c-4a: the app on engine 5.x
+
+The app now speaks only the renamed engine's names (runtime 5.0.0); on `main` it needs that
+runtime, which 3c-5 publishes. Plan `docs/superpowers/plans/2026-11-21-ano-plan3c4a-app-runtime.md`.
+
+**What the app expects of the runtime**: `Libraries/Ano` (`bin/ano-loader`, `bin/ano-server`,
+`lib/ano`, `share/ano`) beside `Libraries/AnoRuntimeVersion.plist` (same keys); a `Libraries/Wine`
+runtime reads as not installed, so Setup offers the new one. The feed is
+`AnoRuntimeVersion.plist` (written with the release in 3c-5). Every variable is `ANO*`
+(`ANOPREFIX`, `ANODLLOVERRIDES`, `ANOD3DMETAL`, `ANOESYNC`, …), the registry is `Software\Ano`,
+bottle creation runs `ano-cfg`, DXMT's bridge is `anometal.dll`, the version parse reads `ano-`,
+crash patterns match `ano:` lines, the Terminal gets `ano-*` aliases (none named `ano`, which is
+the CLI). The app runs `ano-tricks` with `ANO`, `ANOSERVER`, `ANOPREFIX` (and `ANO_BIN` for a
+proxied bottle) and reads `ano-tricks.log`; `Libraries/verbs.txt` is `ano-tricks list-all` (no
+"wine" left). The proxy's variable is `ANO_RUNTIME_DIR`. `check_app_runtime_names.py` (Hygiene)
+finds every such name in the app's literals and bundled JSON: 194 at the start, 0 now; three
+lines keep an old name on purpose (the mark Apple's D3DMetal DLLs carry, the old-bottle check).
+
+**D3DMetal's variables** (owner's ruling): Apple's D3DMetal reads `WINED3DMETAL` and `WINEESYNC`
+itself. The app sets `ANOD3DMETAL` and `ANOESYNC`; `patches/rename/0005` makes each engine
+process copy them to the old names in its own environment after its Windows environment is
+built, and drop them from every environment it hands on (CrossOver's hand-off to a new process,
+the server spawn, a forked child before exec). `check-env-aliases.sh` (engine run 44912708138,
+checks 44922096835): the Mac half of a D3DMetal stand-in reads both as `1`; the Windows
+environment has neither; `ps -E` shows neither on the program, its child or the server.
+Provisional until the owner's `ano-gptk-wine-names.txt` confirms which names D3DMetal reads.
+
+**Old bottles** (decision 3): a bottle whose `system.reg` starts `WINE REGISTRY` or whose
+`Metadata.plist` has a key with "wine" is recognised before its settings are decoded, listed as
+"Made with an earlier Ano", refused for every run and setting, and never written; removing it
+still works. New bottles' files have no "wine" keys.
+
+**End to end** (`check-app-on-engine.sh`, engine check 44949053420): the `ano` CLI, built from
+this tree, with engine 5.x where the app keeps its runtime, creates a bottle and runs a program
+in it (it writes its file and exits 0); the bottle starts `ANO REGISTRY`, the app's keys are under
+`Software\Ano`, `ano shellenv` sets only `ANO*`, and the gate passes over the bottle. A bottle
+from Ano 8, on the list as an update leaves it, is listed, refused with the message, and stays
+byte for byte as it was. `Ano Proxy` passes on engine 5.x and still on runtime 4.9.0.
+
+**Left**: 3c-4b (what users see: UI text in every language, logs, CLI text, `Info.plist`, the
+`wineglass` symbol, troubleshooting text, GameDB keys and text, the full source check), 3c-4c
+(first launch: old traces, the admin script, moving an imported GPTK store from `lib/wine` to
+`lib/ano`, the update-check opt-out), 3c-5 (the release). On the owner's Mac: D3DMetal with the
+alias, once the listing confirms the names.
