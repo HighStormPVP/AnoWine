@@ -159,7 +159,7 @@ struct WhiskyApp: App {
                 }
                 .sheet(isPresented: $showTroubleshootingPicker) {
                     TroubleshootingTargetPicker(
-                        bottles: BottleVM.shared.bottles
+                        bottles: BottleVM.shared.usableBottles
                     ) { bottle, program in
                         troubleshootingBottle = bottle
                         troubleshootingProgram = program

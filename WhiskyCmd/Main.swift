@@ -38,6 +38,30 @@ struct DomainError: LocalizedError {
     }
 }
 
+/// The registered bottle called `name` that a command may act on.
+///
+/// A bottle an earlier Ano made is listed under its folder name but refused:
+/// nothing may run in it or change it (``OldRuntimeBottle``).
+///
+/// - Parameters:
+///   - name: The name the command was given.
+///   - bottles: The registered bottles.
+///   - missing: The message for no bottle by that name.
+/// - Throws: ``DomainError`` when there is no such bottle or an earlier Ano made it.
+@MainActor
+func usableBottle(named name: String, in bottles: [Bottle], missing: String) throws -> Bottle {
+    let named = bottles.filter { $0.settings.name == name }
+    guard let bottle = named.first(where: { !$0.isFromOldRuntime }) ?? named.first else {
+        throw DomainError(missing)
+    }
+    do {
+        try bottle.refuseIfFromOldRuntime()
+    } catch {
+        throw DomainError("\"\(name)\": \(error.localizedDescription)")
+    }
+    return bottle
+}
+
 @main
 struct Whisky: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -80,12 +104,16 @@ extension Whisky {
             for bottle in bottles {
                 table.addRow(values: [
                     bottle.settings.name,
-                    bottle.settings.windowsVersion.pretty(),
+                    // Not read from an earlier Ano's bottle, so the row says what it is instead.
+                    bottle.isFromOldRuntime ? "Made with an earlier Ano" : bottle.settings.windowsVersion.pretty(),
                     bottle.url.prettyPath()
                 ])
             }
 
             print(table.render())
+            for bottle in bottles where bottle.isFromOldRuntime {
+                print("\"\(bottle.settings.name)\": \(OldRuntimeBottleError().localizedDescription)")
+            }
         }
     }
 
@@ -292,9 +320,9 @@ extension Whisky {
             var bottlesList = BottleData()
             let bottles = bottlesList.loadBottles()
 
-            guard let bottle = bottles.first(where: { $0.settings.name == bottleName }) else {
-                throw DomainError("A bottle with that name doesn't exist.")
-            }
+            let bottle = try usableBottle(
+                named: bottleName, in: bottles, missing: "A bottle with that name doesn't exist."
+            )
 
             let url = URL(fileURLWithPath: Self.resolveExecutablePath(path, in: bottle))
             let program = Program(url: url, bottle: bottle)
@@ -446,9 +474,9 @@ extension Whisky {
             var bottlesList = BottleData()
             let bottles = bottlesList.loadBottles()
 
-            guard let bottle = bottles.first(where: { $0.settings.name == bottleName }) else {
-                throw DomainError("A bottle with that name doesn't exist.")
-            }
+            let bottle = try usableBottle(
+                named: bottleName, in: bottles, missing: "A bottle with that name doesn't exist."
+            )
 
             let url = URL(fileURLWithPath: exePath)
             let program = Program(url: url, bottle: bottle)
@@ -500,9 +528,9 @@ extension Whisky {
             var bottlesList = BottleData()
             let bottles = bottlesList.loadBottles()
 
-            guard let bottle = bottles.first(where: { $0.settings.name == bottleName }) else {
-                throw DomainError("A bottle with that name doesn't exist.")
-            }
+            let bottle = try usableBottle(
+                named: bottleName, in: bottles, missing: "A bottle with that name doesn't exist."
+            )
 
             let envCmd = Wine.generateTerminalEnvironmentCommand(bottle: bottle)
             print(envCmd)
@@ -541,9 +569,9 @@ extension Whisky {
             var bottlesList = BottleData()
             let bottles = bottlesList.loadBottles()
 
-            guard let bottle = bottles.first(where: { $0.settings.name == bottleName }) else {
-                throw DomainError("A bottle with that name doesn't exist.")
-            }
+            let bottle = try usableBottle(
+                named: bottleName, in: bottles, missing: "A bottle with that name doesn't exist."
+            )
 
             let games = SteamLibrary.enumerate(bottleURL: bottle.url)
 
@@ -603,14 +631,11 @@ extension Whisky {
             var bottlesList = BottleData()
             let bottles = bottlesList.loadBottles()
 
-            let target: Bottle
-            if let bottleName = bottle {
-                guard let named = bottles.first(where: { $0.settings.name == bottleName }) else {
-                    throw DomainError("A bottle with that name doesn't exist.")
-                }
-                target = named
+            let target: Bottle = if let bottleName = bottle {
+                try usableBottle(named: bottleName, in: bottles, missing: "A bottle with that name doesn't exist.")
             } else {
-                target = try SteamLauncher.resolveBottle(appId: appId, in: bottles)
+                // An earlier Ano's bottle can't launch anything, so it is never the one picked.
+                try SteamLauncher.resolveBottle(appId: appId, in: bottles.filter { !$0.isFromOldRuntime })
             }
 
             // The launch happens inside the returned task. Returning before it

@@ -25,14 +25,37 @@ import Foundation
 /// Ano lists it, refuses it and never writes to it; the owner recreates it
 /// (design decision 3).
 public enum OldRuntimeBottle {
-    /// Whether the bottle at `bottleURL` was made by an earlier Ano.
+    /// How the registry files of an engine before 5.0.0 begin (5.0.0 writes `ANO REGISTRY`).
+    private static let oldRegistryHeader = Data("WINE REGISTRY".utf8) // old name: a 3.x or 4.x engine's registry
+
+    /// The word every settings key an earlier Ano wrote for the runtime carries (`wineConfig`).
+    private static let oldKeyWord = "wine" // old name: recognises an earlier Ano's Metadata.plist
+
+    /// Whether the bottle at `bottleURL` was made by an earlier Ano: its
+    /// `system.reg` begins `WINE REGISTRY`, or its `Metadata.plist` has a
+    /// top-level key containing `wine`, in any case.
     ///
     /// Reads only, and is checked before the bottle's settings are decoded.
     ///
     /// - Parameter bottleURL: The bottle's folder.
     /// - Returns: `true` for a bottle made by an earlier Ano.
     public static func isOld(at bottleURL: URL) -> Bool {
-        false
+        registryIsOld(bottleURL.appending(path: "system.reg"))
+            || metadataIsOld(bottleURL.appending(path: "Metadata").appendingPathExtension("plist"))
+    }
+
+    private static func registryIsOld(_ url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        return (try? handle.read(upToCount: oldRegistryHeader.count)) == oldRegistryHeader
+    }
+
+    private static func metadataIsOld(_ url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),
+              let keys = (plist as? [String: Any])?.keys
+        else { return false }
+        return keys.contains { $0.lowercased().contains(oldKeyWord) }
     }
 }
 
@@ -48,6 +71,17 @@ public struct OldRuntimeBottleError: LocalizedError, Equatable, Sendable {
             Create a new bottle and reinstall its programs.
             """
         )
+    }
+}
+
+extension BottleSettings {
+    /// What an earlier Ano's bottle is held with: defaults, named after its
+    /// folder, since its own settings are never decoded.
+    ///
+    /// - Parameter bottleURL: The bottle's folder.
+    init(oldBottleAt bottleURL: URL) {
+        self.init()
+        name = bottleURL.lastPathComponent
     }
 }
 

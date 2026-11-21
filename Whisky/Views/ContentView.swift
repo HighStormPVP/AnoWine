@@ -159,7 +159,7 @@ struct ContentView: View {
             FileOpenView(
                 fileURL: url,
                 currentBottle: selected,
-                bottles: bottleVM.bottles,
+                bottles: bottleVM.usableBottles,
                 toast: $toast
             )
         }

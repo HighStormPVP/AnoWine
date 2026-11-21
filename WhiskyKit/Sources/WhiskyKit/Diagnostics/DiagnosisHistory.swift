@@ -50,6 +50,20 @@ public struct DiagnosisHistoryEntry: Codable, Sendable {
     /// Path to the program executable that was analyzed.
     public let programPath: String
 
+    /// Every stored field, the preset written as `anoDebugPreset`: a bottle's
+    /// files carry no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case timestamp
+        case logFileRef
+        case primaryCategory
+        case confidenceTier
+        case topSignatures
+        case remediationCardIds
+        case wineDebugPreset = "anoDebugPreset"
+        case bottleIdentifier
+        case programPath
+    }
+
     public init(
         timestamp: Date,
         logFileRef: String,

@@ -56,6 +56,15 @@ public struct BottleWineConfig: Codable, Equatable {
     var enhancedSync: EnhancedSync = .msync
     var avxEnabled: Bool = false
 
+    /// The version stamp is written as `anoVersion`: a bottle's files carry no
+    /// `wine` key, which is what marks one an earlier Ano made.
+    private enum CodingKeys: String, CodingKey {
+        case wineVersion = "anoVersion"
+        case windowsVersion
+        case enhancedSync
+        case avxEnabled
+    }
+
     public init() {}
 
     public init(from decoder: Decoder) throws {

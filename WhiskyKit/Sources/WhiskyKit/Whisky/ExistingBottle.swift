@@ -61,7 +61,8 @@ extension BottleData {
     ///
     /// - Parameter bottleURL: The bottle directory.
     /// - Returns: The bottle's settings.
-    /// - Throws: ``ExistingBottleError`` when the directory is not a readable bottle.
+    /// - Throws: ``ExistingBottleError`` when the directory is not a readable bottle,
+    ///   or is one an earlier Ano made.
     public static func existingBottleSettings(at bottleURL: URL) throws -> BottleSettings {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: bottleURL.path(percentEncoded: false), isDirectory: &isDirectory)
@@ -72,6 +73,8 @@ extension BottleData {
         guard FileManager.default.fileExists(atPath: metadataURL.path(percentEncoded: false)) else {
             throw ExistingBottleError.missingMetadata
         }
+        // Before decoding: this build would read an earlier Ano's settings as defaults.
+        guard !OldRuntimeBottle.isOld(at: bottleURL) else { throw ExistingBottleError.madeByEarlierAno }
         guard let data = try? Data(contentsOf: metadataURL),
               let settings = try? PropertyListDecoder().decode(BottleSettings.self, from: data)
         else { throw ExistingBottleError.unreadableMetadata }

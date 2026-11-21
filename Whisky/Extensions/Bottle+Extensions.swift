@@ -124,6 +124,12 @@ extension Bottle {
     /// list.
     @MainActor
     func updateInstalledPrograms() async {
+        // An earlier Ano's bottle is never scanned: a program found there would
+        // read and write settings in it.
+        guard !isFromOldRuntime else {
+            programs = []
+            return
+        }
         await coalesceProgramScan { [self] in
             programsLoading = true
             defer { programsLoading = false }
@@ -266,6 +272,12 @@ extension BottleVM: BottleRegistry {
     var bottlePaths: [URL] {
         get { bottlesList.paths }
         set { bottlesList.paths = newValue }
+    }
+
+    /// The bottles this Ano can use. One an earlier Ano made is listed in the
+    /// sidebar, so it can be removed, but never offered to run or check anything in.
+    var usableBottles: [Bottle] {
+        bottles.filter { !$0.isFromOldRuntime }
     }
 
     func bottle(for url: URL) -> Bottle? {

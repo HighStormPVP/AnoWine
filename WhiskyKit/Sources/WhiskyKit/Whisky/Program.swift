@@ -295,19 +295,26 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
         self.url = url
         self.pinned = bottle.settings.pins.contains(where: { $0.url == url })
 
-        let settingsUrl = Self.settingsURL(for: url, in: bottle, legacyName: name)
-        self.settingsURL = settingsUrl
-
-        do {
-            self.settings = try ProgramSettings.decode(from: settingsUrl)
-        } catch {
-            Logger.wineKit.error(
-                "Failed to load settings for `\(name)`: \(String(describing: error), privacy: .public)"
-            )
-            // Preserve the unreadable file before the next save overwrites it with defaults.
-            BottleSettings.quarantineCorruptedFile(at: settingsUrl)
+        let settingsUrl: URL
+        if bottle.isFromOldRuntime {
+            // An earlier Ano's bottle: its settings are not read, and nothing is
+            // created, migrated or quarantined in it.
+            settingsUrl = Self.settingsLocations(for: url, bottleURL: bottle.url, legacyName: name).identity
             self.settings = ProgramSettings()
+        } else {
+            settingsUrl = Self.settingsURL(for: url, in: bottle, legacyName: name)
+            do {
+                self.settings = try ProgramSettings.decode(from: settingsUrl)
+            } catch {
+                Logger.wineKit.error(
+                    "Failed to load settings for `\(name)`: \(String(describing: error), privacy: .public)"
+                )
+                // Preserve the unreadable file before the next save overwrites it with defaults.
+                BottleSettings.quarantineCorruptedFile(at: settingsUrl)
+                self.settings = ProgramSettings()
+            }
         }
+        self.settingsURL = settingsUrl
 
         self.peFile = peFile
         self.dxvkSteering = dxvkSteering ?? DXVKSteering.detect(executable: url)
@@ -333,6 +340,8 @@ public final class Program: ObservableObject, Equatable, Hashable, Identifiable 
 
     /// Save the settings to file
     private func saveSettings() {
+        // Nothing writes to a bottle an earlier Ano made.
+        guard !bottle.isFromOldRuntime else { return }
         do {
             try settings.encode(to: settingsURL)
         } catch {

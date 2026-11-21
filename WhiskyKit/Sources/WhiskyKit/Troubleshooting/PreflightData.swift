@@ -84,6 +84,28 @@ public struct PreflightData: Codable, Sendable {
     /// When this preflight data was collected.
     public let collectedAt: Date
 
+    /// Every stored field, the server state written as `isAnoServerRunning`: a
+    /// bottle's files carry no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case bottleURL
+        case bottleName
+        case programURL
+        case programName
+        case launcherType
+        case isWineserverRunning = "isAnoServerRunning"
+        case processCount
+        case recentLogURL
+        case lastExitCode
+        case recentRunStartTime
+        case audioDeviceName
+        case audioTransportType
+        case audioSampleRate
+        case graphicsBackend
+        case bottleGraphicsBackend
+        case graphicsBackendReason
+        case collectedAt
+    }
+
     public init(
         bottleURL: URL,
         bottleName: String,

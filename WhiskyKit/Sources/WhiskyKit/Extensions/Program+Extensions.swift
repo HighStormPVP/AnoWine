@@ -87,6 +87,13 @@ public extension Program {
         useTerminal: Bool,
         onClipboardCleared: (@MainActor (_ contentType: String, _ sizeBytes: Int) -> Void)? = nil
     ) async -> LaunchResult {
+        // Refused before the launcher fixes or the clipboard check look at it.
+        do {
+            try bottle.refuseIfFromOldRuntime()
+        } catch {
+            return .launchFailed(programName: name, errorDescription: error.localizedDescription)
+        }
+
         // Launcher detection first: in Automatic mode the clipboard policy
         // depends on which launcher this is. Settings it changes are saved
         // before the launch below prepares the bottle.

@@ -105,8 +105,10 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
     /// scanning the bottle; ``rockstarWineD3DStatus`` reads it.
     @Published public internal(set) var rockstarD3DLayout: RockstarD3DLayout?
     /// Indicates whether the bottle's directory exists and is accessible.
+    /// Never `true` when an earlier Ano made the bottle: it can't be opened.
     public var isAvailable: Bool = false
-    /// Whether an earlier Ano made this bottle (``OldRuntimeBottle``).
+    /// Whether an earlier Ano made this bottle (``OldRuntimeBottle``): it is
+    /// listed but never decoded, opened, run or written to.
     public nonisolated let isFromOldRuntime: Bool
 
     /// The in-flight program scan, if any, used to coalesce concurrent rescans.
@@ -146,7 +148,8 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
     /// This initializer loads existing settings from the metadata file if present,
     /// or creates default settings if the file doesn't exist or is corrupted.
     /// Invalid pins (referencing deleted programs) are automatically cleaned up;
-    /// the cleanup is saved to disk only when it actually removed a pin.
+    /// the cleanup is saved to disk only when it actually removed a pin. A bottle
+    /// an earlier Ano made is neither decoded nor written (``isFromOldRuntime``).
     ///
     /// - Parameters:
     ///   - bottleUrl: The URL to the bottle's root directory.
@@ -156,9 +159,16 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
         let metadataURL = bottleUrl.appending(path: "Metadata").appendingPathExtension("plist")
         self.url = bottleUrl
         self.inFlight = inFlight
-        self.isAvailable = isAvailable
         self.metadataURL = metadataURL
-        self.isFromOldRuntime = OldRuntimeBottle.isOld(at: bottleUrl)
+        let isOld = OldRuntimeBottle.isOld(at: bottleUrl)
+        self.isFromOldRuntime = isOld
+        self.isAvailable = isAvailable && !isOld
+
+        guard !isOld else {
+            // Not decoded: this build reads its old keys as defaults, and a save would write those over it.
+            self.settings = BottleSettings(oldBottleAt: bottleUrl)
+            return
+        }
 
         do {
             self.settings = try BottleSettings.decode(from: metadataURL)
@@ -232,6 +242,8 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
 
     /// Encode and save the bottle settings
     private func saveSettings() {
+        // Nothing writes to a bottle an earlier Ano made, whatever changed in memory.
+        guard !isFromOldRuntime else { return }
         do {
             try settings.encode(to: self.metadataURL)
         } catch {

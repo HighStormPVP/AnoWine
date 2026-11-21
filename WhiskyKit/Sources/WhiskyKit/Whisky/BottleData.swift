@@ -158,6 +158,8 @@ public struct BottleData: Codable {
         return entries
             .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
             .filter { !registered.contains(Self.comparablePath($0)) }
+            // An earlier Ano's bottle can't be used, so it is no bottle to re-import.
+            .filter { !OldRuntimeBottle.isOld(at: $0) }
             .compactMap { url in
                 let metadataURL = url.appending(path: "Metadata").appendingPathExtension("plist")
                 guard let data = try? Data(contentsOf: metadataURL),

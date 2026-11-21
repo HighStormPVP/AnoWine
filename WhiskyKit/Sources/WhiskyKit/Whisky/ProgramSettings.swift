@@ -173,6 +173,19 @@ public struct ProgramSettings: Codable {
     /// evidence (e.g., a fresh crash diagnosis) is found.
     public var dismissedDependencyRecommendations: Set<String>?
 
+    /// Every stored setting, the debug preset written as `activeAnoDebugPreset`:
+    /// a bottle's files carry no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case locale
+        case environment
+        case arguments
+        case overrides
+        case activeWineDebugPreset = "activeAnoDebugPreset"
+        case lastLogFileURL
+        case lastDiagnosisDate
+        case dismissedDependencyRecommendations
+    }
+
     /// Creates a new ProgramSettings with default values.
     public init() {}
 

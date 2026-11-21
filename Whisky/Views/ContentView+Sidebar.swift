@@ -43,6 +43,8 @@ extension ContentView {
                                     ProgressView().controlSize(.small)
                                 }
                                 .opacity(0.5)
+                            } else if bottle.isFromOldRuntime {
+                                oldRuntimeBottleRow(bottle)
                             } else if !bottle.isAvailable {
                                 HStack {
                                     Image(systemName: "exclamationmark.triangle.fill")
@@ -115,7 +117,8 @@ extension ContentView {
     @ViewBuilder
     var detail: some View {
         if let bottle = selected {
-            if let bottle = bottleVM.bottles.first(where: { $0.url == bottle }) {
+            // An earlier Ano's bottle is never opened, however it got selected.
+            if let bottle = bottleVM.bottles.first(where: { $0.url == bottle }), !bottle.isFromOldRuntime {
                 BottleView(bottle: bottle)
                     .disabled(bottle.inFlight)
                     .id(bottle.url)
@@ -144,6 +147,79 @@ extension ContentView {
 
     var sortedBottles: [Bottle] {
         bottleVM.bottles.sorted()
+    }
+}
+
+// MARK: - Bottles Made by an Earlier Ano
+
+extension ContentView {
+    /// A bottle an earlier Ano made: listed, with what to do about it, so it can
+    /// be removed or deleted, but never opened. Nothing here writes to it.
+    func oldRuntimeBottleRow(_ bottle: Bottle) -> some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.caption)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(bottle.settings.name)
+                Text("bottle.oldRuntime.title")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button {
+                confirmOldRuntimeBottleRemoval(bottle)
+            } label: {
+                Image(systemName: "xmark.circle")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("button.removeFromList.help")
+        }
+        .help("bottle.oldRuntime.message")
+        .opacity(0.6)
+        .selectionDisabled(true)
+        .contextMenu {
+            Button("button.removeAlert", systemImage: "trash") {
+                confirmOldRuntimeBottleRemoval(bottle)
+            }
+            .labelStyle(.titleAndIcon)
+            Button("button.showInFinder", systemImage: "folder") {
+                NSWorkspace.shared.activateFileViewerSelecting([bottle.url])
+            }
+            .labelStyle(.titleAndIcon)
+        }
+        .accessibilityIdentifier("sidebar.oldRuntimeBottle")
+    }
+
+    /// Says why the bottle can't be used, then removes it from the list, and
+    /// deletes its folder too when the box is ticked.
+    @MainActor
+    func confirmOldRuntimeBottleRemoval(_ bottle: Bottle) {
+        let deleteFiles = NSButton(
+            checkboxWithTitle: String(localized: "button.removeAlert.checkbox"), target: nil, action: nil
+        )
+        let alert = NSAlert()
+        alert.messageText = String(format: String(localized: "button.removeAlert.msg"), bottle.settings.name)
+        alert.informativeText = String(localized: "bottle.oldRuntime.message")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: String(localized: "button.removeAlert.delete")).hasDestructiveAction = true
+        alert.addButton(withTitle: String(localized: "button.removeAlert.cancel"))
+        alert.accessoryView = deleteFiles
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        // Nothing of this Ano's runs in the bottle, so there is nothing to stop first.
+        let registry = BottleVM.shared
+        do {
+            try BottleOperations.remove(bottleAt: bottle.url, deleteFiles: deleteFiles.state == .on, registry: registry)
+        } catch {
+            let failure = NSAlert()
+            failure.messageText = String(localized: "bottle.remove.failed.title")
+            failure.informativeText = error.localizedDescription
+            failure.alertStyle = .critical
+            failure.addButton(withTitle: String(localized: "button.ok"))
+            failure.runModal()
+        }
     }
 }
 

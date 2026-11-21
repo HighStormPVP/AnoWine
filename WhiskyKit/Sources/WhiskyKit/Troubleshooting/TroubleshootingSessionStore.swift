@@ -242,7 +242,7 @@ public struct TroubleshootingSessionStore: TroubleshootingSessionStoring {
             let oldState = snapshot.isWineserverRunning ? "running" : "stopped"
             let newState = currentPreflight.isWineserverRunning ? "running" : "stopped"
             changes.append(StalenessChange(
-                field: "isWineserverRunning",
+                field: "isAnoServerRunning",
                 oldValue: oldState,
                 newValue: newState,
                 displayMessage: currentPreflight.isWineserverRunning

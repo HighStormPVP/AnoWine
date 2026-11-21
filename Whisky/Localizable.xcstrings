@@ -19841,6 +19841,38 @@
         }
       }
     },
+    "bottle.oldRuntime.message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle was made by an earlier version of Ano and can't be used with this one. Create a new bottle and reinstall its programs."
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This bottle was made by an earlier version of Ano and can't be used with this one. Create a new bottle and reinstall its programs."
+          }
+        }
+      }
+    },
+    "bottle.oldRuntime.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made with an earlier Ano"
+          }
+        },
+        "en-GB" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made with an earlier Ano"
+          }
+        }
+      }
+    },
     "bottle.orphan.stop" : {
       "localizations" : {
         "en" : {

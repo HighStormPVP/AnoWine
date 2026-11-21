@@ -50,6 +50,19 @@ public struct RunLogEntry: Codable, Identifiable, Equatable, Sendable {
     /// Whether ANODEBUG output was captured during this run.
     public var hasWineDebugOutput: Bool = false
 
+    /// Every stored field, the debug ones written as `activeAnoDebugPreset` and
+    /// `hasAnoDebugOutput`: a bottle's files carry no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case startTime
+        case endTime
+        case exitCode
+        case logFileName
+        case programName
+        case activeWineDebugPreset = "activeAnoDebugPreset"
+        case hasWineDebugOutput = "hasAnoDebugOutput"
+    }
+
     /// Whether the program is still running (no end time recorded yet).
     public var isRunning: Bool {
         endTime == nil

@@ -85,6 +85,8 @@ extension Program {
         importer: Wine.RegistryImporter = { try await Wine.importRegistry(document: $0, bottle: $1) },
         bootstrapper: Wine.PrefixBootstrapper = { try await Wine.bootstrapPrefix(bottle: $0) }
     ) async throws -> Wine.PreparedLaunch {
+        // Before anything reaches the prefix: an earlier Ano's bottle is never touched.
+        try bottle.refuseIfFromOldRuntime()
         try await Wine.prepareBottlePrefix(bottle: bottle, bootstrapper: bootstrapper)
         await Wine.syncAudioRegistry(bottle: bottle)
         return try await Wine.prepareProgramLaunch(

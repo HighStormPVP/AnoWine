@@ -116,6 +116,23 @@ public struct BottleLauncherConfig: Codable, Equatable {
     /// predates the migration and decodes as `0`.
     var localeMigration: Int = LauncherLocaleMigration.current
 
+    /// Every stored setting, the Rockstar one written as `rockstarAnoD3D`: a
+    /// bottle's files carry no `wine` key, which is what marks one an earlier Ano made.
+    private enum CodingKeys: String, CodingKey {
+        case compatibilityMode
+        case launcherMode
+        case detectedLauncher
+        case launcherLocale
+        case gpuSpoofing
+        case gpuVendor
+        case autoEnableDXVK
+        case rockstarWineD3D = "rockstarAnoD3D"
+        case backendMigration
+        case backendResetNotice
+        case backendSwitchedByLauncher
+        case localeMigration
+    }
+
     public init() {}
 
     public init(from decoder: Decoder) throws {

@@ -37,6 +37,8 @@ public extension Wine {
     /// - Returns: `true` if the wineserver is active, `false` otherwise.
     @MainActor
     static func isWineserverRunning(for bottle: Bottle) async -> Bool {
+        // Nothing of this Ano's runs in an earlier Ano's bottle, so nothing is probed there.
+        guard !bottle.isFromOldRuntime else { return false }
         // Deliberately does NOT go through runWineserverProcess: a -k0 probe
         // only needs ANOPREFIX, while the full path builds the entire launch
         // environment and creates + retention-scans a log file per call — the

@@ -157,6 +157,7 @@ public class Wine {
     public static func runWineProcess(
         name: String? = nil, args: [String], bottle: Bottle, environment: [String: String] = [:]
     ) throws -> AsyncStream<ProcessOutput> {
+        try bottle.refuseIfFromOldRuntime()
         let fileHandle = try makeFileHandle()
         fileHandle.writeApplicationInfo()
         fileHandle.writeInfo(for: bottle)
@@ -186,6 +187,7 @@ public class Wine {
     public static func runWineserverProcess(
         name: String? = nil, args: [String], bottle: Bottle, environment: [String: String] = [:]
     ) throws -> AsyncStream<ProcessOutput> {
+        try bottle.refuseIfFromOldRuntime()
         let fileHandle = try makeFileHandle()
         fileHandle.writeApplicationInfo()
         fileHandle.writeInfo(for: bottle)
@@ -339,6 +341,9 @@ public class Wine {
         // LauncherFixes.detectAndApply in the app's run-a-file paths
         // (FileOpenView, BottleActionBar).
 
+        // Before the preparation writes into the prefix: an earlier Ano's bottle is never touched.
+        try bottle.refuseIfFromOldRuntime()
+
         // Disable App Nap if requested, so macOS doesn't throttle Whisky while it
         // pumps the session's output: held until the output closes, not only
         // while the `wine start` launcher runs.
@@ -474,6 +479,7 @@ public class Wine {
         dxmtFolder: URL = Wine.dxmtFolder,
         rockstarRuntime: RockstarD3DRuntime = .installed
     ) async throws -> PreparedLaunch {
+        try bottle.refuseIfFromOldRuntime()
         // Font aliases first, before any setting is read: their import can take
         // a few seconds, and a setting changed during it would leave this launch
         // with one backend's files and another's environment. It must finish
@@ -794,7 +800,10 @@ public class Wine {
     ) -> String {
         // Escape args and environment values to prevent shell injection from user-editable settings
         let escapedArgs = preEscaped ? args : args.esc
-        WineUserProfile.reconcile(bottleURL: bottle.url)
+        // Only describes the command for an earlier Ano's bottle: nothing is written to it.
+        if !bottle.isFromOldRuntime {
+            WineUserProfile.reconcile(bottleURL: bottle.url)
+        }
         let wineEnv = constructWineEnvironment(for: bottle, environment: environment)
         return shellCommand(
             "\(loader(for: wineEnv, default: wineBinary).esc) start /unix \(url.esc) \(escapedArgs)",
@@ -981,6 +990,7 @@ public class Wine {
         _ args: [String], bottle: Bottle, environment: [String: String] = [:], createsLogFile: Bool = true,
         isHelper: Bool = true
     ) async throws -> String {
+        try bottle.refuseIfFromOldRuntime()
         let bottleURL = bottle.url
         if isHelper {
             WineHelperActivity.shared.begin(bottleURL: bottleURL)
@@ -1106,6 +1116,8 @@ public class Wine {
     /// - Note: This is intentionally non-blocking. Errors are logged but not propagated.
     @MainActor
     public static func killBottle(bottle: Bottle) {
+        // Nothing of this Ano's runs in an earlier Ano's bottle.
+        guard !bottle.isFromOldRuntime else { return }
         Task {
             do {
                 _ = try await runWineserver(["-k"], bottle: bottle)
@@ -1123,6 +1135,7 @@ public class Wine {
     /// on quit whatever the kill-on-quit setting said.
     @MainActor
     public static func killBottleAndWait(bottle: Bottle, timeout: TimeInterval = 5) {
+        guard !bottle.isFromOldRuntime else { return }
         let process = Process()
         process.executableURL = wineserverBinary
         process.arguments = ["-k"]

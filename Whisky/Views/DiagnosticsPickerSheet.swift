@@ -51,7 +51,7 @@ struct DiagnosticsPickerSheet: View {
 
             Picker("Bottle", selection: $selectedBottle) {
                 Text("Select a bottle").tag(nil as Bottle?)
-                ForEach(bottleVM.bottles) { bottle in
+                ForEach(bottleVM.usableBottles) { bottle in
                     Text(bottle.settings.name).tag(bottle as Bottle?)
                 }
             }

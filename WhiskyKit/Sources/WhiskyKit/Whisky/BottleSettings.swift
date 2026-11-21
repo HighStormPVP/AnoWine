@@ -147,8 +147,8 @@ public struct BottleSettings: Codable, Equatable {
     var fileVersion: SemanticVersion = Self.defaultFileVersion
     /// Basic bottle information (name, pins).
     private var info: BottleInfo
-    /// Wine-specific configuration.
-    private var wineConfig: BottleWineConfig
+    /// Runtime configuration (Windows version, sync, AVX), stored as `anoConfig`.
+    private var anoConfig: BottleWineConfig
     /// Metal graphics settings.
     private var metalConfig: BottleMetalConfig
     /// DXVK translation layer settings.
@@ -181,7 +181,7 @@ public struct BottleSettings: Codable, Equatable {
     /// Creates a new BottleSettings instance with default values.
     public init() {
         self.info = BottleInfo()
-        self.wineConfig = BottleWineConfig()
+        self.anoConfig = BottleWineConfig()
         self.metalConfig = BottleMetalConfig()
         self.dxvkConfig = BottleDXVKConfig()
         self.performanceConfig = BottlePerformanceConfig()
@@ -203,8 +203,8 @@ public struct BottleSettings: Codable, Equatable {
         self.fileVersion = try container.decodeIfPresent(SemanticVersion.self, forKey: .fileVersion) ?? Self
             .defaultFileVersion
         self.info = try container.decodeIfPresent(BottleInfo.self, forKey: .info) ?? BottleInfo()
-        self.wineConfig = try container
-            .decodeIfPresent(BottleWineConfig.self, forKey: .wineConfig) ?? BottleWineConfig()
+        self.anoConfig = try container
+            .decodeIfPresent(BottleWineConfig.self, forKey: .anoConfig) ?? BottleWineConfig()
         self.metalConfig = try container
             .decodeIfPresent(BottleMetalConfig.self, forKey: .metalConfig) ?? BottleMetalConfig()
         self.dxvkConfig = try container
@@ -270,8 +270,8 @@ public struct BottleSettings: Codable, Equatable {
     ///
     /// This is automatically updated when Wine is upgraded.
     public var wineVersion: SemanticVersion {
-        get { wineConfig.wineVersion }
-        set { wineConfig.wineVersion = newValue }
+        get { anoConfig.wineVersion }
+        set { anoConfig.wineVersion = newValue }
     }
 
     /// The Windows version that Wine emulates for this bottle.
@@ -279,8 +279,8 @@ public struct BottleSettings: Codable, Equatable {
     /// Different Windows versions may provide better compatibility
     /// for different applications. Windows 10 is recommended for most games.
     public var windowsVersion: WinVersion {
-        get { wineConfig.windowsVersion }
-        set { wineConfig.windowsVersion = newValue }
+        get { anoConfig.windowsVersion }
+        set { anoConfig.windowsVersion = newValue }
     }
 
     /// Whether AVX instruction set support is advertised to programs.
@@ -288,8 +288,8 @@ public struct BottleSettings: Codable, Equatable {
     /// Enable this via Rosetta 2 for programs that require AVX instructions.
     /// Only applicable on Apple Silicon Macs.
     public var avxEnabled: Bool {
-        get { wineConfig.avxEnabled }
-        set { wineConfig.avxEnabled = newValue }
+        get { anoConfig.avxEnabled }
+        set { anoConfig.avxEnabled = newValue }
     }
 
     /// The list of pinned programs for quick access.
@@ -322,8 +322,8 @@ public struct BottleSettings: Codable, Equatable {
     /// Enhanced sync modes (ESync/MSync) can improve performance for some applications
     /// by using more efficient synchronization primitives.
     public var enhancedSync: EnhancedSync {
-        get { wineConfig.enhancedSync }
-        set { wineConfig.enhancedSync = newValue }
+        get { anoConfig.enhancedSync }
+        set { anoConfig.enhancedSync = newValue }
     }
 
     /// Whether to display the Metal performance HUD overlay.
@@ -852,11 +852,11 @@ public struct BottleSettings: Codable, Equatable {
             return settings
         }
 
-        if settings.wineConfig.wineVersion != BottleWineConfig().wineVersion {
+        if settings.anoConfig.wineVersion != BottleWineConfig().wineVersion {
             Logger.wineKit.warning(
-                "Bottle has a different wine version `\(settings.wineConfig.wineVersion, privacy: .public)`"
+                "Bottle has a different wine version `\(settings.anoConfig.wineVersion, privacy: .public)`"
             )
-            settings.wineConfig.wineVersion = BottleWineConfig().wineVersion
+            settings.anoConfig.wineVersion = BottleWineConfig().wineVersion
             do {
                 try settings.encode(to: metadataURL)
             } catch {
