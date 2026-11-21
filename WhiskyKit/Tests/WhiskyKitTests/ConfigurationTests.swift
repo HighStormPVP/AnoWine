@@ -29,7 +29,7 @@ final class BottleWineConfigDecodingTests: XCTestCase {
 
     func testDecodeWithAllValues() throws {
         let plist: [String: Any] = [
-            "wineVersion": createVersionDict(major: 8, minor: 0, patch: 1),
+            "anoVersion": createVersionDict(major: 8, minor: 0, patch: 1),
             "windowsVersion": "win11",
             "enhancedSync": ["esync": [:]],
             "avxEnabled": true
@@ -59,7 +59,7 @@ final class BottleWineConfigDecodingTests: XCTestCase {
 
     func testDecodeWithMissingWindowsVersionUsesDefault() throws {
         let plist: [String: Any] = [
-            "wineVersion": createVersionDict(major: 8, minor: 0, patch: 0),
+            "anoVersion": createVersionDict(major: 8, minor: 0, patch: 0),
             "enhancedSync": ["msync": [:]],
             "avxEnabled": false
         ]
@@ -72,7 +72,7 @@ final class BottleWineConfigDecodingTests: XCTestCase {
 
     func testDecodeWithMissingEnhancedSyncUsesDefault() throws {
         let plist: [String: Any] = [
-            "wineVersion": createVersionDict(major: 8, minor: 0, patch: 0),
+            "anoVersion": createVersionDict(major: 8, minor: 0, patch: 0),
             "windowsVersion": "win10",
             "avxEnabled": false
         ]
@@ -85,7 +85,7 @@ final class BottleWineConfigDecodingTests: XCTestCase {
 
     func testDecodeWithMissingAVXEnabledUsesDefault() throws {
         let plist: [String: Any] = [
-            "wineVersion": createVersionDict(major: 8, minor: 0, patch: 0),
+            "anoVersion": createVersionDict(major: 8, minor: 0, patch: 0),
             "windowsVersion": "win10",
             "enhancedSync": ["msync": [:]]
         ]

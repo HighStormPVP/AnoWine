@@ -166,6 +166,8 @@ extension Whisky {
                 "\(path) is not a Whisky bottle: it has no Metadata.plist."
             case .unreadableMetadata:
                 "\(path) is not a Whisky bottle: its Metadata.plist could not be read."
+            case .madeByEarlierAno:
+                "\(path): \(OldRuntimeBottleError().localizedDescription)"
             }
         }
     }

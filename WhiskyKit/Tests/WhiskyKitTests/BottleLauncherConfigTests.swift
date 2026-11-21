@@ -163,7 +163,7 @@ final class BottleLauncherConfigTests: XCTestCase {
         encoder.outputFormat = .xml
         let xml = try XCTUnwrap(String(data: encoder.encode(BottleLauncherConfig()), encoding: .utf8))
 
-        XCTAssertFalse(xml.contains("rockstarWineD3D"))
+        XCTAssertFalse(xml.contains("rockstarAnoD3D"))
     }
 
     func testRockstarWineD3DOffRoundTrips() throws {
@@ -175,7 +175,7 @@ final class BottleLauncherConfigTests: XCTestCase {
         try settings.encode(to: url)
         let xml = try String(contentsOf: url, encoding: .utf8)
 
-        XCTAssertTrue(xml.contains("rockstarWineD3D"))
+        XCTAssertTrue(xml.contains("rockstarAnoD3D"))
         XCTAssertFalse(try BottleSettings.decode(from: url).rockstarWineD3D)
     }
 

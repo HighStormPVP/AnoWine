@@ -202,7 +202,7 @@ final class TroubleshootingPreflightTests: XCTestCase {
 
     func testSnapshotsSavedBeforeTheNewFieldsStillDecode() throws {
         let legacy = """
-        {"bottleURL":"file:///tmp/b","bottleName":"B","isWineserverRunning":false,"processCount":0,\
+        {"bottleURL":"file:///tmp/b","bottleName":"B","isAnoServerRunning":false,"processCount":0,\
         "graphicsBackend":"dxvk","collectedAt":0}
         """
         let preflight = try JSONDecoder().decode(PreflightData.self, from: Data(legacy.utf8))

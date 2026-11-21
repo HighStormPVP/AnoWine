@@ -28,6 +28,8 @@ public enum ExistingBottleError: Error, Equatable {
     case missingMetadata
     /// The directory's `Metadata.plist` could not be read as bottle settings.
     case unreadableMetadata
+    /// An earlier Ano made the bottle (``OldRuntimeBottle``), so this one can't use it.
+    case madeByEarlierAno
 }
 
 extension BottleData {

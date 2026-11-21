@@ -106,6 +106,8 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
     @Published public internal(set) var rockstarD3DLayout: RockstarD3DLayout?
     /// Indicates whether the bottle's directory exists and is accessible.
     public var isAvailable: Bool = false
+    /// Whether an earlier Ano made this bottle (``OldRuntimeBottle``).
+    public nonisolated let isFromOldRuntime: Bool
 
     /// The in-flight program scan, if any, used to coalesce concurrent rescans.
     /// See ``coalesceProgramScan(_:)``.
@@ -156,6 +158,7 @@ public final class Bottle: ObservableObject, Equatable, Hashable, Identifiable, 
         self.inFlight = inFlight
         self.isAvailable = isAvailable
         self.metadataURL = metadataURL
+        self.isFromOldRuntime = OldRuntimeBottle.isOld(at: bottleUrl)
 
         do {
             self.settings = try BottleSettings.decode(from: metadataURL)

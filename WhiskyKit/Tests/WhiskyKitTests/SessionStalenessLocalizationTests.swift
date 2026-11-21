@@ -228,7 +228,7 @@ final class SessionStalenessLocalizationTests: XCTestCase {
 
         XCTAssertEqual(
             found.map(\.field),
-            ["graphicsBackend", "audioDeviceName", "isWineserverRunning", "processCount"]
+            ["graphicsBackend", "audioDeviceName", "isAnoServerRunning", "processCount"]
         )
         XCTAssertEqual(Set(found.map { StringCatalog.stem($0.displayMessage) }).count, 4)
         for change in found {
