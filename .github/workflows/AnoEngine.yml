@@ -216,7 +216,7 @@ jobs:
     needs: build
     if: always() && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.engine_run != ''))
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -456,6 +456,16 @@ jobs:
           python3 scripts/anowine/wine_tokens.py "$B" --allowlist scripts/anowine/wine-allowlist.txt \
             --out "$RUNNER_TEMP/default-tokens.tsv" --gate || missing=1
           exit $missing
+
+      # Plan 3c-3: the app's verbs with ano-tricks, called as the app calls them
+      # (Winetricks+Install.swift), in the default bottle; then remove_mono (the
+      # first thing dotnet48 does) must find mono by its renamed name, and the
+      # bottle passes the gate. It changes the default bottle: keep it after the
+      # steps that read that bottle.
+      - name: The app's verbs with ano-tricks
+        if: always() && steps.default_bottle.outcome == 'success'
+        timeout-minutes: 60
+        run: scripts/anowine/check-ano-tricks.sh "$RUNNER_TEMP/ours/Libraries/Ano" "$RUNNER_TEMP/bottle-default"
 
       # Plan 3c-2: what the app copies from Libraries/DXMT into a bottle
       # (Wine.swift, dxmtPrefixDLLs: the three front ends and the bridge).
