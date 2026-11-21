@@ -18,14 +18,14 @@
 
 import Foundation
 
-/// How the app runs the bundled winetricks script (in the app's Resources,
+/// How the app runs the bundled ano-tricks script (in the app's Resources,
 /// beside cabextract): the command line for installing one verb with nobody
 /// watching (from a game configuration, a troubleshooting fix or the
 /// dependency panel) or listing the installed ones, the environment those
 /// runs get, and the script Terminal sources for a command the user picks.
 public enum WinetricksInstallArguments {
     /// The script's file name in the app's Resources.
-    public static let scriptName = "winetricks"
+    public static let scriptName = "ano-tricks"
 
     /// The bundled script in the Resources folder `resourcesURL`.
     public static func scriptURL(in resourcesURL: URL) -> URL {
@@ -36,19 +36,19 @@ public enum WinetricksInstallArguments {
     ///
     /// Every verb gets `-q` (W_OPT_UNATTENDED). Without it an installer shows
     /// its wizard and waits for a click nothing prompts for, so the process
-    /// never exits and the winetricks.log entry is never written. It is not
+    /// never exits and the ano-tricks.log entry is never written. It is not
     /// only installers: `w_try_regsvr32` adds `/S` only when unattended, so
     /// `xact` put up one "Successfully registered DLL" panel per audio DLL,
     /// each waiting on a click.
     ///
     /// The vcrun verbs also get `--force`: Microsoft rotates the vc_redist
-    /// binaries in place, so the checksums pinned in the bundled winetricks go
+    /// binaries in place, so the checksums pinned in the bundled ano-tricks go
     /// stale between releases and the install aborts with exit 1 on the SHA256
     /// mismatch (winetricks#2195).
     ///
     /// - Parameters:
-    ///   - verb: The winetricks verb to install.
-    ///   - winetricksPath: The path of the bundled winetricks script.
+    ///   - verb: The ano-tricks verb to install.
+    ///   - winetricksPath: The path of the bundled ano-tricks script.
     /// - Returns: `bash`, the script, its options and the verb.
     public static func arguments(verb: String, winetricksPath: String) -> [String] {
         var arguments = ["bash", winetricksPath]
@@ -89,9 +89,9 @@ public enum WinetricksInstallArguments {
         home: String = NSHomeDirectory()
     ) -> [String: String] {
         ProxyEnvironment.applying(proxy, to: [
-            "WINEPREFIX": bottleURL.path(percentEncoded: false),
-            "WINE": AnoWineRuntime.loaderName,
-            "WINESERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
+            "ANOPREFIX": bottleURL.path(percentEncoded: false),
+            "ANO": AnoWineRuntime.loaderName,
+            "ANOSERVER": AnoWineRuntime.serverURL.path(percentEncoded: false),
             "PATH": [
                 WhiskyWineInstaller.binFolder.path(percentEncoded: false),
                 resourcesURL.path(percentEncoded: false),
@@ -123,9 +123,9 @@ public enum WinetricksInstallArguments {
         return ([
             "#!/bin/bash",
             "export PATH=\(ShellQuoting.quoted(pathValue)):\"$PATH\"",
-            "export WINE=\(AnoWineRuntime.loaderName)",
-            "export " + ShellQuoting.assignment("WINESERVER", AnoWineRuntime.serverURL.path(percentEncoded: false)),
-            "export " + ShellQuoting.assignment("WINEPREFIX", bottleURL.path(percentEncoded: false))
+            "export ANO=\(AnoWineRuntime.loaderName)",
+            "export " + ShellQuoting.assignment("ANOSERVER", AnoWineRuntime.serverURL.path(percentEncoded: false)),
+            "export " + ShellQuoting.assignment("ANOPREFIX", bottleURL.path(percentEncoded: false))
         ] + proxyExports + [
             ShellQuoting.commandLine(["bash", scriptURL(in: resourcesURL).path(percentEncoded: false), command]),
             ""
@@ -134,6 +134,6 @@ public enum WinetricksInstallArguments {
 
     /// The file name, in the temporary folder, of one ``terminalScript(command:bottleURL:resourcesURL:proxy:)``.
     public static func terminalScriptName(uuid: UUID = UUID()) -> String {
-        "whisky-winetricks-\(uuid.uuidString).sh"
+        "ano-tricks-\(uuid.uuidString).sh"
     }
 }

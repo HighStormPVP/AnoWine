@@ -18,15 +18,15 @@
 
 import Foundation
 
-/// Cached state of installed winetricks verbs for a bottle.
+/// Cached state of installed ano-tricks verbs for a bottle.
 ///
 /// Stores the set of installed verb names alongside metadata about the
-/// `winetricks.log` file that was current when the cache was last refreshed.
+/// `ano-tricks.log` file that was current when the cache was last refreshed.
 /// This enables cheap staleness detection without spawning a subprocess.
 ///
 /// ## Storage
 ///
-/// Persisted as `WinetricksCache.plist` in the bottle directory alongside
+/// Persisted as `AnoTricksCache.plist` in the bottle directory alongside
 /// `Metadata.plist`, keeping the main settings file uncluttered.
 ///
 /// ## Staleness Detection
@@ -34,7 +34,7 @@ import Foundation
 /// ```swift
 /// let logInfo = WinetricksVerbCache.winetricksLogInfo(for: bottleURL)
 /// if cache.isStale(currentLogSize: logInfo.size, currentLogModDate: logInfo.modDate) {
-///     // Re-run winetricks list-installed
+///     // Re-run ano-tricks list-installed
 /// }
 /// ```
 public struct WinetricksVerbCache: Codable, Sendable {
@@ -44,10 +44,10 @@ public struct WinetricksVerbCache: Codable, Sendable {
     /// The date when the installed verbs were last verified.
     public var lastChecked: Date
 
-    /// The byte size of the winetricks.log file at the time of the last check.
+    /// The byte size of the ano-tricks.log file at the time of the last check.
     public var logFileSize: Int64?
 
-    /// The modification date of the winetricks.log file at the time of the last check.
+    /// The modification date of the ano-tricks.log file at the time of the last check.
     public var logFileModDate: Date?
 
     /// Creates a new verb cache.
@@ -60,7 +60,7 @@ public struct WinetricksVerbCache: Codable, Sendable {
         self.lastChecked = lastChecked
     }
 
-    /// Whether the cache may be stale based on winetricks.log file changes.
+    /// Whether the cache may be stale based on ano-tricks.log file changes.
     ///
     /// The cache is considered stale if:
     /// - No log metadata was recorded (first check or log didn't exist)
@@ -68,7 +68,7 @@ public struct WinetricksVerbCache: Codable, Sendable {
     /// - The log file modification date has changed
     ///
     /// - Parameters:
-    ///   - currentLogSize: The current byte size of the winetricks.log file, or nil if missing.
+    ///   - currentLogSize: The current byte size of the ano-tricks.log file, or nil if missing.
     ///   - currentLogModDate: The current modification date, or nil if missing.
     /// - Returns: `true` if the cache should be refreshed.
     public func isStale(currentLogSize: Int64?, currentLogModDate: Date?) -> Bool {
@@ -88,7 +88,7 @@ public struct WinetricksVerbCache: Codable, Sendable {
 
     // MARK: - Persistence
 
-    private static let cacheFileName = "WinetricksCache.plist"
+    private static let cacheFileName = "AnoTricksCache.plist"
 
     /// Loads the verb cache from the bottle directory.
     ///
@@ -116,8 +116,8 @@ public struct WinetricksVerbCache: Codable, Sendable {
 
     // MARK: - The bottle's log
 
-    /// The log the bundled script keeps in a bottle, naming each verb it installed.
-    public static let logFileName = "winetricks.log"
+    /// The log ano-tricks keeps in a bottle, naming each verb it installed.
+    public static let logFileName = "ano-tricks.log"
 
     /// Where a bottle's log may be: the prefix root (`<bottleURL>/<log>`, the
     /// standard location) first, then `<bottleURL>/drive_c/<log>`, where some

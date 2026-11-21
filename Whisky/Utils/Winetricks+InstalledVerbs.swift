@@ -27,7 +27,7 @@ private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: 
 // swiftlint:disable function_body_length
 
 extension Winetricks {
-    /// Runs `winetricks list-installed` as a headless process to discover installed verbs.
+    /// Runs `ano-tricks list-installed` as a headless process to discover installed verbs.
     ///
     /// - Parameter bottle: The bottle whose prefix to query.
     /// - Returns: A set of installed verb names, or `nil` if the process fails or times out.
@@ -99,7 +99,7 @@ extension Winetricks {
         return verbs
     }
 
-    /// Parses the winetricks.log file as a fallback verb discovery method.
+    /// Parses the bottle's ano-tricks.log as a fallback verb discovery method.
     ///
     /// Checks both the prefix root and drive_c locations for the log file.
     /// Each successfully installed verb appears on its own line in the log.
@@ -115,7 +115,7 @@ extension Winetricks {
     ///
     /// Flow:
     /// 1. Load cache from disk (instant)
-    /// 2. Check staleness via winetricks.log file attributes
+    /// 2. Check staleness via ano-tricks.log file attributes
     /// 3. If cache is fresh, return cached data
     /// 4. Otherwise, try `list-installed` first, fall back to log parsing
     /// 5. Save updated cache and return

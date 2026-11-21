@@ -16,10 +16,10 @@ Every hook passes straight through when `ANO_PROXY_PORT` is not set.
 | `connect` | TCP to a non-loopback address goes to the helper on `127.0.0.1` / `::1`, followed by a `C` frame with the real destination. UDP to a non-loopback address fails with `EACCES`. |
 | `sendto`, `sendmsg` | UDP to a non-loopback address fails with `EACCES`. |
 | `getpeername` | For a tunnelled socket, returns the original destination (`P` frame). |
-| `execve`, `posix_spawn`, `posix_spawnp` | Programs outside `$ANO_WINE_DIR/` (compared by resolved path; bare names are looked up on `PATH`) start without `DYLD_INSERT_LIBRARIES`, because native arm64 tools abort with it. |
+| `execve`, `posix_spawn`, `posix_spawnp` | Programs outside `$ANO_RUNTIME_DIR/` (compared by resolved path; bare names are looked up on `PATH`) start without `DYLD_INSERT_LIBRARIES`, because native arm64 tools abort with it. |
 
 Environment: `ANO_PROXY_PORT` (helper port; `0` means it failed, so all network
-access fails), `ANO_NET_LIB`, `ANO_WINE_DIR`, `ANO_REAL_LOADER`.
+access fails), `ANO_NET_LIB`, `ANO_RUNTIME_DIR`, `ANO_REAL_LOADER`.
 
 The wire protocol (`ANO1` magic, then `C` / `R` / `P` frames) is in the Global
 Constraints of `docs/superpowers/plans/2026-11-10-ano-plan2a-proxy-tcp-dns.md`.

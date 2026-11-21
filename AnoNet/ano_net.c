@@ -546,7 +546,7 @@ static int path_under(const char *path, const char *dir)
  * reached through a symlink. */
 static int inside_wine(const char *path)
 {
-    const char *dir = getenv("ANO_WINE_DIR");
+    const char *dir = getenv("ANO_RUNTIME_DIR");
     if (!path || !dir || !*dir) return 0;
     if (path_under(path, dir)) return 1;
     char real_dir[PATH_MAX], real_path[PATH_MAX];

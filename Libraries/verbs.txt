@@ -57,7 +57,7 @@ vlc                      VLC media player 2.2.1 (VideoLAN, 2015) [downloadable]
 vstools2019              MS Visual Studio Build Tools 2019 (Microsoft, 2019) [downloadable]
 winamp                   Winamp (Radionomy (AOL (Nullsoft)), 2013) [downloadable]
 winrar                   WinRAR 6.11 (RARLAB, 1993) [downloadable]
-wme9                     MS Windows Media Encoder 9 (broken in Wine) (Microsoft, 2002) [downloadable]
+wme9                     MS Windows Media Encoder 9 (broken in Ano) (Microsoft, 2002) [downloadable]
 ===== benchmarks =====
 3dmark03                 3D Mark 03 (Futuremark, 2003) 
 3dmark05                 3D Mark 05 (Futuremark, 2005) [downloadable]
@@ -176,70 +176,70 @@ dxdiag                   DirectX Diagnostic Tool (Microsoft, 2010) [downloadable
 dxdiagn                  DirectX Diagnostic Library (Microsoft, 2011) [downloadable]
 dxdiagn_feb2010          DirectX Diagnostic Library (February 2010) (Microsoft, 2010) [downloadable]
 dxtrans                  MS dxtrans.dll (Microsoft, 2002) [downloadable]
-dxvk                     Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (latest) (Philip Rebohle, 2024) [downloadable]
-dxvk1000                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.0) (Philip Rebohle, 2017) [downloadable]
-dxvk1001                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.0.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1002                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.0.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1003                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.0.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1011                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.1.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1020                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1021                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.2.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1022                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.2.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1023                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.2.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1030                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1031                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.3.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1032                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.3.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1033                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.3.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1034                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.3.4) (Philip Rebohle, 2017) [downloadable]
-dxvk1040                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4) (Philip Rebohle, 2017) [downloadable]
-dxvk1041                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1042                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1043                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1044                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.4) (Philip Rebohle, 2017) [downloadable]
-dxvk1045                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.5) (Philip Rebohle, 2017) [downloadable]
-dxvk1046                 Vulkan-based D3D10/D3D11 implementation for Linux / Wine (1.4.6) (Philip Rebohle, 2017) [downloadable]
-dxvk1050                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.5) (Philip Rebohle, 2017) [downloadable]
-dxvk1051                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.5.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1052                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.5.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1053                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.5.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1054                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.5.4) (Philip Rebohle, 2017) [downloadable]
-dxvk1055                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.5.5) (Philip Rebohle, 2017) [downloadable]
-dxvk1060                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.6) (Philip Rebohle, 2017) [downloadable]
-dxvk1061                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.6.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1070                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.7) (Philip Rebohle, 2017) [downloadable]
-dxvk1071                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.7.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1072                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.7.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1073                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.7.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1080                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.8) (Philip Rebohle, 2017) [downloadable]
-dxvk1081                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.8.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1090                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.9) (Philip Rebohle, 2017) [downloadable]
-dxvk1091                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.9.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1092                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.9.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1093                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.9.3) (Philip Rebohle, 2017) [downloadable]
-dxvk1094                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.9.4) (Philip Rebohle, 2017) [downloadable]
-dxvk1100                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.10) (Philip Rebohle, 2017) [downloadable]
-dxvk1101                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.10.1) (Philip Rebohle, 2017) [downloadable]
-dxvk1102                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.10.2) (Philip Rebohle, 2017) [downloadable]
-dxvk1103                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (1.10.3) (Philip Rebohle, 2022) [downloadable]
-dxvk2000                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (2.0) (Philip Rebohle, 2022) [downloadable]
-dxvk2010                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (2.1) (Philip Rebohle, 2023) [downloadable]
-dxvk2020                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (2.2) (Philip Rebohle, 2023) [downloadable]
-dxvk2030                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Wine (2.3) (Philip Rebohle, 2023) [downloadable]
-dxvk2040                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.4) (Philip Rebohle, 2024) [downloadable]
-dxvk2041                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.4.1) (Philip Rebohle, 2024) [downloadable]
-dxvk2050                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.5) (Philip Rebohle, 2024) [downloadable]
-dxvk2051                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.5.1) (Philip Rebohle, 2024) [downloadable]
-dxvk2052                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.5.2) (Philip Rebohle, 2024) [downloadable]
-dxvk2053                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.5.3) (Philip Rebohle, 2025) [downloadable]
-dxvk2060                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.6) (Philip Rebohle, 2025) [downloadable]
-dxvk2061                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.6.1) (Philip Rebohle, 2025) [downloadable]
-dxvk2062                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.6.2) (Philip Rebohle, 2025) [downloadable]
-dxvk2070                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.7) (Philip Rebohle, 2025) [downloadable]
-dxvk2071                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Wine (2.7.1) (Philip Rebohle, 2025) [downloadable]
+dxvk                     Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (latest) (Philip Rebohle, 2024) [downloadable]
+dxvk1000                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.0) (Philip Rebohle, 2017) [downloadable]
+dxvk1001                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.0.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1002                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.0.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1003                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.0.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1011                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.1.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1020                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1021                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.2.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1022                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.2.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1023                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.2.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1030                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1031                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.3.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1032                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.3.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1033                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.3.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1034                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.3.4) (Philip Rebohle, 2017) [downloadable]
+dxvk1040                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4) (Philip Rebohle, 2017) [downloadable]
+dxvk1041                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1042                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1043                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1044                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4.4) (Philip Rebohle, 2017) [downloadable]
+dxvk1045                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4.5) (Philip Rebohle, 2017) [downloadable]
+dxvk1046                 Vulkan-based D3D10/D3D11 implementation for Linux / Ano (1.4.6) (Philip Rebohle, 2017) [downloadable]
+dxvk1050                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.5) (Philip Rebohle, 2017) [downloadable]
+dxvk1051                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.5.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1052                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.5.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1053                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.5.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1054                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.5.4) (Philip Rebohle, 2017) [downloadable]
+dxvk1055                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.5.5) (Philip Rebohle, 2017) [downloadable]
+dxvk1060                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.6) (Philip Rebohle, 2017) [downloadable]
+dxvk1061                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.6.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1070                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.7) (Philip Rebohle, 2017) [downloadable]
+dxvk1071                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.7.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1072                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.7.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1073                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.7.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1080                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.8) (Philip Rebohle, 2017) [downloadable]
+dxvk1081                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.8.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1090                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.9) (Philip Rebohle, 2017) [downloadable]
+dxvk1091                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.9.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1092                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.9.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1093                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.9.3) (Philip Rebohle, 2017) [downloadable]
+dxvk1094                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.9.4) (Philip Rebohle, 2017) [downloadable]
+dxvk1100                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.10) (Philip Rebohle, 2017) [downloadable]
+dxvk1101                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.10.1) (Philip Rebohle, 2017) [downloadable]
+dxvk1102                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.10.2) (Philip Rebohle, 2017) [downloadable]
+dxvk1103                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (1.10.3) (Philip Rebohle, 2022) [downloadable]
+dxvk2000                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (2.0) (Philip Rebohle, 2022) [downloadable]
+dxvk2010                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (2.1) (Philip Rebohle, 2023) [downloadable]
+dxvk2020                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (2.2) (Philip Rebohle, 2023) [downloadable]
+dxvk2030                 Vulkan-based D3D9/D3D10/D3D11 implementation for Linux / Ano (2.3) (Philip Rebohle, 2023) [downloadable]
+dxvk2040                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.4) (Philip Rebohle, 2024) [downloadable]
+dxvk2041                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.4.1) (Philip Rebohle, 2024) [downloadable]
+dxvk2050                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.5) (Philip Rebohle, 2024) [downloadable]
+dxvk2051                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.5.1) (Philip Rebohle, 2024) [downloadable]
+dxvk2052                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.5.2) (Philip Rebohle, 2024) [downloadable]
+dxvk2053                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.5.3) (Philip Rebohle, 2025) [downloadable]
+dxvk2060                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.6) (Philip Rebohle, 2025) [downloadable]
+dxvk2061                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.6.1) (Philip Rebohle, 2025) [downloadable]
+dxvk2062                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.6.2) (Philip Rebohle, 2025) [downloadable]
+dxvk2070                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.7) (Philip Rebohle, 2025) [downloadable]
+dxvk2071                 Vulkan-based D3D8/D3D9/D3D10/D3D11 implementation for Linux / Ano (2.7.1) (Philip Rebohle, 2025) [downloadable]
 dxvk_async               DXVK with Async and GPL patches [USE AT OWN RISK IN GAMES WITH ANTICHEAT] (latest) (Ph42oN, 2025) [downloadable]
-dxvk_nvapi               Alternative NVAPI Vulkan implementation on top of DXVK for Linux / Wine (latest) (Jens Peters, 2025) [downloadable]
-dxvk_nvapi0061           Alternative NVAPI Vulkan implementation on top of DXVK for Linux / Wine (0.6.1) (Jens Peters, 2023) [downloadable]
-dxvk_nvapi009            Alternative NVAPI Vulkan implementation on top of DXVK for Linux / Wine (0.9.0) (Jens Peters, 2025) [downloadable]
+dxvk_nvapi               Alternative NVAPI Vulkan implementation on top of DXVK for Linux / Ano (latest) (Jens Peters, 2025) [downloadable]
+dxvk_nvapi0061           Alternative NVAPI Vulkan implementation on top of DXVK for Linux / Ano (0.6.1) (Jens Peters, 2023) [downloadable]
+dxvk_nvapi009            Alternative NVAPI Vulkan implementation on top of DXVK for Linux / Ano (0.9.0) (Jens Peters, 2025) [downloadable]
 esent                    MS Extensible Storage Engine (Microsoft, 2011) [downloadable]
 faudio                   FAudio (xaudio reimplementation, with xna support) builds for win32 (20.07) (Kron4ek, 2019) [downloadable]
 faudio1901               FAudio (xaudio reimplementation, with xna support) builds for win32 (19.01) (Kron4ek, 2019) [downloadable]
@@ -251,16 +251,6 @@ faudio1906               FAudio (xaudio reimplementation, with xna support) buil
 faudio190607             FAudio (xaudio reimplementation, with xna support) builds for win32 (19.06.07) (Kron4ek, 2019) [downloadable]
 ffdshow                  ffdshow video codecs (doom9 folks, 2010) [downloadable]
 filever                  Microsoft's filever, for dumping file version info (Microsoft, 20??) [downloadable]
-galliumnine              Gallium Nine Standalone (latest) (Gallium Nine Team, 2024) [downloadable]
-galliumnine010           Gallium Nine Standalone (v0.10) (Gallium Nine Team, 2024) [downloadable]
-galliumnine02            Gallium Nine Standalone (v0.2) (Gallium Nine Team, 2019) [downloadable]
-galliumnine03            Gallium Nine Standalone (v0.3) (Gallium Nine Team, 2019) [downloadable]
-galliumnine04            Gallium Nine Standalone (v0.4) (Gallium Nine Team, 2019) [downloadable]
-galliumnine05            Gallium Nine Standalone (v0.5) (Gallium Nine Team, 2019) [downloadable]
-galliumnine06            Gallium Nine Standalone (v0.6) (Gallium Nine Team, 2020) [downloadable]
-galliumnine07            Gallium Nine Standalone (v0.7) (Gallium Nine Team, 2020) [downloadable]
-galliumnine08            Gallium Nine Standalone (v0.8) (Gallium Nine Team, 2021) [downloadable]
-galliumnine09            Gallium Nine Standalone (v0.9) (Gallium Nine Team, 2023) [downloadable]
 gdiplus                  MS GDI+ (Microsoft, 2011) [downloadable]
 gdiplus_winxp            MS GDI+ (Microsoft, 2009) 
 gfw                      MS Games For Windows Live (xlive.dll) (Microsoft, 2008) [downloadable]
@@ -270,10 +260,6 @@ gmdls                    General MIDI DLS Collection (Microsoft / Roland, 1999) 
 hid                      MS hid (Microsoft, 2003) [downloadable]
 icodecs                  Indeo codecs (Intel, 1998) [downloadable]
 ie6                      Internet Explorer 6 (Microsoft, 2002) [downloadable]
-ie7                      Internet Explorer 7 (Microsoft, 2008) [downloadable]
-ie8                      Internet Explorer 8 (Microsoft, 2009) [downloadable]
-ie8_kb2936068            Cumulative Security Update for Internet Explorer 8 (Microsoft, 2014) [downloadable]
-ie8_tls12                TLS 1.1 and 1.2 for Internet Explorer 8 (Microsoft, 2017) [downloadable]
 iertutil                 MS Runtime Utility (Microsoft, 2011) [downloadable]
 itircl                   MS itircl.dll (Microsoft, 1999) [downloadable]
 itss                     MS itss.dll (Microsoft, 1999) [downloadable]
@@ -318,14 +304,11 @@ ogg                      OpenCodecs 0.85: FLAC, Speex, Theora, Vorbis, WebM (Xip
 ole32                    MS ole32 Module (ole32.dll) (Microsoft, 2004) [downloadable]
 oleaut32                 MS oleaut32.dll (Microsoft, 2011) [downloadable]
 openal                   OpenAL Runtime (Creative, 2023) [downloadable]
-otvdm                    Otvdm - A modified version of winevdm as Win16 emulator (otya128, 2024) [downloadable]
-otvdm090                 Otvdm - A modified version of winevdm as Win16 emulator (otya128, 2024) [downloadable]
 pdh                      MS pdh.dll (Performance Data Helper) (Microsoft, 2011) [downloadable]
 pdh_nt4                  MS pdh.dll (Performance Data Helper); WinNT 4.0 Version (Microsoft, 1997) [downloadable]
 peverify                 MS peverify (from .NET 2.0 SDK) (Microsoft, 2006) [downloadable]
 physx                    PhysX (Nvidia, 2024) [downloadable]
 pngfilt                  pngfilt.dll (from winxp) (Microsoft, 2004) [downloadable]
-powershell               PowerShell Wrapper For Wine (ProjectSynchro, 2024) [downloadable]
 powershell_core          PowerShell Core (Microsoft, 2024) [downloadable]
 prntvpt                  prntvpt.dll (Microsoft, 2011) [downloadable]
 python26                 Python interpreter 2.6.2 (Python Software Foundaton, 2009) [downloadable]
@@ -371,7 +354,7 @@ vcrun2022                Visual C++ 2015-2022 libraries (concrt140.dll,mfc140.dl
 vcrun6                   Visual C++ 6 SP4 libraries (mfc42, msvcp60, msvcirt) (Microsoft, 2000) [downloadable]
 vcrun6sp6                Visual C++ 6 SP6 libraries (with fixes in ATL and MFC) (Microsoft, 2004) [downloadable]
 vjrun20                  MS Visual J# 2.0 SE libraries (requires dotnet20) (Microsoft, 2007) [downloadable]
-vkd3d                    Vulkan-based D3D12 implementation for Linux / Wine (latest) (Hans-Kristian Arntzen , 2020) [downloadable]
+vkd3d                    Vulkan-based D3D12 implementation for Linux / Ano (latest) (Hans-Kristian Arntzen , 2020) [downloadable]
 webio                    MS Windows Web I/O (Microsoft, 2011) [downloadable]
 windowscodecs            MS Windows Imaging Component (Microsoft, 2006) [downloadable]
 winhttp                  MS Windows HTTP Services (Microsoft, 2005) [downloadable]
@@ -443,8 +426,8 @@ settings
 ===== settings =====
 alldlls=builtin          Override most common DLLs to builtin 
 alldlls=default          Remove all DLL overrides 
-autostart_winedbg=disabled Prevent winedbg from launching when an unhandled exception occurs 
-autostart_winedbg=enabled Automatically launch winedbg when an unhandled exception occurs (default) 
+autostart_anodbg=disabled Prevent ano-dbg from launching when an unhandled exception occurs 
+autostart_anodbg=enabled Automatically launch ano-dbg when an unhandled exception occurs (default) 
 bad                      Fake verb that always returns false 
 cfc=disabled             Disable CheckFloatConstants (default) 
 cfc=enabled              Enable CheckFloatConstants 
@@ -469,10 +452,10 @@ gsm=1                    Set MaxShaderModelGS to 1
 gsm=2                    Set MaxShaderModelGS to 2 
 gsm=3                    Set MaxShaderModelGS to 3 
 heapcheck                Enable heap checking with GlobalFlag 
-hidewineexports=disable  Disable hiding Wine exports from applications (wine-staging) 
-hidewineexports=enable   Enable hiding Wine exports from applications (wine-staging) 
+hideanoexports=disable   Disable hiding Ano exports from applications (ano-staging) 
+hideanoexports=enable    Enable hiding Ano exports from applications (ano-staging) 
 hosts                    Add empty C:\windows\system32\drivers\etc\{hosts,services} files 
-isolate_home             Remove wineprefix links to /Users/afranke 
+isolate_home             Remove anoprefix links to ~ 
 mackeyremap=both         Enable mapping opt->alt and cmd->ctrl keys for the Mac native driver 
 mackeyremap=left         Enable mapping of left opt->alt and cmd->ctrl keys for the Mac native driver 
 mackeyremap=none         Do not remap keys for the Mac native driver (default) 
@@ -493,7 +476,7 @@ psm=0                    Set MaxShaderModelPS to 0
 psm=1                    Set MaxShaderModelPS to 1 
 psm=2                    Set MaxShaderModelPS to 2 
 psm=3                    Set MaxShaderModelPS to 3 
-remove_mono              Remove builtin wine-mono 
+remove_mono              Remove builtin ano-mono 
 renderer=gdi             Set renderer to gdi 
 renderer=gl              Set renderer to gl 
 renderer=no3d            Set renderer to no3d 
@@ -504,9 +487,9 @@ rtlm=readdraw            Set RenderTargetLockMode to readdraw
 rtlm=readtex             Set RenderTargetLockMode to readtex 
 rtlm=texdraw             Set RenderTargetLockMode to texdraw 
 rtlm=textex              Set RenderTargetLockMode to textex 
-sandbox                  Sandbox the wineprefix - remove links to /Users/afranke 
+sandbox                  Sandbox the anoprefix - remove links to ~ 
 set_mididevice           Set MIDImap device to the value specified in the MIDI_DEVICE environment variable 
-set_userpath             set user PATH variable in wine prefix specified by native and/or wine paths in WINEPATH environment variable with ';' as path separator 
+set_userpath             set user PATH variable in ano prefix specified by native and/or ano paths in ANOPATH environment variable with ';' as path separator 
 shader_backend=arb       Set shader_backend to arb 
 shader_backend=glsl      Set shader_backend to glsl 
 shader_backend=none      Set shader_backend to none 
@@ -517,8 +500,8 @@ sound=oss                Set sound driver to OSS
 sound=pulse              Set sound driver to PulseAudio 
 ssm=disabled             Disable Struct Shader Math (default) 
 ssm=enabled              Enable Struct Shader Math 
-theme=dark               Use dark theme for the WINEPREFIX 
-theme=light              Use default Wine theme (light) for the WINEPREFIX 
+theme=dark               Use dark theme for the ANOPREFIX 
+theme=light              Use default Ano theme (light) for the ANOPREFIX 
 useegl=n                 Disable EGL, use GLX instead 
 useegl=y                 Enable EGL (default) 
 usetakefocus=n           Disable UseTakeFocus (default) 
@@ -529,10 +512,10 @@ vd=1440x900              Enable virtual desktop, set size to 1440x900
 vd=640x480               Enable virtual desktop, set size to 640x480 
 vd=800x600               Enable virtual desktop, set size to 800x600 
 vd=off                   Disable virtual desktop 
-videomemorysize=1024     Tell Wine your video card has 1024MB RAM 
-videomemorysize=2048     Tell Wine your video card has 2048MB RAM 
-videomemorysize=512      Tell Wine your video card has 512MB RAM 
-videomemorysize=default  Let Wine detect amount of video card memory 
+videomemorysize=1024     Tell Ano your video card has 1024MB RAM 
+videomemorysize=2048     Tell Ano your video card has 2048MB RAM 
+videomemorysize=512      Tell Ano your video card has 512MB RAM 
+videomemorysize=default  Let Ano detect amount of video card memory 
 vista                    Set Windows version to Windows Vista 
 vsm=0                    Set MaxShaderModelVS to 0 
 vsm=1                    Set MaxShaderModelVS to 1 

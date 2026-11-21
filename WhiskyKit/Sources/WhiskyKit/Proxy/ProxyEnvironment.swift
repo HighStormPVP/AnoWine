@@ -29,7 +29,7 @@ public enum ProxyEnvironment {
     /// Absolute path of `libano_net.dylib`.
     public static let libraryKey = "ANO_NET_LIB"
     /// The runtime's `Libraries/Ano` folder: programs under it keep the interceptor.
-    public static let wineDirKey = "ANO_WINE_DIR"
+    public static let wineDirKey = "ANO_RUNTIME_DIR"
     /// The runtime's `ano-loader`, which the wrapper starts.
     public static let realLoaderKey = "ANO_REAL_LOADER"
     static let dyldKey = "DYLD_INSERT_LIBRARIES"
@@ -99,7 +99,7 @@ public enum ProxyEnvironment {
         return wrapper
     }
 
-    /// For tools that start Wine by name from a shell (Winetricks): the
+    /// For tools that start Wine by name from a shell (ano-tricks): the
     /// variables to add and the folder to put first on `PATH`, so `ano-loader`
     /// resolves to the wrapper. Empty for a bottle with the proxy off.
     @MainActor
@@ -109,10 +109,10 @@ public enum ProxyEnvironment {
         guard bottle.settings.proxyEnabled else { return ([:], nil) }
         _ = try? installWrapper()
         var additions = variables(port: proxyPort(bottle))
-        // Winetricks reads the Wine binary to learn its architecture; the wrapper
+        // ano-tricks reads the loader binary to learn its architecture; the wrapper
         // is a script, so point it at the real loader (it still runs `ano-loader`
         // from PATH, which is the wrapper).
-        additions["WINE_BIN"] = AnoWineRuntime.loaderURL.path(percentEncoded: false)
+        additions["ANO_BIN"] = AnoWineRuntime.loaderURL.path(percentEncoded: false)
         return (additions, wrapperFolder.path(percentEncoded: false))
     }
 

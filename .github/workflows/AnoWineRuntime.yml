@@ -34,6 +34,10 @@ env:
   ENGINE_SHA256: 08ffabd7b7c352470faee2b1d51061b341316e401439ca805c5302acc2fb8818
   OLD_RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v3.1.6/Libraries.tar.gz
   OLD_RUNTIME_SHA256: 412035519d2df986aebb5c3a72c5dd6b00162d3b5aa52c1fff1713928b521ead
+  # Runtime 4.x reads upstream's WINE* names, so its checks use the winetricks the app
+  # bundled before ano-tricks replaced it (Plan 3c-4a), pinned at its last commit.
+  LEGACY_WINETRICKS_URL: https://raw.githubusercontent.com/HighStormPVP/AnoWine/c734db46c3716b78fc381735888aa2c4eca6d3be/Libraries/winetricks
+  LEGACY_WINETRICKS_SHA256: f43967dbd067cf384e61adb640a21e45b6644b776cb34abb13301566374f0730
 
 jobs:
   modules:
@@ -115,7 +119,9 @@ jobs:
 
       - name: Smoke test - ano-boot and ano-device work, from new and older bottles
         run: |
-          bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-programs.sh" "$RUNNER_TEMP/smoke/Libraries" --boot             --exitwindows "$RUNNER_TEMP/modules/tests/exitwindows.exe"             --upgrade-from "$RUNNER_TEMP/old/Libraries"             --winetricks "$GITHUB_WORKSPACE/Libraries/winetricks"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/winetricks" "$LEGACY_WINETRICKS_URL"
+          echo "$LEGACY_WINETRICKS_SHA256  $RUNNER_TEMP/winetricks" | shasum -a 256 -c -
+          bash "$GITHUB_WORKSPACE/scripts/anowine/check-ano-programs.sh" "$RUNNER_TEMP/smoke/Libraries" --boot             --exitwindows "$RUNNER_TEMP/modules/tests/exitwindows.exe"             --upgrade-from "$RUNNER_TEMP/old/Libraries"             --winetricks "$RUNNER_TEMP/winetricks"
 
       - name: Upload runtime
         uses: actions/upload-artifact@v7

@@ -19,6 +19,10 @@ permissions:
 env:
   RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v4.9.0/Libraries.tar.gz
   RUNTIME_SHA256: 7951aa539c1e0f371b4f5083c31599e582f902c33f80617321d745cc164743e5
+  # Runtime 4.x reads upstream's WINE* names, so its checks use the winetricks the app
+  # bundled before ano-tricks replaced it (Plan 3c-4a), pinned at its last commit.
+  LEGACY_WINETRICKS_URL: https://raw.githubusercontent.com/HighStormPVP/AnoWine/c734db46c3716b78fc381735888aa2c4eca6d3be/Libraries/winetricks
+  LEGACY_WINETRICKS_SHA256: f43967dbd067cf384e61adb640a21e45b6644b776cb34abb13301566374f0730
 
 jobs:
   scan:
@@ -48,8 +52,10 @@ jobs:
 
       - name: Scan
         run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/winetricks" "$LEGACY_WINETRICKS_URL"
+          echo "$LEGACY_WINETRICKS_SHA256  $RUNNER_TEMP/winetricks" | shasum -a 256 -c -
           bash "$GITHUB_WORKSPACE/scripts/anowine/scan-wine-traces.sh" "$RUNNER_TEMP/runtime/Libraries" \
-            "$GITHUB_WORKSPACE/Libraries/winetricks" "$RUNNER_TEMP/report"
+            "$RUNNER_TEMP/winetricks" "$RUNNER_TEMP/report"
           cat "$RUNNER_TEMP/report/report.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload report

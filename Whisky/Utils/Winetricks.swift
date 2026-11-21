@@ -45,7 +45,7 @@ struct WinetricksCategory {
 }
 
 class Winetricks {
-    /// Opens the winetricks command in the user's terminal.
+    /// Opens the ano-tricks command in the user's terminal.
     ///
     /// - Returns: `true` when the command was handed to the terminal, `false`
     ///   when it never started (the prefix failed validation or could not be
@@ -82,7 +82,7 @@ class Winetricks {
             showMissingResourcesAlert(command: command)
             return false
         }
-        // Winetricks ships in the app bundle Resources alongside cabextract. Invoke it via
+        // ano-tricks ships in the app bundle Resources alongside cabextract. Invoke it via
         // `bash` (matching the headless install paths) so no executable bit is relied upon.
         //
         // The command goes into a temp script that the terminal sources, the
@@ -130,7 +130,7 @@ class Winetricks {
         alert.runModal()
     }
 
-    /// Writes the winetricks invocation to a temp script the terminal sources.
+    /// Writes the ano-tricks invocation to a temp script the terminal sources.
     ///
     /// Every value is single-quoted so nothing in a path is read as shell
     /// syntax; the script is tracked for cleanup like the bottle terminal's.
