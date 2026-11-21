@@ -50,14 +50,23 @@ jobs:
         if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-ano-tricks.sh" "$GITHUB_WORKSPACE"
 
+      # Plan 3c-4a: the names the app passes to or expects from the engine,
+      # the runtime, ano-tricks and a bottle are the renamed engine's.
+      - name: The app's runtime names
+        if: ${{ !cancelled() }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/anowine/check_app_runtime_names.py"
+
       - name: D3DMetal names script test
+        if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-list-gptk-wine-names.sh"
 
       - name: Engine configure gates test
+        if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-check-wine-config.sh"
 
       # Fails after an upstream merge brings new "Whisky" strings; fix by running
       # python3 scripts/anowine/rebrand_strings.py Whisky/Localizable.xcstrings
       # then python3 scripts/british-english.py
       - name: UI strings are rebranded
+        if: ${{ !cancelled() }}
         run: python3 "$GITHUB_WORKSPACE/scripts/anowine/rebrand_strings.py" --check "$GITHUB_WORKSPACE/Whisky/Localizable.xcstrings"
