@@ -300,3 +300,59 @@ on the runner they behave as the prebuilt ones, but only a game on the owner's M
 them. The app (3c-4) still asks for DXMT's bridge as `winemetal.dll`; the payload now holds it as
 `anometal.dll`. The final review (Opus) found the missing bridge, the ungated default bottle and
 the thread model; all three are fixed.
+
+## Plan 3c-3: ano-tricks
+
+`Libraries/ano-tricks` is winetricks 20260125 (upstream `src/winetricks` at that tag, SHA-256
+`431f82fc…`) made by `scripts/anowine/make_ano_tricks.py`; Hygiene makes it again from the
+pinned file and fails if the committed one differs. 18,868 lines; the gate over the file passes
+(its only tokens: AutoHotkey's `IfWinExist` in verb scripts, allowlisted as not-wine, and the
+`winevent` API set).
+
+**Renamed** by the engine's rule and map, which gains `winetricks` → `ano-tricks`, `Winetricks`
+→ `Ano-tricks` and `github.com/Winetricks/winetricks` → the repo URL: `ANO`, `ANOSERVER`,
+`ANOPREFIX`, `ANODLLOVERRIDES`, `ANOTRICKS_*`, `Software\Ano\DllOverrides`, `ano-boot`,
+`ano-tricks.log`, `ano-11.19` version parsing; Wine bug links point to the repo's issues.
+
+**Dropped verbs**, all of which download from other people's paths named after Wine (renamed,
+those paths would not exist, or would be someone else's to claim); the app uses none:
+`galliumnine*` (Gallium Nine needs Mesa, which a Mac does not have), `ie7`, `ie8`,
+`ie8_kb2936068`, `ie8_tls12`, `otvdm`, `otvdm090` (16-bit Windows programs), and `powershell`
+(the wrapper; `powershell_core`, PowerShell itself, stays). The generator stops if any Wine URL
+is left that the map does not replace.
+
+**Edits**: the update check, self-update and stats report are stubs. Upstream checks
+raw.githubusercontent.com on every run, outside the bottle's proxy, and once renamed, its
+self-update would fetch from a GitHub account (`Anotricks`) anyone could register. The cache
+is `~/Library/Caches/io.github.highstormpvp.Ano/ano-tricks`; upstream's was `~/.cache/winetricks`,
+because it sets `XDG_CACHE_HOME` before its macOS default applies. Three comment links to other
+sites' pages about Wine are removed.
+
+**A bug fixed on the way**: upstream's vcrun2022 (master too) copies `msvcp140.dll` out of
+the redistributables' cabinets itself, because their installer keeps the builtin, which has a
+higher version number. But the pinned 2022 cabinets name the file `msvcp140.dll_x86` and
+`msvcp140.dll_amd64`, so nothing was extracted and the verb still exited 0: games got Wine's
+builtin `msvcp140`, in today's app too. ano-tricks extracts it by its real name; a later rename
+fails the verb instead. vcrun2019's cabinets say `msvcp140.dll` and work.
+
+**In a bottle** (`check-ano-tricks.sh`, engine 5.0.0's default bottle, called as the app calls
+it: one verb per call, `--force` for vcrun, the app's environment only; run 44847281515):
+
+| verb | result | time on the runner |
+|---|---|---|
+| vcrun2022 | `msvcp140` and `vcruntime140` native, 64- and 32-bit | 152 s |
+| d3dcompiler_47 | native, override under `Software\Ano` | 85 s |
+| d3dx9 | `d3dx9_43` native, override | 111 s |
+| xact | `xactengine3_7` (32-bit) native | 459 s |
+| xinput | `xinput1_3` native, override | 131 s |
+| remove_mono (dotnet48's first step) | finds "Ano Mono Windows Support" and removes it | 152 s |
+
+Each verb is in the bottle's `ano-tricks.log`; there is no `winetricks.log` and no
+`Software\Wine` key. The downloads (142 MB) sit in Ano's cache folder and nothing goes under
+`~/.cache`. The bottle passes the gate.
+
+**For 3c-4 (the app)**: call `Libraries/ano-tricks` with `ANO`, `ANOSERVER`, `ANOPREFIX`
+(`Winetricks+Install.swift`, `Winetricks+InstalledVerbs.swift`, the Terminal script in
+`Winetricks.swift`); read `ano-tricks.log` (`Winetricks+InstalledVerbs.swift`); make
+`Libraries/verbs.txt` again from `ano-tricks list-all` (today it is upstream's list: the dropped
+verbs and 82 "wine"s); then drop `Libraries/winetricks`.
