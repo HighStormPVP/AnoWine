@@ -8,7 +8,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 from make_ano_tricks import (  # noqa: E402
-    SEPARATOR, drop_verbs, load_tricks_rules, rename, replace_once, stub_function, wine_urls_left)
+    SEPARATOR, drop_verbs, load_tricks_rules, rename, replace_in_function, replace_once, stub_function,
+    wine_urls_left)
 
 KEPT = """w_metadata vcrun2022 dlls \\
     title="Visual C++"
@@ -77,6 +78,13 @@ class EditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "winetricks_stats_report"):
             stub_function("a()\n{\n}\n", "winetricks_stats_report", "    return\n")
 
+    def test_replace_in_function_only_touches_that_function(self):
+        text = "load_vcrun2019()\n{\n    x -F 'a'\n}\n\nload_vcrun2022()\n{\n    x -F 'a'\n}\n"
+        out = replace_in_function(text, "load_vcrun2022", "    x -F 'a'\n", "    x -F 'a_x86'\n")
+        self.assertEqual(out, "load_vcrun2019()\n{\n    x -F 'a'\n}\n\nload_vcrun2022()\n{\n    x -F 'a_x86'\n}\n")
+        with self.assertRaises(ValueError):
+            replace_in_function(text, "load_vcrun2022", "    y\n", "    z\n")
+
     def test_replace_once_refuses_none_or_two(self):
         self.assertEqual(replace_once("a b c", "b", "x"), "a x c")
         with self.assertRaises(ValueError):
@@ -140,6 +148,16 @@ class CommittedFileTests(unittest.TestCase):
     def test_libraries_ano_tricks_exists(self):
         path = Path(HERE).parent.parent / "Libraries" / "ano-tricks"
         self.assertTrue(path.is_file(), f"{path} is missing: run scripts/anowine/make_ano_tricks.py")
+
+    def test_vcrun2022_extracts_msvcp140_by_its_name_in_the_cabinet(self):
+        # In the pinned VC++ 2022 redistributables the file is msvcp140.dll_x86 (a10)
+        # and msvcp140.dll_amd64 (a12); upstream's -F 'msvcp140.dll' extracts nothing.
+        text = (Path(HERE).parent.parent / "Libraries" / "ano-tricks").read_text(encoding="utf-8")
+        body = text[text.index("load_vcrun2022()"):]
+        body = body[:body.index("\n}\n")]
+        self.assertIn("-F 'msvcp140.dll_x86'", body)
+        self.assertIn("-F 'msvcp140.dll_amd64'", body)
+        self.assertNotIn("-F 'msvcp140.dll'\n", body)
 
 
 if __name__ == "__main__":

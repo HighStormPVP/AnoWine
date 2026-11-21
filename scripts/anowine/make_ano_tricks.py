@@ -69,6 +69,25 @@ EDITS = (
     ("    # https://bgstack15.ddns.net/blog/posts/2024/08/21/set-wine-theme-from-cli/\n", ""),
 )
 
+# Upstream's vcrun2022 copies msvcp140.dll out of the redistributables' cabinets
+# itself (their installer keeps the builtin, whose version number is higher),
+# but in the pinned 2022 redistributables the file is msvcp140.dll_x86 (a10) and
+# msvcp140.dll_amd64 (a12): -F 'msvcp140.dll' extracts nothing and the verb
+# leaves the builtin. (vcrun2019's cabinets name it msvcp140.dll.) If the name
+# changes again, the mv fails the verb instead.
+FUNCTION_EDITS = (
+    ("load_vcrun2022",
+     """    w_try_cabextract --directory="${W_SYSTEM32_DLLS}" "${W_TMP}/win32/a10" -F 'msvcp140.dll'\n""",
+     """    # Ano: in the 2022 redistributable the file is msvcp140.dll_x86.\n"""
+     """    w_try_cabextract --directory="${W_TMP}/win32" "${W_TMP}/win32/a10" -F 'msvcp140.dll_x86'\n"""
+     """    w_try mv -f "${W_TMP}/win32/msvcp140.dll_x86" "${W_SYSTEM32_DLLS}/msvcp140.dll"\n"""),
+    ("load_vcrun2022",
+     """            w_try_cabextract --directory="${W_SYSTEM64_DLLS}" "${W_TMP}/win64/a12" -F 'msvcp140.dll'\n""",
+     """            # Ano: in the 2022 redistributable the file is msvcp140.dll_amd64.\n"""
+     """            w_try_cabextract --directory="${W_TMP}/win64" "${W_TMP}/win64/a12" -F 'msvcp140.dll_amd64'\n"""
+     """            w_try mv -f "${W_TMP}/win64/msvcp140.dll_amd64" "${W_SYSTEM64_DLLS}/msvcp140.dll"\n"""),
+)
+
 METADATA = re.compile(r"^w_metadata ([A-Za-z0-9_]+) ", re.M)
 FUNCTION = re.compile(r"^([A-Za-z0-9_]+)\(\)", re.M)
 CALL = re.compile(r"\bw_(?:do_)?call\s+([A-Za-z0-9_]+)")
@@ -110,13 +129,26 @@ def drop_verbs(text: str, verbs, helpers=()) -> str:
     return out
 
 
-def stub_function(text: str, name: str, body: str) -> str:
-    """Replace the body of the function name() (braces in column 0)."""
-    pattern = re.compile(rf"^{re.escape(name)}\(\)\n\{{\n.*?^\}}\n", re.M | re.S)
-    matches = pattern.findall(text)
+def _function(text: str, name: str) -> re.Match:
+    """The one definition of name() with its braces in column 0."""
+    pattern = re.compile(rf"^{re.escape(name)}\(\)\n\{{\n(.*?)^\}}\n", re.M | re.S)
+    matches = list(pattern.finditer(text))
     if len(matches) != 1:
         raise ValueError(f"expected one function {name}, found {len(matches)}")
-    return pattern.sub(lambda _m: f"{name}()\n{{\n{body}}}\n", text)
+    return matches[0]
+
+
+def stub_function(text: str, name: str, body: str) -> str:
+    """Replace the body of the function name()."""
+    match = _function(text, name)
+    return text[:match.start()] + f"{name}()\n{{\n{body}}}\n" + text[match.end():]
+
+
+def replace_in_function(text: str, name: str, old: str, new: str) -> str:
+    """replace_once inside the body of the function name() only."""
+    match = _function(text, name)
+    body = replace_once(match.group(1), old, new)
+    return text[:match.start(1)] + body + text[match.end(1):]
 
 
 def replace_once(text: str, old: str, new: str) -> str:
@@ -150,6 +182,8 @@ def generate(upstream: str) -> str:
         text = stub_function(text, name, body)
     for old, new in EDITS:
         text = replace_once(text, old, new)
+    for name, old, new in FUNCTION_EDITS:
+        text = replace_in_function(text, name, old, new)
     rules = load_tricks_rules()
     left = wine_urls_left(text, rules)
     if left:
