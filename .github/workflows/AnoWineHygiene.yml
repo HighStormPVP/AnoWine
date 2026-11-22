@@ -70,6 +70,14 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 "$GITHUB_WORKSPACE/scripts/anowine/check_app_text.py"
 
+      # Plan 3c-4b: every localization key the app's Swift names (String(localized:),
+      # Text("..."), a dotted key anywhere, the head of a key built at run time) is
+      # in Whisky/Localizable.xcstrings. A key renamed on one side only shows the raw
+      # key. Rename keys with python3 scripts/anowine/rename_app_text.py --keys
+      - name: The catalog has every key the app uses
+        if: ${{ !cancelled() }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/anowine/check_catalog_keys.py"
+
       - name: D3DMetal names script test
         if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-list-gptk-wine-names.sh"
@@ -80,6 +88,7 @@ jobs:
 
       # Fails after an upstream merge brings new "Whisky" strings; fix by running
       # python3 scripts/anowine/rebrand_strings.py Whisky/Localizable.xcstrings
+      # then python3 scripts/anowine/rename_app_text.py --keys --values (new "Wine")
       # then python3 scripts/british-english.py
       - name: UI strings are rebranded
         if: ${{ !cancelled() }}
