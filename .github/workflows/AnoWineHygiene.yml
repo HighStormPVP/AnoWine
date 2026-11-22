@@ -64,6 +64,12 @@ jobs:
         if: ${{ !cancelled() }}
         run: python3 "$GITHUB_WORKSPACE/scripts/anowine/check_app_runtime_names.py"
 
+      # Plan 3c-4b: nothing the app shows, logs or bundles says "wine"
+      # (code-only names excepted, decision 6).
+      - name: The app's text
+        if: ${{ !cancelled() }}
+        run: python3 "$GITHUB_WORKSPACE/scripts/anowine/check_app_text.py"
+
       - name: D3DMetal names script test
         if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-list-gptk-wine-names.sh"
