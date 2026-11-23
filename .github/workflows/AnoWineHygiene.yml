@@ -86,6 +86,12 @@ jobs:
         if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-check-wine-config.sh"
 
+      # Plan 3c-4c: the owner's script that lists and removes Rosetta's cached
+      # translations of the old runtime's files (/var/db/oah), on a fake tree.
+      - name: Rosetta cache script test
+        if: ${{ !cancelled() }}
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-clean-rosetta-cache.sh" "$GITHUB_WORKSPACE"
+
       # Fails after an upstream merge brings new "Whisky" strings; fix by running
       # python3 scripts/anowine/rebrand_strings.py Whisky/Localizable.xcstrings
       # then python3 scripts/anowine/rename_app_text.py --keys --values (new "Wine")
