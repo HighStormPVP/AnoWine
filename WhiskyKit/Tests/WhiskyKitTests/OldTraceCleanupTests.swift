@@ -224,8 +224,10 @@ final class OldTraceCleanupTests: XCTestCase {
             serverRoot: base.appending(path: "tmp"),
             uid: getuid()
         )
-        for folder in [places.home, places.temporaryFolder, places.userCacheFolder, places.applicationFolder,
-                       places.serverRoot] {
+        let folders = [
+            places.home, places.temporaryFolder, places.userCacheFolder, places.applicationFolder, places.serverRoot
+        ]
+        for folder in folders {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         }
         return places
