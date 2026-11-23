@@ -79,5 +79,24 @@ final class WhiskyUITests: WhiskyUITestCase {
         )
     }
 
+    // MARK: - File menu
+
+    /// Every bottle the original Whisky made is an old bottle, which Ano refuses,
+    /// so the File menu no longer offers to import them.
+    func testTheFileMenuHasNoWhiskyImport() {
+        let fileMenu = require(app.menuBars.menuBarItems["File"], "File menu", timeout: 8)
+        fileMenu.click()
+        // The menu is open once its own import command (catalog key `open.bottle`) shows.
+        require(fileMenu.menuItems["Import Bottle"], "File > Import Bottle")
+        // The removed command's English title in the catalog (key "Migrate from the
+        // Original Whisky…"), copied here: the GREEN removes the key.
+        let removedTitle = "Migrate from the Original Ano\u{2026}"
+        XCTAssertFalse(
+            app.menuItems[removedTitle].exists,
+            "The File menu still offers \(removedTitle)"
+        )
+        fileMenu.typeKey(.escape, modifierFlags: [])
+    }
+
     // MARK: - Game Configurations browser
 }
