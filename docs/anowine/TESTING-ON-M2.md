@@ -109,3 +109,31 @@ Apple's files cannot be changed. This lists them. It only reads files; it change
 
 If it says no Game Porting Toolkit has been imported, skip this section: it needs item 5 of
 the Ano-8 list first.
+
+## Ano 9: clean old traces
+
+On its first launch Ano 9 removes what Ano 6–8 left with the old runtime's names. One trace
+it can't remove itself: Rosetta keeps a translated copy of every Intel program file it has
+run in `/var/db/oah`, and the copies of the old runtime's files still have the old names
+(for example `winemac.so.aot`). That folder belongs to macOS, and only an administrator can
+read or change it, so the script needs `sudo` (it asks for your Mac password).
+
+Removing them is safe: Rosetta makes the copies again for any program that still needs
+them. The same files of other apps such as Whisky or CrossOver go too; their next start may
+take a little longer while Rosetta remakes them.
+
+1. Download `clean-rosetta-cache.sh`. It is attached to the ano-test release; download it
+   from the [release page](https://github.com/HighStormPVP/AnoWine/releases) in your browser.
+2. Look first. In Terminal (it lists the files and how many there are, and changes nothing):
+
+   ```
+   sudo bash ~/Downloads/clean-rosetta-cache.sh
+   ```
+
+3. Then delete them:
+
+   ```
+   sudo bash ~/Downloads/clean-rosetta-cache.sh --delete
+   ```
+
+4. Send back the last line of each run. If it says "nothing to clean", there was nothing left.
