@@ -109380,25 +109380,7 @@
     "Checking prefix health…" : {},
     "Confirm Action" : {},
     "Could not verify installation status" : {},
-    "Deselect All" : {},
     "Details" : {},
-    "Import Bottles from the Original Whisky" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import Bottles from the Original Ano"
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import Bottles from the Original Ano"
-          }
-        }
-      }
-    },
-    "Import Selected" : {},
     "Installation Log (%lld lines)" : {},
     "Installation completed successfully" : {},
     "Installation exited with code %lld" : {},
@@ -109409,38 +109391,6 @@
     "Last refreshed: %@ ago" : {},
     "Launcher fixes applied: %@" : {},
     "Map Command Key to Windows Ctrl" : {},
-    "Migrate from the Original Whisky…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Migrate from the Original Ano…"
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Migrate from the Original Ano…"
-          }
-        }
-      }
-    },
-    "No bottles from the original Whisky were found." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No bottles from the original Ano were found."
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No bottles from the original Ano were found."
-          }
-        }
-      }
-    },
     "No diagnosis available" : {},
     "Not supported" : {},
     "Not supported on macOS" : {},
@@ -109481,7 +109431,6 @@
     },
     "Running ano-tricks for %@" : {},
     "Search log…" : {},
-    "Select All" : {},
     "Sets LeftCommandIsCtrl/RightCommandIsCtrl in Ano's Mac driver registry so Cmd+A/C/V/S register inside Ano apps as Ctrl+A/C/V/S." : {},
     "Sets the Windows locale for every program in this bottle, including games a launcher starts. Auto keeps the launcher's default: US English for EA App, Epic Games, Battle.net and Rockstar, and the Mac's own language and region otherwise." : {
       "localizations" : {
@@ -109503,22 +109452,6 @@
     "Some components may not have installed correctly" : {},
     "Switch to %@…" : {},
     "Test Input: System Settings > Game Controllers" : {},
-    "These bottles were created by the archived original Whisky app. Importing references them in place: your files aren't moved or copied, and the original app keeps working." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These bottles were created by the archived original Ano app. Importing references them in place: your files aren't moved or copied, and the original app keeps working."
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "These bottles were created by the archived original Ano app. Importing references them in place: your files aren't moved or copied, and the original app keeps working."
-          }
-        }
-      }
-    },
     "This will install: %@" : {},
     "Try connecting via USB or check System Settings > Bluetooth" : {},
     "Try running the game in offline mode if available" : {},

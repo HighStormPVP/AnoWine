@@ -40,11 +40,7 @@ struct WhiskyApp: App {
     /// Opt-in: show a menu-bar extra and keep Whisky running after the main
     /// window closes (see `AppDelegate.applicationShouldTerminateAfterLastWindowClosed`).
     @AppStorage("showMenuBarExtra") private var showMenuBarExtra = false
-    /// Set once the original-Whisky import has been offered automatically, so
-    /// it is never offered again (it stays available from the File menu).
-    @AppStorage("hasOfferedLegacyMigration") private var hasOfferedLegacyMigration = false
     @State var showSetup: Bool = false
-    @State private var showMigrate: Bool = false
     @State private var showDiagnosticsSheet: Bool = false
     @State private var showTroubleshootingPicker: Bool = false
     @State private var showTroubleshootingWizard: Bool = false
@@ -103,26 +99,6 @@ struct WhiskyApp: App {
         }
     }
 
-    /// Offers the original-Whisky import once, when the archived app left
-    /// bottles this fork hasn't registered yet. Most people installing the fork
-    /// are coming from the original app, and the import is otherwise only
-    /// reachable from the File menu, so a first launch would create a fresh
-    /// bottle without ever mentioning the old ones.
-    ///
-    /// Called when the main window appears and when setup closes, so the sheet
-    /// never competes with the first-launch setup sheet for presentation.
-    private func offerLegacyMigrationIfNeeded() {
-        guard !Self.isUITesting, !hasOfferedLegacyMigration, !showSetup, !showMigrate,
-              LegacyBottleImport.legacyContainerExists()
-        else { return }
-        let importable = LegacyBottleImport.importableBottleURLs(
-            existingPaths: BottleVM.shared.bottlesList.paths
-        )
-        guard !importable.isEmpty else { return }
-        hasOfferedLegacyMigration = true
-        showMigrate = true
-    }
-
     var body: some Scene {
         WindowGroup(id: Self.mainWindowID) {
             ContentView(showSetup: $showSetup)
@@ -137,16 +113,6 @@ struct WhiskyApp: App {
                     }
                     updateGPTKPayloadIfNeeded()
                     startAudioDeviceListening()
-                    // Without a runtime, ContentView is about to present setup;
-                    // the onChange below offers the import once that closes.
-                    if WhiskyWineInstaller.isWhiskyWineInstalled() {
-                        offerLegacyMigrationIfNeeded()
-                    }
-                }
-                .onChange(of: showSetup) { _, isShowing in
-                    if !isShowing {
-                        offerLegacyMigrationIfNeeded()
-                    }
                 }
                 .onReceive(
                     NotificationCenter.default.publisher(for: .crashDiagnosisAvailable)
@@ -179,10 +145,6 @@ struct WhiskyApp: App {
                             entryContext: context
                         )
                     }
-                }
-                .sheet(isPresented: $showMigrate) {
-                    MigrateBottlesSheet()
-                        .environmentObject(BottleVM.shared)
                 }
                 .sheet(item: $crashDiagnosisSheet) { banner in
                     DiagnosticsView(
@@ -240,9 +202,6 @@ struct WhiskyApp: App {
                     }
                 }
                 .keyboardShortcut("I", modifiers: [.command])
-                Button("Migrate from the Original Whisky…") {
-                    showMigrate = true
-                }
             }
             CommandGroup(after: .importExport) {
                 Button("open.logs") {
