@@ -26,8 +26,14 @@ private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: 
 /// Wine server folders, the Metal shader caches named after the old loaders,
 /// the app's old terminal and registry files, and the proxy's old wrapper.
 ///
+/// - Nothing is cleaned on a Mac without Ano 6-8's runtime folder: their
+///   traces need that runtime, and the run is marked done all the same.
 /// - A server folder whose `lock` another process holds belongs to a running
 ///   server, Ano's or another Wine app's, and stays.
+/// - winetricks' download cache stays while another winetricks user is on the
+///   Mac (``otherTricksUsers``): it is theirs too.
+/// - A temporary item younger than ``temporaryItemMinimumAge`` stays: another
+///   app's winetricks run shares the temporary folder.
 /// - A symlink is removed as a link; no link is followed.
 /// - A removal that fails is logged under `AnoMigration` and skipped; the run
 ///   still counts as done, so it never repeats on every launch.
@@ -54,6 +60,8 @@ public enum OldTraceCleanup {
         public let applicationFolder: URL
         /// The folder that holds the per-user server folder (`/private/tmp`).
         public let serverRoot: URL
+        /// The root of the file system (`/`), where Homebrew and MacPorts install.
+        public let systemRoot: URL
         /// The user's id, part of the server folder's name.
         public let uid: uid_t
 
@@ -66,6 +74,7 @@ public enum OldTraceCleanup {
                 userCacheFolder: darwinUserCacheFolder ?? home.appending(path: "Library").appending(path: "Caches"),
                 applicationFolder: WhiskyWineInstaller.applicationFolder,
                 serverRoot: URL(filePath: "/private/tmp", directoryHint: .isDirectory),
+                systemRoot: URL(filePath: "/", directoryHint: .isDirectory),
                 uid: getuid()
             )
         }
@@ -73,6 +82,11 @@ public enum OldTraceCleanup {
         /// The per-user server folder of the engine in runtimes 3.x and 4.x.
         var serverFolder: URL {
             serverRoot.appending(path: ".wine-\(uid)") // old name: the server folder of runtimes 3.x and 4.x
+        }
+
+        /// Ano 6-8's runtime folder; installing runtime 5.x replaces `Libraries` whole.
+        var oldRuntimeFolder: URL {
+            applicationFolder.appending(path: "Libraries/Wine") // old name: Ano 6-8's runtime folder
         }
 
         /// The user cache folder, or `nil` when the system does not say.
@@ -117,6 +131,40 @@ public enum OldTraceCleanup {
         TemporaryName(prefix: "whisky-dll-overrides-", suffix: ".reg", rule: .fileWithOldText)
     ]
 
+    /// How long a temporary item stays: a day, the age `TempFileTracker`'s
+    /// launch cleanup uses. Another app's live winetricks run (Homebrew's, the
+    /// original Whisky's) shares `$TMPDIR` and keeps its working folder.
+    static let temporaryItemMinimumAge: TimeInterval = 24 * 60 * 60
+
+    /// A path, under the system root or the home folder, whose presence says
+    /// another winetricks user is on the Mac.
+    enum OtherTricksUser: Sendable {
+        /// A path under ``Places/systemRoot``.
+        case underSystemRoot(String)
+        /// A path under ``Places/home``.
+        case underHome(String)
+
+        /// Where it is in `places`.
+        func url(in places: Places) -> URL {
+            switch self {
+            case let .underSystemRoot(path): places.systemRoot.appending(path: path)
+            case let .underHome(path): places.home.appending(path: path)
+            }
+        }
+    }
+
+    /// Who else uses `~/.cache/winetricks`, which every winetricks on macOS
+    /// shares: winetricks from Homebrew (Apple silicon, Intel) or MacPorts,
+    /// and the original Whisky and frankea's Whisky, which run their own. While
+    /// one of these is there, in any form, the cache stays.
+    static let otherTricksUsers: [OtherTricksUser] = [
+        .underSystemRoot("opt/homebrew/bin/winetricks"), // old name: Homebrew's winetricks on Apple silicon
+        .underSystemRoot("usr/local/bin/winetricks"), // old name: Homebrew's winetricks on Intel
+        .underSystemRoot("opt/local/bin/winetricks"), // old name: MacPorts' winetricks
+        .underHome("Library/Application Support/com.isaacmarovitz.Whisky"), // old name: the original Whisky
+        .underHome("Library/Application Support/com.franke.Whisky") // old name: frankea's Whisky
+    ]
+
     /// The bundle identifiers of Ano 6-8's loaders, which name their Metal
     /// shader caches in the user cache folder.
     static let loaderCacheNames = [
@@ -127,11 +175,17 @@ public enum OldTraceCleanup {
     // MARK: - Running
 
     /// Runs ``clean(_:isServerLive:)`` unless this version already ran, then
-    /// records that it ran, whatever was skipped.
+    /// records that it ran, whatever was skipped. Without Ano 6-8's runtime
+    /// folder (any type) it cleans nothing and records that it ran.
     /// - Returns: What it removed, or `nil` when it had already run.
     @discardableResult
     public static func runIfNeeded(defaults: UserDefaults = .standard, places: Places = .live) -> [URL]? {
         guard defaults.integer(forKey: doneDefaultsKey) < currentVersion else { return nil }
+        guard entry(at: places.oldRuntimeFolder) != nil else {
+            defaults.set(currentVersion, forKey: doneDefaultsKey)
+            logger.info("Old traces: none, Ano 6-8's runtime folder is not here")
+            return []
+        }
         let removed = clean(places)
         defaults.set(currentVersion, forKey: doneDefaultsKey)
         logger.info("Old traces removed: \(removed.count)")
@@ -205,21 +259,32 @@ public enum OldTraceCleanup {
         return stale.count == names.count ? stale + [root] : stale
     }
 
-    /// winetricks' download cache and the Metal shader caches named after the
-    /// old loaders, whether or not they are there.
+    /// winetricks' download cache, unless ``otherTricksUsers`` finds another
+    /// user of it, and the Metal shader caches named after the old loaders,
+    /// whether or not they are there.
     private static func cacheTraces(in places: Places) -> [URL] {
         let cacheFolders = [places.userCacheFolder, places.home.appending(path: "Library").appending(path: "Caches")]
         let tricksCache = places.home.appending(path: ".cache").appending(path: "winetricks") // old name: its cache
-        return [tricksCache] + loaderCacheNames.flatMap { name in cacheFolders.map { $0.appending(path: name) } }
+        let shaderCaches = loaderCacheNames.flatMap { name in cacheFolders.map { $0.appending(path: name) } }
+        let users = otherTricksUsers.map { $0.url(in: places) }
+        guard let user = users.first(where: { entry(at: $0) != nil }) else { return [tricksCache] + shaderCaches }
+        if entry(at: tricksCache) != nil {
+            let cache = tricksCache.path(percentEncoded: false)
+            let userPath = user.path(percentEncoded: false)
+            logger.info("Kept \(cache, privacy: .public): \(userPath, privacy: .public) uses it too")
+        }
+        return shaderCaches
     }
 
-    /// The items in the temporary folder that match ``temporaryNames``.
+    /// The items in the temporary folder that match ``temporaryNames`` and
+    /// were last modified more than ``temporaryItemMinimumAge`` ago.
     private static func temporaryTraces(in folder: URL) -> [URL] {
+        let cutoff = Date(timeIntervalSinceNow: -temporaryItemMinimumAge)
         let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path(percentEncoded: false))) ?? []
         return names.sorted().map { folder.appending(path: $0) }.filter { item in
             temporaryNames.contains { name in
                 item.lastPathComponent.hasPrefix(name.prefix) && item.lastPathComponent.hasSuffix(name.suffix)
-                    && matches(item, name.rule)
+                    && wasModified(item, before: cutoff) && matches(item, name.rule)
             }
         }
     }
@@ -263,6 +328,15 @@ public enum OldTraceCleanup {
         var info = stat()
         guard lstat(url.path(percentEncoded: false), &info) == 0 else { return nil }
         return (mode_t(info.st_mode) & mode_t(S_IFMT), info.st_uid)
+    }
+
+    /// Whether what is at `url` was last modified before `cutoff`, by its own
+    /// time (`lstat`'s `st_mtimespec`), never a link target's; `false` when
+    /// nothing is there.
+    private static func wasModified(_ url: URL, before cutoff: Date) -> Bool {
+        var info = stat()
+        guard lstat(url.path(percentEncoded: false), &info) == 0 else { return false }
+        return TimeInterval(info.st_mtimespec.tv_sec) < cutoff.timeIntervalSince1970
     }
 
     /// Removes `folder` only while it is empty (`rmdir`).
