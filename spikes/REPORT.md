@@ -413,3 +413,69 @@ byte for byte as it was. `Ano Proxy` passes on engine 5.x and still on runtime 4
 (first launch: old traces, the admin script, moving an imported GPTK store from `lib/wine` to
 `lib/ano`, the update-check opt-out), 3c-5 (the release). On the owner's Mac: D3DMetal with the
 alias, once the listing confirms the names.
+
+## Plan 3c-4b: what users see
+
+Nothing the app shows, logs or bundles says "wine" any more. Plan
+`docs/superpowers/plans/2026-11-22-ano-plan3c4b-app-text.md`.
+
+**The check**: `check_app_text.py` (Hygiene) reads every Swift string literal of the app's
+targets (interpolations are code and left out), every key and value in every language of
+`Localizable.xcstrings`, the JSON WhiskyKit bundles, the `Info.plist` files and `verbs.txt`.
+1,993 places at the start (1,322 in the catalog, 340 in GameDB), 0 now (Hygiene 45121213544).
+The repo's own URL (`github.com` and `raw.githubusercontent.com` `/HighStormPVP/AnoWine`) is the
+only text it lets through; github.io never. `check_catalog_keys.py` (Hygiene) fails when a key the
+Swift sources name is missing from the catalog, so a key renamed on one side only can't show as a
+raw key; two partial renames were caught in mutation runs. `BundledDataNamesTests` pins GameDB
+(87 entries, 90 variants; `minAnoVersion` 85, `anoTricksVerbs` 90, `anoVersion` 89, read and
+decoded), the remediations' `anoTricksVerb` and the renamed ids, so no entry drops silently.
+
+**What changed**:
+- **Catalog:** `rename_app_text.py --keys --values`. It renamed 116 keys together with their Swift uses, and changed 1,206 values across 24 languages.
+- **Rewordings:** 160 values, listed in the script's `REWORDINGS` and `RUNTIME_WORDING`.
+  - Grammar: French elision, Czech, Finnish, Turkish and Korean endings.
+  - Where a translation said plain "Wine" for the runtime, it now uses its own word for the runtime ("Ano-Runtime", "runtime Ano", "Ano ランタイム"). A plain "Ano" there would name the app.
+- **Swift text:** log categories (`AnoKit`, `Ano`, `AnoRuntimeInstaller`, `AnoTricks`, …), log and diagnostics text, the CLI's help, and `Info.plist`'s permission text.
+- **Exports:** the files are now `ano.log` and `ano.tail.log`, and the key is `anoRuntimeVersion`.
+- **Symbol:** `wineglass` became `flask`.
+- **CLI flag:** `ano uninstall --runtime`/`-r` (was `--whisky-wine`/`-w`).
+- **GameDB:** the keys are `anoTricksVerbs`, `anoVersion` and `minAnoVersion` (`CodingKeys`; the Swift properties keep their names). 55 notes were reworded.
+- **Remediations:** the key is `anoTricksVerb`.
+- **Ids:**
+  - fix `install-ano-tricks-verb`
+  - check `anoTricks.verb_check`
+  - flow nodes `check_ano_tricks`, `check_ano_dns`, `fix_ano_dns`
+  - pattern `ano-nonzero-exit`
+  - variants `recommended-anod3d`, `anod3d-winxp`
+
+  None is migrated: only bottles made on engine 5.x (unpublished) can hold them.
+- **Removed:** Sparkle's github.io feed URL (`SUFeedURL`, `DistributionConfig.baseURL`/`appcastURL`). Sparkle stays off without `SUPublicEDKey`.
+
+**How text about Wine was reworded** (so it stays true):
+
+| Was | Now |
+|---|---|
+| Wine version (the engine's) | engine version ("Ano version" reads as the app's) |
+| Wine's own Direct3D / d3d11, the Wine builtin marker | the engine's own …, the engine's builtin marker |
+| Wine PID, Wine username | Windows PID (the one `taskkill` takes), Windows username |
+| WhiskyWine (the runtime), WineD3D, winetricks | Ano runtime, AnoD3D, ano-tricks |
+| "BattlEye / EAC Wine/Proton support" | "BattlEye's / EAC's Proton support" (the vendors' opt-in) |
+| "does not work under Wine", "the Wine prefix AppData" | "does not work in Ano", "the bottle's AppData" |
+| "WineHQ bugs 56463 and 58543", "upstream Wine HDRP support" | "upstream bugs …", "the engine's HDRP support upstream" |
+| GameDB tags "Wine 9.0+", "Tested with Wine 9.0" | "Engine 9.0+", "Tested with engine 9.0" |
+
+**Kept on purpose**:
+- Code-only names (decision 6): Swift identifiers, type and file names (`WhiskyWineInstaller`, `Wine.swift`, `winetricksVerbs` properties). Comments, tests and `Documentation.docc` also keep them.
+- `// old name:` lines:
+  - the D3DMetal DLL mark;
+  - the old-bottle check;
+  - the update-check opt-out's defaults key `checkWhiskyWineUpdates`. Renaming it would switch the check back on for anyone who turned it off, so 3c-4c migrates it.
+- The repo URL.
+
+**Left for 3c-4c**:
+- Text that still says Whisky (not wine):
+  - the CLI's `run` help ("whisky run MyBottle");
+  - diagnostics' "Whisky Version:";
+  - one log subsystem;
+  - the catalog's "original Ano" where it means Whisky.
+- First-launch cleanup.
