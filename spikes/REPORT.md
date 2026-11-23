@@ -480,3 +480,99 @@ decoded), the remediations' `anoTricksVerb` and the renamed ids, so no entry dro
   - one log subsystem;
   - the catalog's "original Ano" where it means Whisky.
 - First-launch cleanup.
+
+## Plan 3c-4c: first launch
+
+The first launch of the renamed app removes what Ano 6–8 left with "wine" in its name, carries
+the user's settings and imported Game Porting Toolkit across the rename, and stops offering an
+import that could only list refused bottles. Plan
+`docs/superpowers/plans/2026-11-23-ano-plan3c4c-first-launch.md`. CI 45225165123 and Hygiene
+45219538083 are green on the last task; `check_app_text.py`, `check_app_runtime_names.py` and
+`check_catalog_keys.py` print 0.
+
+**Launch order** (read from the call sites, not yet watched on a Mac):
+1. `WhiskyApp.init` starts Sparkle and the telemetry consent check (neither reads a migrated key).
+2. `applicationWillFinishLaunching` runs `AppMigrations.runAtLaunch()`, synchronously.
+3. When the window shows, the runtime update check reads `checkAnoRuntimeUpdates` and the GPTK steps
+   (`verifyStoredPayload`, `deployStoredPayloadIfMissing`, the `ensure…` calls) start.
+4. `applicationDidFinishLaunching` starts `OldTraceCleanup.runIfNeeded()` in the background (not
+   under UI tests). It runs once: defaults key `oldTracesCleanupVersion` = 1, written even when a
+   removal failed (logged under `AnoMigration` and skipped).
+
+**What the cleanup removes** (inventory from tags `ano-test-6/7/8`, the bundled winetricks and three
+trace scans):
+
+| Trace | Rule |
+|---|---|
+| `~/.cache/winetricks` | removed; a symlink there loses only the link |
+| `/tmp/.wine-<uid>/server-*` | removed only when its `lock` is not held (`fcntl` `F_GETLK`), so a live server, Ano's or another Wine app's, stays; `.wine-<uid>` itself goes by `rmdir` once empty, and only a real folder owned by the user is looked into |
+| `org.winehq.wine` (runtime 3.1.x) and `com.codeweavers.CrossOver.wineloader` (runtime 4.9.0) | Metal shader caches in the user cache folder and `~/Library/Caches`; removed. If CrossOver is installed it shares the second id and rebuilds its shader cache once |
+| `$TMPDIR/winetricks.*` folders, `whisky-winetricks-*.sh` | removed (a crash or force-quit leaves them) |
+| `$TMPDIR/whisky-run-*.sh`, `whisky-env-*.sh`, `whisky-registry-*.reg`, `whisky-dll-overrides-*.reg` | removed only when their text says "wine" (UTF-8 or UTF-16): the current app still writes these names with Ano text |
+| `Proxy/bin/ano-loader` | removed when its text says "wine" (Ano 6–8's wrapper); the proxy writes the current one when a proxied bottle needs it |
+
+The app never asks for admin rights and deletes only in the home folder, the temporary folder, the
+user cache folder and `/tmp/.wine-<uid>`. Files checked by their text are read only when they are
+regular files.
+
+**Kept on purpose**:
+- bottles, whole (decision 3);
+- `Libraries/Wine`, which the runtime swap replaces;
+- Ano 6–8 logs (the user's diagnostics; their text holds Wine output, and log retention prunes them);
+- the user's saved diagnostics and app shortcuts;
+- `/usr/local/bin/ano` (a clean name; removing it needs admin rights).
+
+winemenubuilder's XDG files are never written on macOS. Runtime 5.x's server folder is
+`/tmp/.ano-<uid>` by the rename rule; no runner has shown it yet.
+
+**Migrations** (`AppMigrations`):
+- Defaults:
+  - `checkWhiskyWineUpdates` → `checkAnoRuntimeUpdates`, so an update-check opt-out survives;
+  - `wineSectionExpanded` → `anoSectionExpanded`.
+
+  The old value is copied only when the new key is absent. `hasOfferedLegacyMigration` is dropped,
+  and any other key containing "wine" is swept on every launch; the current app writes none.
+- GPTK store: Ano 8's `lib/wine` becomes `lib/ano` (`adoptModuleFolder`; `lib/ano` wins when both
+  exist). A store that was verified is stamped again, so D3DMetal keeps working without a new
+  import. A store that wasn't verified stays unverified. Originals backed up from a runtime below 5
+  are dropped. A test deploys the migrated store into a fake runtime.
+
+**Import removed**: the original-Whisky import sheet, its first-launch offer, the File-menu command,
+`LegacyBottleImport` and 7 catalog keys are gone. Every bottle it found was an old bottle the app
+refuses. The UI test `testTheFileMenuHasNoWhiskyImport` checks the menu. The README's upstream part
+still describes the command.
+
+**Wording**:
+- PIDs and the kill-on-quit setting:
+  - "Ano PID" is now "Windows PID" (key `process.detail.windowsPID`).
+  - The kill-on-quit setting says "Terminate Windows programs when Ano closes".
+  - Both changed in all 24 languages.
+- GameDB:
+  - Five anti-cheat workaround/"until" lines no longer cite the vendors' Proton support, which is Linux-only. They now name support for macOS or for compatibility layers on macOS.
+  - Its "Whisky picks / Whisky's DXVK / Whisky's Library" notes say Ano.
+  - "Whisky Community" (the author), `referenceURL` links and `frankea/Whisky#N` stay.
+- CLI: `ano run` help, "is not an Ano bottle", and the usage line says `ano`, because ArgumentParser named the command after its Swift type, so `commandName: "ano"`.
+- Diagnostics: "Ano version:" and the report titles say Ano. The audio probe logs under the app's bundle id.
+- Checks:
+  - `check_catalog_keys.py` now checks keys passed as `label:`.
+  - `test_app_wording.py` (Hygiene) and `BundledDataNamesTests` (no Proton in workarounds, no "Whisky" outside `author`) pin the new text.
+
+**Admin script**: `scripts/anowine/clean-rosetta-cache.sh` lists, and with `--delete` removes, Rosetta's
+cached translations of old runtime files (`/var/db/oah/.../*wine*.aot`, regular files only). The
+owner runs it once with `sudo` (`TESTING-ON-M2.md`, "Ano 9: clean old traces"). It reports what it
+could not remove (exit 1). Whether SIP lets root delete there, and the script on BSD find and bash
+3.2, are untested until that run. 3c-5 attaches it to the ano-test release.
+
+**Not checked on a Mac yet**:
+- that `applicationWillFinishLaunching` runs before the window's update check. If not, the first
+  launch could ignore the opt-out once and deploy D3DMetal one launch late;
+- what a GUI game leaves (Saved Application State, a preferences domain): the scans ran console
+  programs only.
+
+**Left** (not "wine", outside this plan's named items):
+- "No Ano processes running for this bottle" and "This is an Ano system process" (same misreading as the PID label);
+- `com.franke.Whisky` / `com.isaacmarovitz.WhiskyKit` log subsystems;
+- the export names `whisky-diagnostics-*.txt` / `Whisky-Diagnostics-*.zip`;
+- the README's upstream text.
+
+A full "Whisky" sweep is a separate follow-up.
