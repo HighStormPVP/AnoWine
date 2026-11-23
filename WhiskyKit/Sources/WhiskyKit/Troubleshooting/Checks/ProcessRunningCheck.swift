@@ -46,7 +46,7 @@ public struct ProcessRunningCheck: TroubleshootingCheck {
             return CheckResult(
                 outcome: .pass,
                 evidence: evidence,
-                summary: "\(count) Wine process(es) running",
+                summary: "\(count) Ano process(es) running",
                 confidence: .high
             )
         }
@@ -54,7 +54,7 @@ public struct ProcessRunningCheck: TroubleshootingCheck {
         return CheckResult(
             outcome: .fail,
             evidence: evidence,
-            summary: "No Wine processes running for this bottle",
+            summary: "No Ano processes running for this bottle",
             confidence: .high
         )
     }

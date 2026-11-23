@@ -126,7 +126,7 @@ extension WhiskyWineDownloadView {
             String(
                 localized: "setup.anoRuntime.error.checksumMismatch",
                 defaultValue: """
-                The downloaded Wine runtime failed its integrity check and was not installed. \
+                The downloaded Ano runtime failed its integrity check and was not installed. \
                 This usually means the download was corrupted. Please try again.
                 """
             ),

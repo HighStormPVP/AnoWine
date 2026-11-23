@@ -256,7 +256,7 @@ final class LocalizedCheckSummaryMoreTests: XCTestCase {
         XCTAssertEqual(result.outcome, .fail)
         XCTAssertEqual(localized, "troubleshooting.check.process.none")
         assertCatalogKey(localized)
-        XCTAssertEqual(result.summary, "No Wine processes running for this bottle")
+        XCTAssertEqual(result.summary, "No Ano processes running for this bottle")
     }
 
     func testProcessRunningHasNoLocalizedSummaryWithoutACount() {

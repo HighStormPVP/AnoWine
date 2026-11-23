@@ -130,12 +130,12 @@ public enum MacOSCompatibilityFixes {
         // Universal fixes (all macOS versions)
         MacOSFix(
             key: "STEAM_DISABLE_CEF_SANDBOX", value: "1",
-            reason: "CEF sandbox cannot function under Wine; required for launcher startup",
+            reason: "CEF sandbox cannot function under Ano; required for launcher startup",
             appliesFrom: allVersions, category: .sandbox
         ),
         MacOSFix(
             key: "CEF_DISABLE_SANDBOX", value: "1",
-            reason: "CEF sandbox cannot function under Wine; required for launcher startup",
+            reason: "CEF sandbox cannot function under Ano; required for launcher startup",
             appliesFrom: allVersions, category: .sandbox
         ),
 
@@ -150,7 +150,7 @@ public enum MacOSCompatibilityFixes {
         // so nothing read it.
         MacOSFix(
             key: "STEAM_RUNTIME", value: "0",
-            reason: "Disables Steam Runtime (incompatible with Wine on macOS 15.4+)",
+            reason: "Disables Steam Runtime (incompatible with Ano on macOS 15.4+)",
             appliesFrom: .sequoia15_4, category: .compatibility
         )
     ]

@@ -123,8 +123,8 @@ extension LauncherType {
 /// provenance recorded in the environment; ``LauncherFixDetail/localizedReason``
 /// maps each one to its catalog entry for display.
 private enum LauncherFixReason {
-    static let steamCefSandbox = "Disables Steam-specific CEF sandbox (crashes under Wine)"
-    static let steamRuntime = "Disables Steam Runtime (incompatible with Wine)"
+    static let steamCefSandbox = "Disables Steam-specific CEF sandbox (crashes under Ano)"
+    static let steamRuntime = "Disables Steam Runtime (incompatible with Ano)"
     static let steamDxvkAsync = "Reduces UI stuttering in Steam client"
     static let largeAddressAware = "Improves launcher initialization memory handling"
     static let rockstarLocale = "Sets locale for launcher UI rendering"

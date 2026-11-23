@@ -35,16 +35,16 @@ public enum WinePrefixBootstrapError: LocalizedError, Equatable {
             String(
                 localized: "ano.prefix.bootstrap.runtimeMissing",
                 defaultValue: """
-                This bottle's Wine prefix can't be set up because the Wine runtime isn't installed. \
-                Open Whisky to install it, then try again.
+                This bottle's Ano prefix can't be set up because the Ano runtime isn't installed. \
+                Open Ano to install it, then try again.
                 """
             )
         case .incomplete:
             String(
                 localized: "ano.prefix.bootstrap.incomplete",
                 defaultValue: """
-                This bottle's Wine prefix couldn't be set up, so nothing can run in it yet. \
-                The latest Wine log has the details.
+                This bottle's Ano prefix couldn't be set up, so nothing can run in it yet. \
+                The latest Ano log has the details.
                 """
             )
         }
