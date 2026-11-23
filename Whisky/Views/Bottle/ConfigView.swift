@@ -59,7 +59,7 @@ struct ConfigView: View {
         }
     }
 
-    @AppStorage("wineSectionExpanded") private var wineSectionExpanded: Bool = true
+    @AppStorage("anoSectionExpanded") private var wineSectionExpanded: Bool = true
     @AppStorage("performanceSectionExpanded") private var performanceSectionExpanded: Bool = true
     @AppStorage("launcherSectionExpanded") private var launcherSectionExpanded: Bool = false
     @AppStorage("inputSectionExpanded") private var inputSectionExpanded: Bool = false

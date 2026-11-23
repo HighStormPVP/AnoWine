@@ -19,7 +19,7 @@
 import Foundation
 import os.log
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WineAudioOutputPin")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoAudioOutputPin")
 
 /// Registry writes that `wine reg` reported as done but did not store.
 enum AudioRegistryWriteError: Error {

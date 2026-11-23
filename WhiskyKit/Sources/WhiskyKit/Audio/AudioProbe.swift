@@ -154,8 +154,8 @@ public struct CoreAudioDeviceProbe: AudioProbe {
 /// Reads the current audio driver setting and DirectSound buffer size
 /// from the Wine registry without launching a test program.
 public final class WineRegistryAudioProbe: AudioProbe, @unchecked Sendable {
-    public let id = "wine-registry"
-    public let displayName = "Wine Audio Registry Check"
+    public let id = "ano-registry"
+    public let displayName = "Ano Audio Registry Check"
 
     private let bottle: Bottle
 
@@ -223,7 +223,7 @@ public final class WineRegistryAudioProbe: AudioProbe, @unchecked Sendable {
                 ))
             }
         } else {
-            evidence.append("Audio driver: not set (Wine auto-detect)")
+            evidence.append("Audio driver: not set (Ano auto-detect)")
         }
 
         return .success
@@ -251,7 +251,7 @@ public final class WineRegistryAudioProbe: AudioProbe, @unchecked Sendable {
                 ))
             }
         } else if bufferSize == nil {
-            evidence.append("DirectSound HelBuflen: not set (Wine default)")
+            evidence.append("DirectSound HelBuflen: not set (Ano default)")
         }
     }
 

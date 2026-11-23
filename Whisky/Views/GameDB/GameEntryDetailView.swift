@@ -150,7 +150,7 @@ extension GameEntryDetailView {
                 constraintTag(String(localized: "gamedb.tag.minMacOS \(minMacOS)"), icon: "laptopcomputer")
             }
             if let minWine = constraints.minWineVersion {
-                constraintTag(String(localized: "gamedb.tag.minAno \(minWine)"), icon: "wineglass")
+                constraintTag(String(localized: "gamedb.tag.minAno \(minWine)"), icon: "flask")
             }
         }
     }

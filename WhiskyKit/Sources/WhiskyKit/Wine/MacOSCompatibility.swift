@@ -205,7 +205,7 @@ extension Wine {
         }
 
         Logger.wineKit.debug("""
-        CEF sandbox disabled for Wine compatibility. \
+        CEF sandbox disabled for Ano compatibility. \
         This is required for Steam, Epic, EA App, and Rockstar launchers to function. \
         Security: Embedded browser content runs with process privileges.
         """)

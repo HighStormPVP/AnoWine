@@ -29,8 +29,8 @@ import os.log
 /// to be completely resilient -- it never crashes and always produces
 /// a structured result.
 public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
-    public let id = "wine-audio-test"
-    public let displayName = "Wine Audio Stack Test"
+    public let id = "ano-audio-test"
+    public let displayName = "Ano Audio Stack Test"
 
     /// Curated ANODEBUG preset for audio troubleshooting channels.
     private static let audioDebugPreset = "+mmdevapi,+dsound,+winmm"
@@ -39,7 +39,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
     private let testExeURL: URL?
     private let logger = Logger(
         subsystem: "com.franke.Whisky",
-        category: "WineAudioTestProbe"
+        category: "AnoAudioTestProbe"
     )
 
     public init(bottle: Bottle, testExeURL: URL?) {
@@ -81,7 +81,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
                 probeId: id,
                 status: .error,
                 summary: String(localized: "audio.probe.anoTest.launchFailed"),
-                evidence: ["Error launching Wine process", "Exe path: \(exePath)"]
+                evidence: ["Error launching Ano process", "Exe path: \(exePath)"]
             )
         }
 
@@ -148,7 +148,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
                 line.contains("winmm") || line.contains("err:") || line.contains("warn:")
         }
         if !relevantStderr.isEmpty {
-            evidence.append("Wine audio log:")
+            evidence.append("Ano audio log:")
             evidence.append(contentsOf: relevantStderr.prefix(20))
         }
 
@@ -208,7 +208,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
         var findings: [AudioFinding] = []
         let codeStr = result.code.map { String($0) } ?? "unknown"
         findings.append(AudioFinding(
-            id: "wine-audio-test-error",
+            id: "ano-audio-test-error",
             description: String(localized: "audio.finding.anoTestFailed \(result.api)"),
             confidence: .high,
             evidence: String(localized: "audio.finding.anoTestFailed.evidence \(codeStr)"),

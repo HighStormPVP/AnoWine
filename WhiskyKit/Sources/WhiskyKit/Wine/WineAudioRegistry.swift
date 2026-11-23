@@ -19,7 +19,7 @@
 import Foundation
 import os.log
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WineAudioRegistry")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoAudioRegistry")
 
 /// The audio registry values Whisky last wrote into a bottle, kept as a
 /// marker file so launches only spawn `wine reg` when the settings changed.

@@ -105,7 +105,7 @@ enum RemediationExecutor {
         } else {
             let detail = failure ?? "exit \(exitCode ?? -1)"
             logger.error(
-                "winetricks \(verb, privacy: .public) failed: \(detail, privacy: .public)"
+                "ano-tricks \(verb, privacy: .public) failed: \(detail, privacy: .public)"
             )
             // The message can carry paths; the history ends up in shared reports.
             let outcome = failure.map { "failed: \(Redactor.redactHomePaths($0))" }

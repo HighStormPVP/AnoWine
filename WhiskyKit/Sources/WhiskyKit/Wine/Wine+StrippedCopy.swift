@@ -85,7 +85,7 @@ enum WineStrippedCopyError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .sourceNotBuiltinMarked(name):
-            "\(name) does not carry the Wine builtin marker"
+            "\(name) does not carry the engine's builtin marker"
         case let .sourceNotRegularFile(name):
             "\(name) is not a regular file"
         }

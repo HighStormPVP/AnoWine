@@ -20,7 +20,7 @@
 import Foundation
 import os.log
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "Wine")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "Ano")
 
 // swiftlint:disable type_body_length
 
@@ -1683,7 +1683,7 @@ extension Wine {
     @discardableResult
     @MainActor
     public static func repairPrefix(bottle: Bottle) async throws -> String {
-        logger.info("Repairing Wine prefix for bottle '\(bottle.settings.name)'")
+        logger.info("Repairing Ano prefix for bottle '\(bottle.settings.name)'")
         return try await runWine([AnoWineRuntime.bootProgramName, "--init"], bottle: bottle)
     }
 

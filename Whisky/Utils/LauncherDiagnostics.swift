@@ -101,9 +101,9 @@ enum LauncherDiagnostics {
 
         // Wine version
         if let wineVer = try? await Wine.wineVersion() {
-            info += "Wine Version: \(wineVer)\n"
+            info += "Engine version: \(wineVer)\n"
         } else {
-            info += "Wine Version: Unable to detect\n"
+            info += "Engine version: Unable to detect\n"
         }
 
         // Processor architecture (host hardware, independent of running slice)
@@ -133,7 +133,7 @@ enum LauncherDiagnostics {
         config += "Bottle Name: \(bottle.settings.name)\n"
         config += "Bottle URL: \(bottle.url.path)\n"
         config += "Windows Version: \(bottle.settings.windowsVersion)\n"
-        config += "Wine Version: \(bottle.settings.wineVersion)\n\n"
+        config += "Engine version: \(bottle.settings.wineVersion)\n\n"
 
         // Launcher Compatibility Settings
         config += "--- Launcher Compatibility ---\n"

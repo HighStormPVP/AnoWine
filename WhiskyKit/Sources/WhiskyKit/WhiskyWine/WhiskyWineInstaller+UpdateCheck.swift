@@ -19,8 +19,9 @@
 import Foundation
 
 extension WhiskyWineInstaller {
-    /// The defaults key behind Settings' "Automatically check for WhiskyWine updates".
-    public static let automaticUpdateCheckDefaultsKey = "checkWhiskyWineUpdates"
+    /// The defaults key behind Settings' "Automatically check for Ano runtime updates".
+    /// It keeps its old name: users' choices are stored under it until Plan 3c-4c moves them.
+    public static let automaticUpdateCheckDefaultsKey = "checkWhiskyWineUpdates" // old name: users' stored choice
 
     /// Whether the runtime update check may run on its own at launch.
     ///

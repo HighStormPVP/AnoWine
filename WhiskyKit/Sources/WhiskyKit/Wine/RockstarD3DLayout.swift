@@ -246,9 +246,9 @@ public enum RockstarD3DLayout: Equatable, Sendable {
     var summary: String {
         switch self {
         case .builtin:
-            "builtin (Wine's own d3d11, dxgi and d3d10core on the OpenGL renderer)"
+            "builtin (the engine's own d3d11, dxgi and d3d10core on the OpenGL renderer)"
         case .swapped:
-            "swapped (system32 d3d11 is Wine's own, marker stripped; "
+            "swapped (system32 d3d11 is the engine's own, marker stripped; "
                 + "Steam's and Social Club's Chromium load DXVK copies beside them)"
         case let .degraded(reason):
             "degraded (\(reason.name): \(reason.explanation); Launcher.exe stays on DXVK)"
@@ -274,11 +274,11 @@ extension RockstarD3DLayout.Reason {
     var explanation: String {
         switch self {
         case .gptkForwarders:
-            "the runtime's d3d11 or dxgi is not Wine's own"
+            "the runtime's d3d11 or dxgi is not the engine's own"
         case .disabledByUser:
-            "Wine Direct3D for the launcher is off in this bottle"
+            "Ano Direct3D for the launcher is off in this bottle"
         case let .sourceUnavailable(why):
-            "no Wine d3d11 or dxgi for this engine: \(why)"
+            "this engine's own d3d11 or dxgi is unavailable: \(why)"
         case .bottleUsesNativeD3D11:
             "the bottle asks for d3d11 native first"
         case let .dxvkPlanGames(names):

@@ -21,7 +21,7 @@ import os.log
 
 private let processLogger = Logger(
     subsystem: Bundle.whiskyBundleIdentifier,
-    category: "Wine.ProcessManagement"
+    category: "Ano.ProcessManagement"
 )
 
 // MARK: - Wine Process Management Helpers
@@ -183,10 +183,10 @@ public extension Wine {
                 ["taskkill.exe", "/PID", String(winePID)],
                 bottle: bottle
             )
-            processLogger.info("Sent graceful kill to Wine PID \(winePID)")
+            processLogger.info("Sent graceful kill to Windows PID \(winePID)")
         } catch {
             processLogger.debug(
-                "Graceful kill for Wine PID \(winePID) failed (process may have exited): \(error.localizedDescription)"
+                "Graceful kill for Windows PID \(winePID) failed (it may have exited): \(error.localizedDescription)"
             )
         }
     }
@@ -206,10 +206,10 @@ public extension Wine {
                 ["taskkill.exe", "/PID", String(winePID), "/F"],
                 bottle: bottle
             )
-            processLogger.info("Sent force kill to Wine PID \(winePID)")
+            processLogger.info("Sent force kill to Windows PID \(winePID)")
         } catch {
             processLogger.debug(
-                "Force kill for Wine PID \(winePID) failed (process may have exited): \(error.localizedDescription)"
+                "Force kill for Windows PID \(winePID) failed (it may have exited): \(error.localizedDescription)"
             )
         }
     }

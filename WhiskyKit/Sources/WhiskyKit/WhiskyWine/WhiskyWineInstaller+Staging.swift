@@ -19,7 +19,7 @@
 import Foundation
 import os
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WhiskyWineInstaller")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoRuntimeInstaller")
 
 extension WhiskyWineInstaller {
     /// Name prefix of the staging folders ``install(tarball:into:moveItem:)``

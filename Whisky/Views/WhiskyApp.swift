@@ -283,7 +283,7 @@ struct WhiskyApp: App {
         Settings {
             SettingsView()
         }
-        MenuBarExtra("Ano", systemImage: "wineglass", isInserted: $showMenuBarExtra) {
+        MenuBarExtra("Ano", systemImage: "flask", isInserted: $showMenuBarExtra) {
             WhiskyMenuBarView()
                 .environmentObject(BottleVM.shared)
         }

@@ -20,7 +20,7 @@ import Foundation
 import os
 import WhiskyKit
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "Winetricks")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoTricks")
 
 // MARK: - Installed Verb Discovery
 
@@ -33,12 +33,12 @@ extension Winetricks {
     /// - Returns: A set of installed verb names, or `nil` if the process fails or times out.
     static func listInstalledVerbs(for bottle: Bottle) async -> Set<String>? {
         let (bottleURL, proxy) = await MainActor.run { (bottle.url, ProxyEnvironment.shellAdditions(for: bottle)) }
-        logger.debug("Running winetricks list-installed for bottle at \(bottleURL.path)")
+        logger.debug("Running ano-tricks list-installed for bottle at \(bottleURL.path)")
 
         guard let resourcesURL = Bundle.main.url(forResource: "cabextract", withExtension: nil)?
             .deletingLastPathComponent()
         else {
-            logger.warning("Could not locate cabextract resource for winetricks")
+            logger.warning("Could not locate cabextract resource for ano-tricks")
             return nil
         }
 
@@ -56,7 +56,7 @@ extension Winetricks {
         do {
             try process.run()
         } catch {
-            logger.error("Failed to launch winetricks list-installed: \(error.localizedDescription)")
+            logger.error("Failed to launch ano-tricks list-installed: \(error.localizedDescription)")
             return nil
         }
 
@@ -64,7 +64,7 @@ extension Winetricks {
         let timeoutTask = Task {
             try await Task.sleep(for: .seconds(30))
             if process.isRunning {
-                logger.warning("winetricks list-installed timed out after 30 seconds")
+                logger.warning("ano-tricks list-installed timed out after 30 seconds")
                 process.terminate()
             }
         }
@@ -74,7 +74,7 @@ extension Winetricks {
 
         guard process.terminationStatus == 0 else {
             logger.warning(
-                "winetricks list-installed exited with status \(process.terminationStatus)"
+                "ano-tricks list-installed exited with status \(process.terminationStatus)"
             )
             return nil
         }
@@ -95,7 +95,7 @@ extension Winetricks {
             return nil
         }
 
-        logger.debug("winetricks list-installed found \(verbs.count) verbs")
+        logger.debug("ano-tricks list-installed found \(verbs.count) verbs")
         return verbs
     }
 

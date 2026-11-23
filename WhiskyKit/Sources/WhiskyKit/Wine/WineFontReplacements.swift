@@ -19,7 +19,7 @@
 import Foundation
 import os.log
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WineFontReplacements")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoFontReplacements")
 
 /// A font family name that Wine resolves to another, installed family.
 struct FontReplacement: Equatable, Sendable {

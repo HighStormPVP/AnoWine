@@ -50,7 +50,7 @@ public enum GraphicsBackend: String, Codable, CaseIterable, Equatable, Sendable 
         case .dxmt:
             "DXMT"
         case .wined3d:
-            "WineD3D"
+            "AnoD3D"
         }
     }
 

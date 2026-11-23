@@ -209,7 +209,7 @@ public enum DiagnosticExporter {
             section += "- **Architecture:** Intel (x86_64)\n"
         }
         if let whiskyWineVersion = WhiskyWineInstaller.whiskyWineVersion() {
-            section += "- **WhiskyWine:** \(whiskyWineVersion.major).\(whiskyWineVersion.minor)"
+            section += "- **Ano runtime:** \(whiskyWineVersion.major).\(whiskyWineVersion.minor)"
             section += ".\(whiskyWineVersion.patch)\n"
         }
         if let dxvkVersion = WhiskyWineInstaller.whiskyWineDXVKVersion() {
@@ -389,7 +389,7 @@ public enum DiagnosticExporter {
         info["architecture"] = HostArchitecture.isAppleSilicon ? "arm64" : "x86_64"
 
         if let whiskyWineVersion = WhiskyWineInstaller.whiskyWineVersion() {
-            info["whiskyWineVersion"] =
+            info["anoRuntimeVersion"] =
                 "\(whiskyWineVersion.major).\(whiskyWineVersion.minor).\(whiskyWineVersion.patch)"
         }
 
@@ -534,7 +534,7 @@ extension DiagnosticExporter {
                 let redacted = context.options.includeSensitiveDetails ? logContent
                     : Redactor.redactLogText(logContent)
                 try? redacted.write(
-                    to: contentDir.appendingPathComponent("wine.log"),
+                    to: contentDir.appendingPathComponent("ano.log"),
                     atomically: true,
                     encoding: .utf8
                 )
@@ -545,7 +545,7 @@ extension DiagnosticExporter {
         let redactedTail = context.options.includeSensitiveDetails ? tailText
             : Redactor.redactLogText(tailText)
         try? redactedTail.write(
-            to: contentDir.appendingPathComponent("wine.tail.log"),
+            to: contentDir.appendingPathComponent("ano.tail.log"),
             atomically: true,
             encoding: .utf8
         )

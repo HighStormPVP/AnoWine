@@ -99,9 +99,9 @@ public enum StabilityDiagnostics {
         if let whiskyWineVersion = WhiskyWineInstaller.whiskyWineVersion() {
             let whiskyWineVersionString =
                 "\(whiskyWineVersion.major).\(whiskyWineVersion.minor).\(whiskyWineVersion.patch)"
-            info += "WhiskyWine Version: \(whiskyWineVersionString)\n"
+            info += "Ano runtime version: \(whiskyWineVersionString)\n"
         } else {
-            info += "WhiskyWine Version: Not installed / unknown\n"
+            info += "Ano runtime version: Not installed / unknown\n"
         }
 
         info += "\n"
@@ -117,7 +117,7 @@ public enum StabilityDiagnostics {
 
         summary += "Bottle Name: \(bottle.settings.name)\n"
         summary += "Windows Version: \(bottle.settings.windowsVersion)\n"
-        summary += "Bottle Wine Version: \(bottle.settings.wineVersion)\n\n"
+        summary += "Bottle engine version: \(bottle.settings.wineVersion)\n\n"
 
         summary += "--- Graphics/Metal ---\n"
         // The bottle's backend as chosen, not a DXVK yes/no: Recommended

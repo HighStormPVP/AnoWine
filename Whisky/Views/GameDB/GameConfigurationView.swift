@@ -186,7 +186,7 @@ struct GameConfigurationView: View {
         case .d3dMetal: "D3DMetal"
         case .dxvk: "DXVK"
         case .dxmt: "DXMT"
-        case .wined3d: "WineD3D"
+        case .wined3d: "AnoD3D"
         case .recommended: nil
         }
     }

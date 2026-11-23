@@ -31,7 +31,7 @@ final class LaunchActivity {
         guard bottle.settings.disableAppNap else { return }
         token = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiated, .idleSystemSleepDisabled],
-            reason: "Wine process running for \(bottle.settings.name)"
+            reason: "Ano process running for \(bottle.settings.name)"
         )
     }
 

@@ -854,7 +854,7 @@ public struct BottleSettings: Codable, Equatable {
 
         if settings.anoConfig.wineVersion != BottleWineConfig().wineVersion {
             Logger.wineKit.warning(
-                "Bottle has a different wine version `\(settings.anoConfig.wineVersion, privacy: .public)`"
+                "Bottle has a different engine version `\(settings.anoConfig.wineVersion, privacy: .public)`"
             )
             settings.anoConfig.wineVersion = BottleWineConfig().wineVersion
             do {
@@ -864,7 +864,7 @@ public struct BottleSettings: Codable, Equatable {
                 // would make the caller quarantine a healthy file and reset it to defaults,
                 // so keep the valid settings and let the stamp retry on the next load.
                 Logger.wineKit.error(
-                    "Failed to update wine version stamp: \(String(describing: error), privacy: .public)"
+                    "Failed to update engine version stamp: \(String(describing: error), privacy: .public)"
                 )
             }
             return settings

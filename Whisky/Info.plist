@@ -67,15 +67,13 @@
 	<key>NSDesktopFolderUsageDescription</key>
 	<string>Ano needs access to Desktop to create shortcuts for Windows programs.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Ano needs access to this folder to manage Wine bottles and install Windows dependencies.</string>
+	<string>Ano needs access to this folder to manage bottles and install Windows dependencies.</string>
 	<key>NSNetworkVolumesUsageDescription</key>
 	<string>Ano needs access to network volumes when bottles are stored on network drives.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
 	<string>Ano needs access to removable volumes when bottles are stored on external drives.</string>
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
-	<key>SUFeedURL</key>
-	<string>https://highstormpvp.github.io/AnoWine/appcast.xml</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

@@ -19,7 +19,7 @@
 import Foundation
 import os.log
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WineUserProfile")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoUserProfile")
 
 /// Keeps a bottle's user profile reachable under both names Wine builds use for it.
 ///

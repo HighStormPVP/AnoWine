@@ -21,7 +21,7 @@ import Foundation
 import os
 import WhiskyKit
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "Winetricks")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoTricks")
 
 enum WinetricksCategories: String {
     case apps
@@ -62,7 +62,7 @@ class Winetricks {
         let validationResult = WinePrefixValidation.validatePrefix(for: bottle)
 
         if !validationResult.isValid {
-            logger.warning("Prefix validation failed before running winetricks '\(command)'")
+            logger.warning("Prefix validation failed before running ano-tricks '\(command)'")
             // Don't offer repair again if this is already a retry after repair
             if isRetryAfterRepair {
                 logger.error("Validation still failing after repair attempt")
@@ -94,7 +94,7 @@ class Winetricks {
         do {
             scriptURL = try writeTerminalScript(command: command, bottle: bottle, resourcesURL: resourcesURL)
         } catch {
-            logger.error("Failed to write winetricks script: \(error)")
+            logger.error("Failed to write ano-tricks script: \(error)")
             showMissingResourcesAlert(command: command)
             return false
         }
@@ -157,7 +157,7 @@ class Winetricks {
     /// silently doing nothing (refs #134).
     @MainActor
     private static func showMissingResourcesAlert(command: String) {
-        logger.error("Bundled winetricks resources are missing; cannot run '\(command)'")
+        logger.error("Bundled ano-tricks resources are missing; cannot run '\(command)'")
         let alert = NSAlert()
         alert.messageText = String(localized: "anoTricks.error.missingResources")
         alert.informativeText = String(localized: "anoTricks.error.missingResourcesInfo")
@@ -227,9 +227,9 @@ class Winetricks {
             bottle.clearWineUsernameCache()
         }
         do {
-            logger.info("Attempting to repair Wine prefix for bottle '\(bottle.settings.name)'")
+            logger.info("Attempting to repair Ano prefix for bottle '\(bottle.settings.name)'")
             try await Wine.repairPrefix(bottle: bottle)
-            logger.info("Prefix repair completed, retrying winetricks command")
+            logger.info("Prefix repair completed, retrying ano-tricks command")
             // Retry the original command - validation will be done by runCommandInternal
             // and will show an error if still invalid (without offering repair again)
             return await runCommandInternal(command: command, bottle: bottle, isRetryAfterRepair: true)

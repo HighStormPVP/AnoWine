@@ -22,7 +22,7 @@ import Foundation
 import os
 import SemanticVersion
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WhiskyWineInstaller")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoRuntimeInstaller")
 
 /// Errors thrown by ``WhiskyWineInstaller/install(from:)``.
 public enum WhiskyWineInstallError: LocalizedError, Equatable {
@@ -367,7 +367,7 @@ public class WhiskyWineInstaller {
         do {
             try FileManager.default.removeItem(at: libraryFolder)
         } catch {
-            logger.error("Failed to uninstall WhiskyWine: \(error.localizedDescription)")
+            logger.error("Failed to uninstall the Ano runtime: \(error.localizedDescription)")
         }
     }
 
@@ -545,11 +545,11 @@ public class WhiskyWineInstaller {
             return try decoder.decode(WhiskyWineVersion.self, from: data)
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             // Expected when WhiskyWine simply isn't installed yet.
-            logger.debug("WhiskyWine version plist absent: \(error.localizedDescription)")
+            logger.debug("Ano runtime version plist absent: \(error.localizedDescription)")
             return nil
         } catch {
             // Present but unreadable/undecodable — likely a corrupt install.
-            logger.error("WhiskyWine version plist unreadable, likely corrupt: \(error.localizedDescription)")
+            logger.error("Ano runtime version plist unreadable, likely corrupt: \(error.localizedDescription)")
             return nil
         }
     }

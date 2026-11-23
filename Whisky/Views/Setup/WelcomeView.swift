@@ -71,7 +71,7 @@ struct WelcomeView: View {
                     isInstalled: $whiskyWineInstalled,
                     shouldCheckInstallStatus: $shouldCheckInstallStatus,
                     showUninstall: true,
-                    name: "Wine runtime"
+                    name: "Ano runtime"
                 )
             }
             .formStyle(.grouped)
@@ -173,7 +173,7 @@ struct InstallStatusView: View {
     }
 
     func uninstall() {
-        if name == "Wine runtime" {
+        if name == "Ano runtime" {
             uninstallWhiskyWineWithOptionalBottles()
         }
 

@@ -119,7 +119,7 @@ public struct WinePrefixDiagnostics: Codable, Sendable {
     }
 
     private func appendHeaderLines(into lines: inout [String], error: String?) {
-        lines.append("Wine Prefix Diagnostics (\(Self.issueURL))")
+        lines.append("Ano Prefix Diagnostics (\(Self.issueURL))")
         lines.append("Session: \(sessionID.uuidString)")
         lines.append("Generated: \(Date().formatted(Self.eventTimestampFormatter))")
         if let error {

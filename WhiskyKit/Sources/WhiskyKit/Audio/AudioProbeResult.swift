@@ -56,7 +56,7 @@ public enum ProbeStatus: String, Sendable, Equatable {
 /// identity, a status classification, human-readable summary, technical
 /// evidence lines, and any diagnostic findings detected.
 public struct AudioProbeResult: Sendable, Identifiable {
-    /// The probe identifier (e.g., "coreaudio-device", "wine-registry", "wine-audio-test").
+    /// The probe identifier (e.g., "coreaudio-device", "ano-registry", "ano-audio-test").
     public let probeId: String
 
     /// The outcome status of the probe.

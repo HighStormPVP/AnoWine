@@ -59,7 +59,7 @@ public enum AudioFixAction: String, CaseIterable, Sendable {
             self = .enableAudioDriver
         case "low-buffer-size":
             self = .useDefaultLatency
-        case "tone-not-audible", "wine-audio-test-error":
+        case "tone-not-audible", "ano-audio-test-error":
             self = .restoreAudio
         case "no-default-device", "no-output-channels":
             self = .openSoundSettings

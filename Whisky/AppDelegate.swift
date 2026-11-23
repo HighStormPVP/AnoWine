@@ -192,7 +192,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 // Flag only -- do NOT auto-clean
                 logger.info(
-                    "Detected orphan Wine processes in bottle '\(bottleName)' (flagged, not auto-cleaned)"
+                    "Detected orphan Ano processes in bottle '\(bottleName)' (flagged, not auto-cleaned)"
                 )
             }
         }

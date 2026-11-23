@@ -150,7 +150,7 @@ extension Whisky {
                 bottle.settings.wineVersion = SemanticVersion(0, 0, 0)
 
                 bottlesList.paths.append(bottleURL)
-                print("Created bottle \"\(trimmed)\". Its Wine prefix is set up when a program first runs in it.")
+                print("Created bottle \"\(trimmed)\". Its Ano prefix is set up when a program first runs in it.")
             } catch {
                 throw DomainError("\(error)")
             }
@@ -265,13 +265,13 @@ extension Whisky {
         static let configuration = CommandConfiguration(
             abstract: "Run a program with Ano.",
             discussion: """
-            Runs a Windows program directly using Wine, with the same settings \
+            Runs a Windows program directly using Ano, with the same settings \
             and preparation as a launch from Whisky. Use --command to print the \
             command instead: the bottle is prepared first (DLL overrides written \
             to its registry, graphics backend files deployed), so the printed \
             command runs the program the same way. Use --follow to stream program \
             output to the terminal in real time. Use --tail-log to follow the \
-            Wine log file.
+            Ano log file.
 
             Options the program itself takes (for example --disable-gpu) are \
             passed through as written. If a program option has the same name \
@@ -298,13 +298,13 @@ extension Whisky {
         @Argument(parsing: .allUnrecognized, help: "Additional arguments to pass to the program")
         var args: [String] = []
 
-        @Flag(name: .shortAndLong, help: "Prepare the bottle and print the Wine command instead of running it")
+        @Flag(name: .shortAndLong, help: "Prepare the bottle and print the Ano command instead of running it")
         var command: Bool = false
 
         @Flag(name: .long, help: "Stream program output to terminal")
         var follow: Bool = false
 
-        @Flag(name: .long, help: "Follow the Wine log file after launch")
+        @Flag(name: .long, help: "Follow the Ano log file after launch")
         var tailLog: Bool = false
 
         @MainActor
@@ -538,15 +538,16 @@ extension Whisky {
     }
 
     struct Install: ParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Install the Wine runtime.")
+        static let configuration = CommandConfiguration(abstract: "Install the Ano runtime.")
 
         mutating func run() throws {}
     }
 
     struct Uninstall: ParsableCommand {
-        static let configuration = CommandConfiguration(abstract: "Uninstall the Wine runtime.")
+        static let configuration = CommandConfiguration(abstract: "Uninstall the Ano runtime.")
 
-        @Flag(name: [.long, .short], help: "Uninstall the Wine runtime") var whiskyWine = false
+        @Flag(name: [.customLong("runtime"), .customShort("r")], help: "Uninstall the Ano runtime")
+        var whiskyWine = false
 
         mutating func run() throws {}
     }
@@ -610,7 +611,7 @@ extension Whisky {
             falling back to the first bottle that has it installed.
 
             The game is launched through the bottle's Steam client, which starts \
-            first if it isn't running. The command confirms once Wine is running \
+            first if it isn't running. The command confirms once Ano is running \
             the client, then stays until the output of what it started has \
             closed, so their logs are complete: a few seconds when the client was \
             already running, the whole session when this launch started it.

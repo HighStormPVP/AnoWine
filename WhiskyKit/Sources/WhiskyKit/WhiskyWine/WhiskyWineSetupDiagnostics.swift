@@ -160,7 +160,7 @@ public struct WhiskyWineSetupDiagnostics: Codable, Sendable {
     static func versionSectionLines(for info: WhiskyWineVersion?) -> [String] {
         var lines = ["[VERSION]"]
         if let version = info?.version.description {
-            lines.append("WhiskyWine: \(version)")
+            lines.append("Ano runtime: \(version)")
         }
         if let dxvk = info?.dxvkVersion {
             lines.append("DXVK: \(dxvk)")

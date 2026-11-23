@@ -70,7 +70,7 @@ struct BottleActionBar: View {
                 showWinetricksSheet.toggle()
             }
             .glassButton()
-            .accessibilityIdentifier("bottle.openWinetricks")
+            .accessibilityIdentifier("bottle.openAnoTricks")
             Button("button.run") {
                 let panel = NSOpenPanel()
                 panel.allowsMultipleSelection = false

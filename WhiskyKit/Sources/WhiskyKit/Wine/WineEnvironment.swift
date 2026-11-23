@@ -22,7 +22,7 @@ import os.log
 
 // swiftlint:disable file_length
 
-private let envLogger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WineEnvironment")
+private let envLogger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoEnvironment")
 
 // swiftlint:disable cyclomatic_complexity
 extension Wine {
@@ -129,7 +129,7 @@ extension Wine {
             if isValidEnvKey(key) {
                 builder.set(key, value, layer: .gameProfile, reason: "GameDB profile")
             } else {
-                envLogger.debug("Skipping invalid game profile key '\(key)' in constructWineEnvironment")
+                envLogger.debug("Skipping invalid game profile key '\(key)' while building the environment")
             }
         }
 
@@ -141,7 +141,7 @@ extension Wine {
                 if isValidEnvKey(key) {
                     builder.set(key, value, layer: .programUser)
                 } else {
-                    envLogger.debug("Skipping invalid environment key '\(key)' in constructWineEnvironment")
+                    envLogger.debug("Skipping invalid environment key '\(key)' while building the environment")
                 }
             }
         }

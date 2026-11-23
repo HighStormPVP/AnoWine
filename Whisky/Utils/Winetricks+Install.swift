@@ -20,7 +20,7 @@ import Foundation
 import os
 import WhiskyKit
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WinetricksInstall")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoTricksInstall")
 
 /// Progress events emitted during a headless winetricks verb installation.
 enum WinetricksInstallProgress {
@@ -150,7 +150,7 @@ extension Winetricks {
             withExtension: nil
         )?.deletingLastPathComponent()
         else {
-            logger.warning("Could not locate cabextract resource for winetricks install")
+            logger.warning("Could not locate cabextract resource for ano-tricks install")
             continuation.yield(.failed("Missing cabextract resource"))
             continuation.finish()
             return
@@ -167,9 +167,9 @@ extension Winetricks {
 
         do {
             try process.run()
-            logger.info("Started winetricks install for verb '\(verb)'")
+            logger.info("Started ano-tricks install for verb '\(verb)'")
         } catch {
-            logger.error("Failed to launch winetricks install: \(error.localizedDescription)")
+            logger.error("Failed to launch ano-tricks install: \(error.localizedDescription)")
             continuation.yield(.failed(error.localizedDescription))
             continuation.finish()
             return
@@ -182,7 +182,7 @@ extension Winetricks {
             await awaitProcessCompletion(process, verb: verb, timeout: timeout)
         } onCancel: {
             if process.isRunning {
-                logger.info("winetricks install '\(verb)' cancelled, terminating")
+                logger.info("ano-tricks install '\(verb)' cancelled, terminating")
                 process.terminate()
             }
         }
@@ -190,7 +190,7 @@ extension Winetricks {
         stderrPipe.fileHandleForReading.readabilityHandler = nil
 
         let exitCode = process.terminationStatus
-        logger.info("winetricks install '\(verb)' exited with status \(exitCode)")
+        logger.info("ano-tricks install '\(verb)' exited with status \(exitCode)")
         continuation.yield(.completed(exitCode: exitCode))
 
         // Refresh the verb cache after installation
@@ -207,7 +207,7 @@ extension Winetricks {
         let timeoutTask = Task {
             try await Task.sleep(for: .seconds(timeout))
             if process.isRunning {
-                logger.warning("winetricks install '\(verb)' timed out after \(Int(timeout)) seconds")
+                logger.warning("ano-tricks install '\(verb)' timed out after \(Int(timeout)) seconds")
                 process.terminate()
             }
         }

@@ -41,7 +41,7 @@ enum System32DLLKind: Equatable {
         case .missing: "missing"
         case .builtinPlaceholder: "builtin placeholder"
         case .dxvkPayload: "DXVK payload"
-        case .wineStripped: "Wine's own, marker stripped (current engine)"
+        case .wineStripped: "the engine's own, marker stripped (current engine)"
         case let .nativeOther(digest): "native other (\(digest))"
         }
     }
@@ -121,8 +121,8 @@ extension DiagnosticExporter {
         section += "- **Runtime dxgi.dll is a GPTK forwarder:** \(slots.dxgi ? "yes" : "no")\n"
         // What the layout goes by while the payload is deployed: a hand-placed
         // payload is no forwarder of the store's, and not Wine's original either.
-        section += "- **Runtime d3d11.dll is the stored Wine original:** \(originals.d3d11 ? "yes" : "no")\n"
-        section += "- **Runtime dxgi.dll is the stored Wine original:** \(originals.dxgi ? "yes" : "no")\n"
+        section += "- **Runtime d3d11.dll is the stored engine original:** \(originals.d3d11 ? "yes" : "no")\n"
+        section += "- **Runtime dxgi.dll is the stored engine original:** \(originals.dxgi ? "yes" : "no")\n"
         section += rockstarSwapLines(
             bottle: bottle, dxvkFolder: dxvkFolder,
             launch: RockstarD3DLaunch(
@@ -227,7 +227,7 @@ extension DiagnosticExporter {
             )
             lines += "- **system32 \(dll):** \(kind.summary)\n"
         }
-        lines += "- **Wine Direct3D swap setting:** \(bottle.settings.rockstarWineD3D ? "on" : "off")\n"
+        lines += "- **Ano Direct3D swap setting:** \(bottle.settings.rockstarWineD3D ? "on" : "off")\n"
         lines += "- **Layout at the last launch:** \(bottle.rockstarD3DLayout?.summary ?? "no launch this session")\n"
         // A launch decides on the swap only in a bottle that is Rockstar's; in
         // any other, the next one that keeps the layout takes it back.
@@ -286,7 +286,7 @@ extension DiagnosticExporter {
     private static func describe(_ source: WineD3DSource) -> String {
         switch source {
         case let .libWine(url):
-            "lib/wine (\(url.pathComponents.suffix(2).joined(separator: "/")))"
+            "lib/ano (\(url.pathComponents.suffix(2).joined(separator: "/")))"
         case let .originals(url):
             "GPTK originals (\(url.pathComponents.suffix(2).joined(separator: "/")))"
         case let .unavailable(reason):

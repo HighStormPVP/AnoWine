@@ -122,9 +122,9 @@ enum RockstarD3DSwapError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unreadable:
-            "DXVK's d3d11 or d3d10core, Wine's d3d11 or the engine version cannot be read"
+            "DXVK's d3d11 or d3d10core, the engine's d3d11 or the engine version cannot be read"
         case let .notInPlace(dll):
-            "system32 \(dll) is not Wine's own after the deploy"
+            "system32 \(dll) is not the engine's own after the deploy"
         }
     }
 }
@@ -193,7 +193,7 @@ extension Wine {
             )
         }
         let count = plan.wanted.count
-        Logger.wineKit.info("Rockstar layout swapped: Wine's d3d11 in system32, \(count) DXVK copies placed")
+        Logger.wineKit.info("Rockstar layout swapped: the engine's d3d11 in system32, \(count) DXVK copies placed")
         return .swapped(source: source)
     }
 

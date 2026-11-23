@@ -118,7 +118,7 @@ struct GameEntryRowView: View {
         case .dxmt:
             return "DXMT"
         case .wined3d:
-            return "WineD3D"
+            return "AnoD3D"
         case .recommended:
             return nil
         }

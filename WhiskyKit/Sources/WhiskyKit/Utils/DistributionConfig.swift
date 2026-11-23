@@ -19,9 +19,6 @@
 import Foundation
 
 public enum DistributionConfig {
-    /// Base URL for GitHub Pages distribution
-    public static let baseURL = "https://highstormpvp.github.io/AnoWine"
-
     /// Where the runtime version feeds are served from: raw.githubusercontent.com
     /// rather than GitHub Pages, because some school and work networks block
     /// github.io while allowing GitHub itself. Same files as dist/pages/.
@@ -43,9 +40,6 @@ public enum DistributionConfig {
 
     /// Base URL for GitHub Releases downloads
     public static let releasesBaseURL = "\(releasesPageURL)/download"
-
-    /// URL for the Sparkle appcast feed
-    public static let appcastURL = "\(baseURL)/appcast.xml"
 
     /// Constructs the download URL for Wine Libraries from GitHub Releases
     /// - Parameter version: The version string (e.g., "2.5.0")

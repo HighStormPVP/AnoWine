@@ -19,7 +19,7 @@
 import Foundation
 import os.log
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WinePrefixValidation")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoPrefixValidation")
 
 /// Provides validation utilities for Wine prefix health.
 ///
@@ -116,11 +116,11 @@ public enum WinePrefixValidation {
 
         // Detect Wine username
         guard let username = detectWineUsername(in: usersDir) else {
-            diagnostics.record("Could not detect Wine username in users directory")
+            diagnostics.record("Could not detect the Windows username in the users directory")
             return .missingUserProfile(diagnostics: diagnostics)
         }
         diagnostics.detectedUsername = username
-        diagnostics.record("Detected Wine username: \(username)")
+        diagnostics.record("Detected Windows username: \(username)")
 
         // Check user profile directories
         let userProfile = usersDir.appending(path: username)

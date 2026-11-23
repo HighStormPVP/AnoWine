@@ -20,7 +20,7 @@ import Foundation
 import os.log
 import SemanticVersion
 
-private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "WinePrefixBootstrap")
+private let logger = Logger(subsystem: Bundle.whiskyBundleIdentifier, category: "AnoPrefixBootstrap")
 
 /// Errors thrown when a bottle's Wine prefix cannot be set up before a launch.
 public enum WinePrefixBootstrapError: LocalizedError, Equatable {
@@ -93,7 +93,7 @@ public extension Wine {
     ) async throws {
         guard !isPrefixBootstrapped(bottle) else { return }
 
-        logger.info("Bootstrapping the Wine prefix of bottle '\(bottle.settings.name, privacy: .public)'")
+        logger.info("Bootstrapping the Ano prefix of bottle '\(bottle.settings.name, privacy: .public)'")
         try await bootstrapper(bottle)
 
         guard isPrefixBootstrapped(bottle) else {

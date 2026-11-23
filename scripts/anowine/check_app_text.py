@@ -9,8 +9,9 @@ identifiers; interpolations \\( ... ) are code and removed first; a line that
 says `// old name: <reason>` is skipped); Whisky/Localizable.xcstrings (every
 key and every value in every language); the JSON resources WhiskyKit bundles;
 the targets' Info.plist files; Libraries/verbs.txt (where AutoHotkey's
-IfWinExist and the API set winevent are not Wine). Code-only names stay
-(decision 6). Exit 1 when anything is left.
+IfWinExist and the API set winevent are not Wine). The repo's own URL
+(github.com/ and raw.githubusercontent.com/HighStormPVP/AnoWine) is not text;
+github.io is. Code-only names stay (decision 6). Exit 1 when anything is left.
 """
 import argparse
 import json
@@ -34,6 +35,13 @@ WINE = re.compile("wine", re.I)
 JSON_STRING = re.compile(r'"((?:\\.|[^"\\])*)"')
 NOT_WINE_IN_VERBS = re.compile(r"\b(?:IfWinExist|ifwinexist|ifWinExist|winevent)\b")
 INTERPOLATION = re.compile(r"\\(#*)\(")
+# The repo keeps its name (renaming it is outward-facing), so its own URL is not
+# text that says "wine". github.io is never allowed: the owner's network blocks it.
+REPO_URL = re.compile(r"https://(?:github\.com|raw\.githubusercontent\.com)/HighStormPVP/AnoWine(?![\w-])")
+
+
+def says_wine(text: str) -> bool:
+    return bool(WINE.search(REPO_URL.sub("", text)))
 
 
 @dataclass
@@ -81,7 +89,7 @@ def _swift(root: Path):
                 if OLD_NAME in lines[line - 1]:
                     continue
                 visible = strip_interpolations(content)
-                if WINE.search(visible):
+                if says_wine(visible):
                     yield Hit(rel, str(line), visible)
 
 
@@ -103,10 +111,10 @@ def _catalog(root: Path):
         return
     strings = json.loads(path.read_text(encoding="utf-8")).get("strings", {})
     for key, entry in strings.items():
-        if WINE.search(key):
+        if says_wine(key):
             yield Hit(CATALOG, f"key {key}", key)
         for lang, localization in entry.get("localizations", {}).items():
-            bad = [value for value in _values(localization) if WINE.search(value)]
+            bad = [value for value in _values(localization) if says_wine(value)]
             if bad:
                 yield Hit(CATALOG, f"{key} [{lang}]", bad[0])
 
@@ -117,7 +125,7 @@ def _lines(root: Path, rel: str, pick):
         return
     for number, line in enumerate(path.read_text(encoding="utf-8").split("\n"), 1):
         text = pick(line)
-        if text is not None and WINE.search(text):
+        if text is not None and says_wine(text):
             yield Hit(rel, str(number), text.strip())
 
 

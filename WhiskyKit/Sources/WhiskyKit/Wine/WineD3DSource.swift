@@ -212,7 +212,7 @@ extension WineD3DSource.Reason: CustomStringConvertible {
         case let .staleOriginals(found, expected):
             "originals are stamped for \(found ?? "no engine"), the installed engine is \(expected ?? "unknown")"
         case .notBuiltinMarked:
-            "the file does not carry the Wine builtin marker"
+            "the file does not carry the engine's builtin marker"
         case .handPlacedPayload:
             "a hand-placed GPTK payload with no current backup"
         case let .unsupportedDLL(name):

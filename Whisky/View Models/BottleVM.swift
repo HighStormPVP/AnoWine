@@ -364,9 +364,9 @@ final class BottleVM: ObservableObject {
         lines.append("macOS Version: \(MacOSVersion.current.description)")
         lines.append("Whisky Version: \(whiskyVersionString)")
         let whiskyWineInstalled = WhiskyWineInstaller.isWhiskyWineInstalled() ? "yes" : "no"
-        lines.append("WhiskyWine Installed: \(whiskyWineInstalled)")
+        lines.append("Ano runtime installed: \(whiskyWineInstalled)")
         if let whiskyWineVersion = WhiskyWineInstaller.whiskyWineVersion() {
-            lines.append("WhiskyWine Version: \(whiskyWineVersion)")
+            lines.append("Ano runtime version: \(whiskyWineVersion)")
         }
         lines.append("")
     }
