@@ -23,7 +23,7 @@ import XCTest
 final class WineLogCapTests: XCTestCase {
     private let limits = WineLogLimits(maxBytes: 8 * 1_024, headBytes: 1_024, tailBytes: 2 * 1_024)
     private let header = """
-    Whisky Version: 9.9.9
+    Ano version: 9.9.9
     Bottle Name: Test Bottle
     Arguments: start /unix C:\\game.exe
 

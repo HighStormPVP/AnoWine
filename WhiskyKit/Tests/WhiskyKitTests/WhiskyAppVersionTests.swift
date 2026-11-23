@@ -108,6 +108,6 @@ struct WhiskyAppVersionTests {
         try handle.closeWineLog()
 
         let header = try String(contentsOf: url, encoding: .utf8)
-        #expect(header.hasPrefix("Whisky Version: \(WhiskyAppVersion.current)\n"))
+        #expect(header.hasPrefix("Ano version: \(WhiskyAppVersion.current)\n"))
     }
 }

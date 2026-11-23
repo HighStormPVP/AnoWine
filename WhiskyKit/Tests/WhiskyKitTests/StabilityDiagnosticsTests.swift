@@ -36,7 +36,7 @@ final class StabilityDiagnosticsTests: XCTestCase {
         )
 
         let report = await StabilityDiagnostics.generateDiagnosticReport(for: bottle, config: config)
-        XCTAssertTrue(report.contains("Whisky Stability Diagnostics Report"))
+        XCTAssertTrue(report.contains("Ano Stability Diagnostics Report"))
         XCTAssertTrue(report.contains("[LOGS]"))
         XCTAssertTrue(report.contains("Logs Folder Status: Not found"))
     }
@@ -172,6 +172,34 @@ final class StabilityDiagnosticsTests: XCTestCase {
         XCTAssertTrue(report.contains("Graphics Backend: dxvk"))
         XCTAssertTrue(report.contains("Detected Launcher: None"))
         XCTAssertFalse(report.contains("DXVK for Launcher Launches"))
+    }
+
+    /// The report names the app it came from as Ano, with the app's version.
+    func testReportNamesAnoAndItsVersion() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let app = root.appendingPathComponent("Fake.app")
+        let contents = app.appendingPathComponent("Contents")
+        try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let info: [String: Any] = [
+            "CFBundleIdentifier": "test.stability.\(UUID().uuidString)",
+            "CFBundleShortVersionString": "9.9.9",
+            "CFBundleVersion": "42"
+        ]
+        try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0)
+            .write(to: contents.appendingPathComponent("Info.plist"))
+        let bundle = try XCTUnwrap(Bundle(url: app))
+
+        let bottle = Bottle(bottleUrl: root, inFlight: false, isAvailable: true)
+        let config = StabilityDiagnostics.Configuration(
+            bundle: bundle,
+            logsFolder: root.appendingPathComponent("does-not-exist"),
+            now: Date.init
+        )
+        let report = await StabilityDiagnostics.generateDiagnosticReport(for: bottle, config: config)
+
+        XCTAssertTrue(report.contains("Ano version: 9.9.9 (42)\n"), report)
+        XCTAssertFalse(report.contains("Whisky"), report)
     }
 
     private static func config(for bottleURL: URL) -> StabilityDiagnostics.Configuration {

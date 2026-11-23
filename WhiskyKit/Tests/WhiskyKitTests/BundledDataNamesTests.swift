@@ -28,16 +28,31 @@ import Testing
 /// before the rename: a dropped field changes a count.
 @Suite("Bundled data uses Ano's names")
 struct BundledDataNamesTests {
+    /// WhiskyKit's sources, found from this file's location.
+    static let sources = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent() // WhiskyKitTests
+        .deletingLastPathComponent() // Tests
+        .deletingLastPathComponent() // WhiskyKit
+        .appending(path: "Sources")
+        .appending(path: "WhiskyKit")
+
     /// A JSON resource of WhiskyKit, read from the repository as written.
     static func resource(_ path: String) throws -> Any {
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // WhiskyKitTests
-            .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // WhiskyKit
-            .appending(path: "Sources")
-            .appending(path: "WhiskyKit")
-            .appending(path: path)
-        return try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+        try JSONSerialization.jsonObject(with: Data(contentsOf: sources.appending(path: path)))
+    }
+
+    /// Every string value anywhere in `json`, with the key it is the value of.
+    static func texts(in json: Any, key: String? = nil) -> [(key: String?, text: String)] {
+        if let object = json as? [String: Any] {
+            return object.flatMap { texts(in: $0.value, key: $0.key) }
+        }
+        if let array = json as? [Any] {
+            return array.flatMap { texts(in: $0, key: key) }
+        }
+        if let text = json as? String {
+            return [(key, text)]
+        }
+        return []
     }
 
     /// How many objects anywhere in `json` have the key `key`.
@@ -198,6 +213,45 @@ struct BundledDataNamesTests {
         )
         #expect(attempt.result == .pending)
         #expect(attempt.afterValue == "vcrun2019")
+    }
+
+    // MARK: - Wording
+
+    /// A vendor's Proton support is a Linux-only opt-in, not what would make a
+    /// game run in Ano on macOS, so no workaround and no "until" line waits for it.
+    @Test("No GameDB workaround or until line waits for Proton support")
+    func protonIsNotTheWayOut() throws {
+        let texts = try Self.texts(in: Self.resource("GameDatabase/Resources/GameDB.json"))
+        let lines = texts.filter { $0.key == "workaround" || $0.text.localizedCaseInsensitiveContains("until") }
+        #expect(lines.contains { $0.key == "workaround" })
+        let proton = lines.filter { $0.text.localizedCaseInsensitiveContains("Proton") }
+        #expect(proton.isEmpty, "\(proton.map { "\($0.key ?? ""): \($0.text)" })")
+    }
+
+    /// The bundled data's text names Ano. Kept by ruling: the `author` of
+    /// upstream's entries, the links to upstream's issues (`referenceURL`) and
+    /// `frankea/Whisky#N` references.
+    @Test("No bundled text says Whisky except its attribution")
+    func noWhiskyText() throws {
+        let files = (FileManager.default.enumerator(at: Self.sources, includingPropertiesForKeys: nil)?
+            .compactMap { $0 as? URL } ?? [])
+            .filter { $0.pathExtension == "json" }
+        let names = Set(files.map(\.lastPathComponent))
+        #expect(names.isSuperset(of: ["GameDB.json", "remediations.json", "launcher-issues.json"]), "\(names)")
+
+        var whisky: [String] = []
+        for file in files {
+            let json = try JSONSerialization.jsonObject(with: Data(contentsOf: file))
+            for (key, text) in Self.texts(in: json) where key != "author" && key != "referenceURL" {
+                let unreferenced = text.replacingOccurrences(
+                    of: #"frankea/Whisky#\d+"#, with: "", options: .regularExpression
+                )
+                if unreferenced.contains("Whisky") {
+                    whisky.append("\(file.lastPathComponent): \(text)")
+                }
+            }
+        }
+        #expect(whisky.isEmpty, "\(whisky)")
     }
 
     // MARK: - Version tags

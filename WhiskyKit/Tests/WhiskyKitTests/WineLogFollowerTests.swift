@@ -23,7 +23,7 @@ import XCTest
 /// truncations that keep it under its cap.
 final class WineLogFollowerTests: XCTestCase {
     private let limits = WineLogLimits(maxBytes: 8 * 1_024, headBytes: 1_024, tailBytes: 2 * 1_024)
-    private let header = "Whisky Version: 9.9.9\nBottle Name: Test Bottle\n\n"
+    private let header = "Ano version: 9.9.9\nBottle Name: Test Bottle\n\n"
     private var nextLine = 0
 
     func testFollowerFromTheBeginningReadsTheWholeLogThenOnlyWhatIsNew() throws {

@@ -91,6 +91,14 @@ class CheckTests(unittest.TestCase):
                  'let id = "elsewhere.thing"\n')
         self.assertEqual(misses(swift), [(2, "identifier", "winetricks.titel")])
 
+    def test_a_key_passed_as_a_label_is_checked(self):
+        # detailRow(label: LocalizedStringResource, ...) takes its key as `label:`.
+        keys = KEYS + ["process.detail.kind"]
+        swift = ('detailRow(label: "process.detail.kind", value: kind)\n'
+                 'detailRow(label: "process.detail.missing", value: pid)\n'
+                 'GPTKInterposer(slotName: "d3d12.dll", label: "D3D12 video processor")\n')
+        self.assertEqual(misses(swift, keys), [(2, "identifier", "process.detail.missing")])
+
     def test_a_key_built_at_run_time_needs_a_key_with_its_head(self):
         self.assertEqual(misses('let key = "winetricks.category.\\(category)"\n'), [])
         self.assertEqual(misses('let key = "winetricks.kind.\\(category)"\n'),

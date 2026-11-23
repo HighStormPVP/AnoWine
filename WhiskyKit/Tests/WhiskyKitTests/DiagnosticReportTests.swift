@@ -26,8 +26,24 @@ final class DiagnosticReportTests: XCTestCase {
         let diagnosis = makeSampleDiagnosis(headline: "DLL Load Failure: MSVCR100.dll")
         let markdown = generateTestMarkdown(diagnosis: diagnosis)
 
-        XCTAssertTrue(markdown.contains("## Whisky Diagnostic Report"))
+        XCTAssertTrue(markdown.contains("## Ano Diagnostic Report"))
         XCTAssertTrue(markdown.contains("DLL Load Failure: MSVCR100.dll"))
+    }
+
+    /// The report a user copies or exports is headed with Ano's name.
+    @MainActor
+    func testTheExportedReportIsHeadedAno() async throws {
+        let bottleURL = FileManager.default.temporaryDirectory.appending(path: "DiagnosticReport-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: bottleURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: bottleURL) }
+        let bottle = Bottle(bottleUrl: bottleURL)
+        let program = Program(url: bottleURL.appending(path: "game.exe"), bottle: bottle)
+
+        let markdown = await DiagnosticExporter.generateMarkdownReport(
+            diagnosis: makeSampleDiagnosis(), bottle: bottle, program: program
+        )
+
+        XCTAssertTrue(markdown.hasPrefix("## Ano Diagnostic Report\n"), String(markdown.prefix(60)))
     }
 
     func testMarkdownReportContainsSections() {
@@ -81,7 +97,7 @@ final class DiagnosticReportTests: XCTestCase {
         )
         let markdown = generateTestMarkdown(diagnosis: diagnosis)
 
-        XCTAssertTrue(markdown.contains("## Whisky Diagnostic Report"))
+        XCTAssertTrue(markdown.contains("## Ano Diagnostic Report"))
         XCTAssertTrue(markdown.contains("### System Info"))
         XCTAssertTrue(markdown.contains("### Diagnosis Summary"))
     }
@@ -136,7 +152,7 @@ final class DiagnosticReportTests: XCTestCase {
     }
 
     private func generateTestMarkdown(diagnosis: CrashDiagnosis) -> String {
-        var markdown = "## Whisky Diagnostic Report\n\n"
+        var markdown = "## Ano Diagnostic Report\n\n"
         markdown += "**Generated:** \(Date().formatted())\n\n"
 
         markdown += "### System Info\n\n"
