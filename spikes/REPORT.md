@@ -497,14 +497,16 @@ import that could only list refused bottles. Plan
    (`verifyStoredPayload`, `deployStoredPayloadIfMissing`, the `ensure…` calls) start.
 4. `applicationDidFinishLaunching` starts `OldTraceCleanup.runIfNeeded()` in the background (not
    under UI tests). It runs once: defaults key `oldTracesCleanupVersion` = 1, written even when a
-   removal failed (logged under `AnoMigration` and skipped).
+   removal failed (logged under `AnoMigration` and skipped). It cleans only on a Mac that had Ano
+   6–8's runtime (`Libraries/Wine`, which every trace below needs); a fresh install is marked done
+   and cleans nothing.
 
 **What the cleanup removes** (inventory from tags `ano-test-6/7/8`, the bundled winetricks and three
 trace scans):
 
 | Trace | Rule |
 |---|---|
-| `~/.cache/winetricks` | removed; a symlink there loses only the link |
+| `~/.cache/winetricks` | removed, unless Homebrew or MacPorts winetricks or the original Whisky (`com.isaacmarovitz.Whisky`, `com.franke.Whisky` in Application Support) is on the Mac: every winetricks shares this cache. A symlink there loses only the link |
 | `/tmp/.wine-<uid>/server-*` | removed only when its `lock` is not held (`fcntl` `F_GETLK`), so a live server, Ano's or another Wine app's, stays; `.wine-<uid>` itself goes by `rmdir` once empty, and only a real folder owned by the user is looked into |
 | `org.winehq.wine` (runtime 3.1.x) and `com.codeweavers.CrossOver.wineloader` (runtime 4.9.0) | Metal shader caches in the user cache folder and `~/Library/Caches`; removed. If CrossOver is installed it shares the second id and rebuilds its shader cache once |
 | `$TMPDIR/winetricks.*` folders, `whisky-winetricks-*.sh` | removed (a crash or force-quit leaves them) |
@@ -513,7 +515,11 @@ trace scans):
 
 The app never asks for admin rights and deletes only in the home folder, the temporary folder, the
 user cache folder and `/tmp/.wine-<uid>`. Files checked by their text are read only when they are
-regular files.
+regular files. Temporary items younger than a day stay (`temporaryItemMinimumAge`, by the item's own
+modification time), so a live winetricks run of another app keeps its working folder.
+
+The final review (no Critical) found the shared winetricks cache (Important) and the live temporary
+folder; both are fixed (CI 45289465182, Hygiene 45289470172).
 
 **Kept on purpose**:
 - bottles, whole (decision 3);
@@ -552,7 +558,7 @@ still describes the command.
   - Its "Whisky picks / Whisky's DXVK / Whisky's Library" notes say Ano.
   - "Whisky Community" (the author), `referenceURL` links and `frankea/Whisky#N` stay.
 - CLI: `ano run` help, "is not an Ano bottle", and the usage line says `ano`, because ArgumentParser named the command after its Swift type, so `commandName: "ano"`.
-- Diagnostics: "Ano version:" and the report titles say Ano. The audio probe logs under the app's bundle id.
+- Diagnostics: "Ano version:" and the exported report titles say Ano. The audio probe logs under the app's bundle id.
 - Checks:
   - `check_catalog_keys.py` now checks keys passed as `label:`.
   - `test_app_wording.py` (Hygiene) and `BundledDataNamesTests` (no Proton in workarounds, no "Whisky" outside `author`) pin the new text.
@@ -571,6 +577,7 @@ could not remove (exit 1). Whether SIP lets root delete there, and the script on
 
 **Left** (not "wine", outside this plan's named items):
 - "No Ano processes running for this bottle" and "This is an Ano system process" (same misreading as the PID label);
+- the bottle-creation failure report's title "Whisky Bottle Creation Diagnostics" (`BottleVM.swift`);
 - `com.franke.Whisky` / `com.isaacmarovitz.WhiskyKit` log subsystems;
 - the export names `whisky-diagnostics-*.txt` / `Whisky-Diagnostics-*.zip`;
 - the README's upstream text.
