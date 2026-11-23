@@ -78,7 +78,7 @@ final class TroubleshootingFlowValidationTests: XCTestCase {
                 on: ["already_configured": "end", "fail": "end", "error": "end"]
             ),
             "unrouted": FlowStepNode(
-                id: "unrouted", type: .check, phase: .checks, checkId: "winetricks.verb_check",
+                id: "unrouted", type: .check, phase: .checks, checkId: "anoTricks.verb_check",
                 params: ["verbs": "d3dx9"], on: ["fail": "end"]
             ),
             "unregistered": FlowStepNode(id: "unregistered", type: .check, phase: .checks, checkId: "no.such_check"),

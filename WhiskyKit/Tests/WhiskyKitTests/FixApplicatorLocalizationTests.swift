@@ -110,7 +110,7 @@ final class FixApplicatorLocalizationTests: XCTestCase {
     func testBottleSettingNamesAreCatalogKeys() throws {
         let fixIds = [
             "switch-backend", "enable-dxvk-async", "set-audio-driver", "set-buffer-size",
-            "enable-esync", "enable-controller-compat", "install-winetricks-verb",
+            "enable-esync", "enable-controller-compat", "install-ano-tricks-verb",
             "set-registry-value", "apply-launcher-fixes"
         ]
         var names: Set<String> = []
@@ -190,7 +190,7 @@ final class FixApplicatorLocalizationTests: XCTestCase {
     // MARK: - Winetricks
 
     func testWinetricksPreviewKeepsTheVerbAndLocalizesTheRest() throws {
-        let fix = try preview("install-winetricks-verb", params: ["verb": "d3dx9"])
+        let fix = try preview("install-ano-tricks-verb", params: ["verb": "d3dx9"])
 
         XCTAssertEqual(fix.newValue, "d3dx9")
         XCTAssertEqual(fix.currentValue, String(localized: "gameConfig.preview.anoTricksMissing"))
@@ -198,7 +198,7 @@ final class FixApplicatorLocalizationTests: XCTestCase {
     }
 
     func testWinetricksPreviewWithoutAVerbSaysUnknown() throws {
-        let fix = try preview("install-winetricks-verb")
+        let fix = try preview("install-ano-tricks-verb")
 
         XCTAssertEqual(fix.newValue, String(localized: "troubleshooting.fix.value.unknown"))
         assertCatalogKey(fix.newValue)

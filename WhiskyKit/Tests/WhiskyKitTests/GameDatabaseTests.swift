@@ -79,7 +79,7 @@ final class GameDatabaseTests: XCTestCase {
           "constraints": {
             "cpuArchitectures": ["arm64"],
             "minMacOSVersion": "15.0.0",
-            "minWineVersion": "9.0",
+            "minAnoVersion": "9.0",
             "requiredBackendCapabilities": []
           },
           "variants": [
@@ -103,7 +103,7 @@ final class GameDatabaseTests: XCTestCase {
                 "D3DM_SUPPORT_DXR": "0"
               },
               "dllOverrides": [],
-              "winetricksVerbs": ["vcrun2022"]
+              "anoTricksVerbs": ["vcrun2022"]
             }
           ],
           "notes": ["Easy Anti-Cheat must be disabled"],

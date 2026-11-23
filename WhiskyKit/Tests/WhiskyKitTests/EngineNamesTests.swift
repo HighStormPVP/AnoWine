@@ -230,10 +230,10 @@ struct EngineNamesTests {
         let pageFault = "ano: Unhandled page fault on read access to 0x00000000 at address 0x7b012345"
         #expect(matches("page-fault", pageFault))
         #expect(matches("prefix-corruption", "ano: could not load kernel32.dll, status c0000135"))
-        #expect(matches("wine-nonzero-exit", "ano: exit code 3"))
-        #expect(matches("wine-nonzero-exit", "ano-server exit code 3"))
-        #expect(!matches("wine-nonzero-exit", "piano exit code 3"))
-        #expect(!matches("wine-nonzero-exit", "/Applications/Ano.app/Contents/MacOS/Ano exit code 3"))
+        #expect(matches("ano-nonzero-exit", "ano: exit code 3"))
+        #expect(matches("ano-nonzero-exit", "ano-server exit code 3"))
+        #expect(!matches("ano-nonzero-exit", "piano exit code 3"))
+        #expect(!matches("ano-nonzero-exit", "/Applications/Ano.app/Contents/MacOS/Ano exit code 3"))
     }
 
     @Test("The server restart fix is restart-ano-server and names ano-server")

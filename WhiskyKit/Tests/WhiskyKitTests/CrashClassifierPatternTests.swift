@@ -279,7 +279,7 @@ final class CrashClassifierPatternTests: XCTestCase {
                 "EasyAntiCheat.exe: Fatal error - EasyAntiCheat is not installed",
             "anticheat-battleye":
                 "BattlEye Service: error initializing - BattlEye not supported",
-            "wine-nonzero-exit":
+            "ano-nonzero-exit":
                 "ano-loader exit code 1",
             "steam-download-stall":
                 "Steam content_log: download HTTP timed out"

@@ -64,7 +64,7 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
     /// later check scripted to lead to escalation.
     private func engineOnInstallStep() async -> TroubleshootingFlowEngine {
         let engine = makeEngine(scripted: [
-            "winetricks.verb_check": .fail,
+            "anoTricks.verb_check": .fail,
             "dependency.check_missing": .pass,
             "game.config_available": .fail
         ])
@@ -79,13 +79,13 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
 
     func testInstallThatLandsAfterTheUserSkippedLeavesTheSessionWhereItIs() async {
         let engine = await engineOnInstallStep()
-        engine.applyFix(fixId: "install-winetricks-verb", beforeValue: nil, afterValue: "vcrun2019")
+        engine.applyFix(fixId: "install-ano-tricks-verb", beforeValue: nil, afterValue: "vcrun2019")
 
         engine.skipStep()
         await waitUntil("flow escalated") { engine.session.phase == .escalation }
         XCTAssertEqual(engine.currentNode?.id, "escalation_summary")
 
-        engine.confirmFixApplied(fixId: "install-winetricks-verb")
+        engine.confirmFixApplied(fixId: "install-ano-tricks-verb")
 
         XCTAssertEqual(engine.currentNode?.id, "escalation_summary", "the install must not pull the user to verify")
         XCTAssertEqual(engine.session.phase, .escalation)
@@ -94,11 +94,11 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
 
     func testInstallThatFailsAfterTheUserWentBackLeavesTheSessionWhereItIs() async {
         let engine = await engineOnInstallStep()
-        engine.applyFix(fixId: "install-winetricks-verb", beforeValue: nil, afterValue: "vcrun2019")
+        engine.applyFix(fixId: "install-ano-tricks-verb", beforeValue: nil, afterValue: "vcrun2019")
 
         engine.goBack()
         XCTAssertEqual(engine.currentNode?.id, "show_missing_deps")
-        engine.markFixFailed(fixId: "install-winetricks-verb")
+        engine.markFixFailed(fixId: "install-ano-tricks-verb")
 
         XCTAssertEqual(engine.currentNode?.id, "show_missing_deps")
         XCTAssertEqual(engine.session.fixAttempts.last?.result, .failed)
@@ -106,9 +106,9 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
 
     func testInstallThatLandsWhileTheUserWaitsMovesOnToVerify() async {
         let engine = await engineOnInstallStep()
-        engine.applyFix(fixId: "install-winetricks-verb", beforeValue: nil, afterValue: "vcrun2019")
+        engine.applyFix(fixId: "install-ano-tricks-verb", beforeValue: nil, afterValue: "vcrun2019")
 
-        engine.confirmFixApplied(fixId: "install-winetricks-verb")
+        engine.confirmFixApplied(fixId: "install-ano-tricks-verb")
 
         XCTAssertEqual(engine.currentNode?.id, "verify_install")
         XCTAssertEqual(engine.session.phase, .verify)
@@ -116,10 +116,10 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
 
     func testStartingOverForgetsAPendingInstall() async {
         let engine = await engineOnInstallStep()
-        engine.applyFix(fixId: "install-winetricks-verb", beforeValue: nil, afterValue: "vcrun2019")
+        engine.applyFix(fixId: "install-ano-tricks-verb", beforeValue: nil, afterValue: "vcrun2019")
 
         engine.startOver()
-        engine.confirmFixApplied(fixId: "install-winetricks-verb")
+        engine.confirmFixApplied(fixId: "install-ano-tricks-verb")
 
         XCTAssertNil(engine.currentNode)
         XCTAssertTrue(engine.session.fixAttempts.isEmpty)
@@ -152,8 +152,8 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
 
     func testFixThatFailedToApplyIsOfferedAgain() async {
         let engine = await engineOnInstallStep()
-        engine.applyFix(fixId: "install-winetricks-verb", beforeValue: nil, afterValue: "vcrun2019")
-        engine.markFixFailed(fixId: "install-winetricks-verb")
+        engine.applyFix(fixId: "install-ano-tricks-verb", beforeValue: nil, afterValue: "vcrun2019")
+        engine.markFixFailed(fixId: "install-ano-tricks-verb")
         XCTAssertEqual(engine.currentNode?.id, "fix_install_deps")
 
         engine.goBack()
@@ -252,7 +252,7 @@ final class TroubleshootingFixLifecycleTests: XCTestCase {
             FixAttempt(fixId: "enable-dxvk-async", beforeValue: "false"),
             hasProgram: false
         ))
-        XCTAssertFalse(FixApplicator.canUndo(FixAttempt(fixId: "install-winetricks-verb"), hasProgram: true))
+        XCTAssertFalse(FixApplicator.canUndo(FixAttempt(fixId: "install-ano-tricks-verb"), hasProgram: true))
         XCTAssertFalse(FixApplicator.canUndo(FixAttempt(fixId: "restart-ano-server"), hasProgram: true))
     }
 }

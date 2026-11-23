@@ -186,7 +186,7 @@ final class TroubleshootingFlowWiringTests: XCTestCase {
     func testFixAttemptKeepsTheParamsItWasAppliedWith() async {
         let engine = makeEngine(scripted: ["registry.value_check": .pass], launcherType: nil)
         engine.selectCategory(.networkDownload)
-        await waitUntil("DNS fix offered") { engine.currentNode?.id == "fix_wine_dns" }
+        await waitUntil("DNS fix offered") { engine.currentNode?.id == "fix_ano_dns" }
         let params = engine.currentNode?.params
 
         engine.applyFix(fixId: "set-registry-value", beforeValue: "1.1.1.1", afterValue: nil, params: params)
@@ -270,7 +270,7 @@ final class TroubleshootingFlowWiringTests: XCTestCase {
 
     func testAllVerbsInstalledMovesOnToTheDLLCheck() async {
         let engine = makeEngine(scripted: [
-            "winetricks.verb_check": .alreadyConfigured,
+            "anoTricks.verb_check": .alreadyConfigured,
             "dependency.check_missing": .pass,
             "game.config_available": .fail
         ])
@@ -285,13 +285,13 @@ final class TroubleshootingFlowWiringTests: XCTestCase {
     func testAllVerbsInstalledAfterACrashEscalates() async {
         let engine = makeEngine(scripted: [
             "crash.log_classify": .pass,
-            "winetricks.verb_check": .alreadyConfigured
+            "anoTricks.verb_check": .alreadyConfigured
         ])
         engine.selectCategory(.launchCrash)
         await waitUntil("flow escalated") { engine.session.phase == .escalation }
 
         XCTAssertTrue(engine.session.branchDecisions.contains {
-            $0.fromNodeId == "check_winetricks" && $0.toNodeId == "escalate"
+            $0.fromNodeId == "check_ano_tricks" && $0.toNodeId == "escalate"
         })
     }
 
@@ -328,7 +328,7 @@ final class TroubleshootingFlowWiringTests: XCTestCase {
 
         let other = makeEngine(scripted: ["registry.value_check": .pass], launcherType: LauncherType.eaApp.rawValue)
         other.selectCategory(.networkDownload)
-        await waitUntil("DNS fix offered") { other.currentNode?.id == "fix_wine_dns" }
+        await waitUntil("DNS fix offered") { other.currentNode?.id == "fix_ano_dns" }
         XCTAssertFalse(other.session.stepHistory.contains { $0.nodeId == "check_steam_download" })
     }
 }

@@ -59,7 +59,7 @@ final class FixApplicatorTests: XCTestCase {
 
     func testPreviewNonReversibleInstallFix() throws {
         let preview = try XCTUnwrap(FixApplicator.preview(
-            fixId: "install-winetricks-verb", params: ["verb": "vcrun2019"], bottle: bottle, program: nil
+            fixId: "install-ano-tricks-verb", params: ["verb": "vcrun2019"], bottle: bottle, program: nil
         ))
 
         XCTAssertEqual(preview.newValue, "vcrun2019")
