@@ -110,7 +110,7 @@ final class SessionStalenessLocalizationTests: XCTestCase {
 
         XCTAssertEqual(
             change.displayMessage,
-            String(localized: "troubleshooting.resume.change.backend \(recommended) WineD3D")
+            String(localized: "troubleshooting.resume.change.backend \(recommended) AnoD3D")
         )
         XCTAssertFalse(change.displayMessage.contains(" recommended "))
     }

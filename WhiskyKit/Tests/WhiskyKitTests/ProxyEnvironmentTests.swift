@@ -159,7 +159,7 @@ final class ProxyEnvironmentTests: XCTestCase {
         let script = try String(contentsOf: wrapper, encoding: .utf8)
         XCTAssertEqual(script, """
         #!/bin/sh
-        # Ano: start Wine with the proxy interceptor. Only Wine gets it.
+        # Ano: start the engine with the proxy interceptor. Only the engine gets it.
         DYLD_INSERT_LIBRARIES="$ANO_NET_LIB" exec "$ANO_REAL_LOADER" "$@"
 
         """)
