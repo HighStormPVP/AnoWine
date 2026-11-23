@@ -50,8 +50,8 @@ final class WhiskyWineUpdateCheckSettingTests: XCTestCase {
     }
 
     func testKeyMatchesTheSettingsToggle() {
-        // SettingsView stores the toggle under this key; renaming it would
-        // silently reset every user's choice.
-        XCTAssertEqual(WhiskyWineInstaller.automaticUpdateCheckDefaultsKey, "checkWhiskyWineUpdates")
+        // SettingsView stores the toggle under this key; renaming it again
+        // needs a migration in AppMigrations, or every user's choice resets.
+        XCTAssertEqual(WhiskyWineInstaller.automaticUpdateCheckDefaultsKey, "checkAnoRuntimeUpdates")
     }
 }
