@@ -70,12 +70,17 @@ if [ "$(id -u)" = 0 ]; then
   echo "skipped: running as root, so every folder is readable"
 else
   chmod 000 "$oah"
-  run --root "$root"
-  chmod 755 "$oah"
-  if [ "$code" = 2 ] && grep -q 'run with sudo' <<< "$out"; then
-    ok "an unreadable cache folder exits 2 (run with sudo)"
+  if [ -r "$oah" ]; then
+    chmod 755 "$oah"
+    echo "skipped: this file system ignores chmod 000, so the folder stays readable"
   else
-    bad "an unreadable cache folder exits 2 (run with sudo)"
+    run --root "$root"
+    chmod 755 "$oah"
+    if [ "$code" = 2 ] && grep -q 'run with sudo' <<< "$out"; then
+      ok "an unreadable cache folder exits 2 (run with sudo)"
+    else
+      bad "an unreadable cache folder exits 2 (run with sudo)"
+    fi
   fi
 fi
 
@@ -119,12 +124,15 @@ else
 fi
 
 # 7. Nothing the script says names the old runtime, only the paths it lists
-# may. The repo and temp folders are taken out first (the repo is AnoWine).
+# may. The script's own path (in scripts/anowine), the repo and the temp
+# folder are taken out first, also as the hints quote them for the shell.
 run --help
 run --no-such-option
 said=$(cat "$tmp/said")
-said=${said//"$ROOT"/REPO}
-said=${said//"$tmp"/TMP}
+for path in "$script" "$ROOT" "$tmp"; do
+  said=${said//"$(printf '%q' "$path")"/PATH}
+  said=${said//"$path"/PATH}
+done
 code=-
 out=$(grep -i 'wine' <<< "$said" || true)
 if [ -f "$script" ] && [ -z "$out" ]; then
