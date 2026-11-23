@@ -12,7 +12,16 @@ sys.path.insert(0, HERE)
 
 from check_catalog_keys import scan as check_keys  # noqa: E402
 from rebrand_strings import dump  # noqa: E402
+import rename_app_text  # noqa: E402
 from rename_app_text import RenameError, key_renames, rename_key, rename_text, run  # noqa: E402
+
+CATALOG_PATH = Path(HERE).parent.parent / "Whisky" / "Localizable.xcstrings"
+ROSETTA = "setup.rosetta.subtitle"
+# Languages whose Rosetta line gave Wine as the example of x86 code; plain "Ano"
+# there says the app is x86 code. (de, fi and tr compare Rosetta with it instead,
+# which stays true; English is a REWORDINGS entry.)
+ROSETTA_EXAMPLE_LANGUAGES = {"ar", "cs", "da", "es", "fr", "it", "ja", "ko", "nl", "pl", "pt-BR", "pt-PT",
+                             "ro", "ru", "sv", "uk", "vi", "zh-Hans", "zh-Hant"}
 
 
 def unit(value):
@@ -79,8 +88,29 @@ class TextRuleTests(unittest.TestCase):
             rename_text("Version Wine", "fr", None, "update.whiskywine.title")
 
     def test_english_rewordings_stay_in_english(self):
-        self.assertEqual(rename_text("Rosetta, kuten Wine, mahdollistaa", "fi"), "Rosetta, kuten Ano, mahdollistaa")
+        self.assertEqual(rename_text("Il Direct3D proprio di Wine", "it"), "Il Direct3D proprio di Ano")
         self.assertEqual(rename_text("PID de Wine", "es"), "PID de Ano")
+
+    def test_the_rosetta_line_names_the_engine_not_the_app(self):
+        changes = []
+        self.assertEqual(rename_text("Rosetta permet au code x86, comme Wine, de s'exécuter sur votre Mac.", "fr",
+                                     changes, ROSETTA),
+                         "Rosetta permet au code x86, comme le moteur d'Ano, de s'exécuter sur votre Mac.")
+        self.assertEqual(rename_text("Rosetta 让您的 Mac 可以运行 Wine 等 x86 架构的程序。", "zh-Hans", None, ROSETTA),
+                         "Rosetta 让您的 Mac 可以运行 Ano 引擎等 x86 架构的程序。")
+        self.assertEqual(changes[0].why, "Rosetta runs the x86 engine; the Ano app itself is native")
+        # A comparison of Rosetta with the engine stays the plain rule.
+        self.assertEqual(rename_text("Rosetta, kuten Wine, mahdollistaa", "fi", None, ROSETTA),
+                         "Rosetta, kuten Ano, mahdollistaa")
+
+
+class CatalogTests(unittest.TestCase):
+    def test_the_catalog_rosetta_line_names_the_engine(self):
+        table = getattr(rename_app_text, "ENGINE_WORDING", {}).get(ROSETTA, {})
+        self.assertEqual(set(table), ROSETTA_EXAMPLE_LANGUAGES)
+        values = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))["strings"][ROSETTA]["localizations"]
+        for lang, (_, engine) in table.items():
+            self.assertIn(engine, values[lang]["stringUnit"]["value"], lang)
 
 
 class KeyTests(unittest.TestCase):
