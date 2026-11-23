@@ -65,6 +65,8 @@ func usableBottle(named name: String, in bottles: [Bottle], missing: String) thr
 @main
 struct Whisky: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
+        // Usage and help name the command; the type's own name would print `whisky`.
+        commandName: "ano",
         abstract: "A CLI interface for Ano.",
         discussion: """
         Exit codes: 64 for a malformed invocation (unknown flags, missing or \
@@ -191,9 +193,9 @@ extension Whisky {
             case .notADirectory:
                 "\(path) is a file, not a bottle directory."
             case .missingMetadata:
-                "\(path) is not a Whisky bottle: it has no Metadata.plist."
+                "\(path) is not an Ano bottle: it has no Metadata.plist."
             case .unreadableMetadata:
-                "\(path) is not a Whisky bottle: its Metadata.plist could not be read."
+                "\(path) is not an Ano bottle: its Metadata.plist could not be read."
             case .madeByEarlierAno:
                 "\(path): \(OldRuntimeBottleError().localizedDescription)"
             }
@@ -266,7 +268,7 @@ extension Whisky {
             abstract: "Run a program with Ano.",
             discussion: """
             Runs a Windows program directly using Ano, with the same settings \
-            and preparation as a launch from Whisky. Use --command to print the \
+            and preparation as a launch from the Ano app. Use --command to print the \
             command instead: the bottle is prepared first (DLL overrides written \
             to its registry, graphics backend files deployed), so the printed \
             command runs the program the same way. Use --follow to stream program \
@@ -276,7 +278,7 @@ extension Whisky {
             Options the program itself takes (for example --disable-gpu) are \
             passed through as written. If a program option has the same name \
             as one of run's own options, put it after a bare -- separator: \
-            whisky run MyBottle app.exe -- --follow
+            ano run MyBottle app.exe -- --follow
             """
         )
 

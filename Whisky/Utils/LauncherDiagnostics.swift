@@ -56,7 +56,7 @@ enum LauncherDiagnostics {
     static func generateDiagnosticReport(for bottle: Bottle) async -> String {
         var report = """
         ═══════════════════════════════════════════════════════
-        Whisky Launcher Diagnostics Report
+        Ano Launcher Diagnostics Report
         Generated: \(Date().formatted())
         ═══════════════════════════════════════════════════════
 

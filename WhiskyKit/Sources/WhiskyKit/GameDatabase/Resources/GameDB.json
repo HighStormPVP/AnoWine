@@ -165,7 +165,7 @@
           "id": "dxvk-(avoids-haziness)",
           "label": "Recommended backend",
           "isDefault": true,
-          "whenToUse": "Default configuration; Whisky picks the backend for the installed runtime",
+          "whenToUse": "Default configuration; Ano picks the backend for the installed runtime",
           "rationale": [
             "DirectX 12 only (PCGamingWiki); DXVK has no Direct3D 12 path and its preset turns d3d12 off, so the game uses the recommended backend (D3DMetal with the GPTK payload)",
             "An earlier note reported haziness on D3DMetal (\"FNA-based renderer hits a documented haziness bug on D3DMetal\"); PCGamingWiki lists no FNA engine and that report is unverified, and DXVK cannot run the game either way"
@@ -482,7 +482,7 @@
       "notes": [
         "Requires both EA App launcher and Easy Anti-Cheat, both of which are problematic",
         "This is a multiplayer-only game; anti-cheat cannot be disabled",
-        "Unlikely to work until anti-cheat vendors support Proton or macOS"
+        "Unlikely to work until anti-cheat vendors support macOS or compatibility layers on macOS"
       ],
       "knownIssues": [
         {
@@ -560,13 +560,13 @@
         }
       ],
       "notes": [
-        "Untested on Whisky's runtime: the launch arguments come from a report on a different engine build"
+        "Untested on Ano's runtime: the launch arguments come from a report on a different engine build"
       ],
       "knownIssues": [
         {
-          "description": "Play inside Steam starts the game without Whisky's launch arguments",
+          "description": "Play inside Steam starts the game without Ano's launch arguments",
           "severity": "major",
-          "workaround": "Start BeamNG.drive from Whisky's Library, or add -nogfxgpudriven -nogfxgpuupload -nogfxbindless -nogfxbindlesscbv -nogfxindirectconstants to its launch options in Steam"
+          "workaround": "Start BeamNG.drive from Ano's Library, or add -nogfxgpudriven -nogfxgpuupload -nogfxbindless -nogfxbindlesscbv -nogfxindirectconstants to its launch options in Steam"
         }
       ],
       "provenance": {
@@ -1070,7 +1070,7 @@
           "whenToUse": "Use if the default variant's forced D3DMetal settings cause glitches or crashes",
           "rationale": [
             "Cyberpunk 2077 is DirectX 12 only (PCGamingWiki); DXVK has no Direct3D 12 path and its preset turns d3d12 off, so a DXVK fallback cannot start the game",
-            "Leaves the backend to Whisky's recommendation for the installed runtime and drops the default variant's DXR override"
+            "Leaves the backend to Ano's recommendation for the installed runtime and drops the default variant's DXR override"
           ],
           "settings": {
             "graphicsBackend": "recommended",
@@ -1410,7 +1410,7 @@
         {
           "description": "BattlEye anti-cheat blocks game launch; Bungie has not enabled BattlEye's Proton support",
           "severity": "critical",
-          "workaround": "None; Bungie must enable BattlEye's Proton support"
+          "workaround": "None; Bungie must enable BattlEye support for macOS or for compatibility layers on macOS"
         }
       ],
       "provenance": {
@@ -1494,7 +1494,7 @@
         {
           "description": "BattlEye anti-cheat prevents online play",
           "severity": "major",
-          "workaround": "No workaround; this game is functionally offline-only on Whisky"
+          "workaround": "No workaround; this game is functionally offline-only in Ano"
         }
       ],
       "provenance": {
@@ -1996,7 +1996,7 @@
         {
           "description": "Easy Anti-Cheat prevents game launch; Epic has not enabled EAC's Proton support",
           "severity": "critical",
-          "workaround": "None; Epic must enable EAC's Proton support, which they have not done"
+          "workaround": "None; Epic must enable EAC support for macOS or for compatibility layers on macOS, which they have not done"
         }
       ],
       "provenance": {
@@ -2618,7 +2618,7 @@
           "id": "dxvk-(decima-engine)",
           "label": "Recommended (Decima engine)",
           "isDefault": true,
-          "whenToUse": "Default configuration; Whisky picks the backend for the installed runtime",
+          "whenToUse": "Default configuration; Ano picks the backend for the installed runtime",
           "rationale": [
             "DirectX 12 only (PCGamingWiki); DXVK has no Direct3D 12 path and its preset turns d3d12 off, so the game uses the recommended backend (D3DMetal with the GPTK payload)",
             "vcrun2022 + esync match the Horizon Zero Dawn recipe"
@@ -3039,7 +3039,7 @@
           "id": "dxvk-(re-engine)",
           "label": "Recommended (RE Engine)",
           "isDefault": true,
-          "whenToUse": "Default configuration; Whisky picks the backend for the installed runtime",
+          "whenToUse": "Default configuration; Ano picks the backend for the installed runtime",
           "rationale": [
             "RE Engine title; vcrun2022 supplies the runtime",
             "DirectX 12 only (PCGamingWiki); DXVK has no Direct3D 12 path and its preset turns d3d12 off, so the game uses the recommended backend (D3DMetal with the GPTK payload)"
@@ -3173,7 +3173,7 @@
           "isDefault": true,
           "whenToUse": "Community-tested configuration",
           "rationale": [
-            "2013-era DirectX 9 fighter (PCGamingWiki); Whisky's DXVK covers Direct3D 10 and 11 only, so Direct3D 9 goes to the runtime's own d3d9",
+            "2013-era DirectX 9 fighter (PCGamingWiki); Ano's DXVK covers Direct3D 10 and 11 only, so Direct3D 9 goes to the runtime's own d3d9",
             "Requires legacy vcrun2013 + d3dcompiler",
             "Splash-then-exit is the classic device init failure pattern"
           ],
@@ -3341,13 +3341,13 @@
       "notes": [
         "BattlEye anti-cheat blocks the game from running in Ano or Proton",
         "Multiplayer-only game; anti-cheat cannot be bypassed",
-        "Unlikely to work until Krafton enables BattlEye's Proton support"
+        "Unlikely to work until Krafton enables BattlEye support for macOS or for compatibility layers on macOS"
       ],
       "knownIssues": [
         {
           "description": "BattlEye prevents game from launching in Ano",
           "severity": "critical",
-          "workaround": "None; developer must enable BattlEye's Proton support"
+          "workaround": "None; developer must enable BattlEye support for macOS or for compatibility layers on macOS"
         }
       ],
       "provenance": {
@@ -4414,7 +4414,7 @@
           "id": "dxvk-(re-engine)",
           "label": "Recommended (RE Engine)",
           "isDefault": true,
-          "whenToUse": "Default configuration; Whisky picks the backend for the installed runtime",
+          "whenToUse": "Default configuration; Ano picks the backend for the installed runtime",
           "rationale": [
             "'Fatal d3d error(3)' has been reported as a D3DMetal crash for the RE Engine; DXVK cannot avoid it because it cannot run the game at all",
             "DirectX 12 only (PCGamingWiki); DXVK has no Direct3D 12 path and its preset turns d3d12 off, so the game uses the recommended backend (D3DMetal with the GPTK payload)",
@@ -4548,7 +4548,7 @@
           "isDefault": true,
           "whenToUse": "Community-tested configuration",
           "rationale": [
-            "DirectX 9 Bandai Namco JRPG with the silent-exit-on-launch pattern (PCGamingWiki); Whisky's DXVK covers Direct3D 10 and 11 only, so Direct3D 9 goes to the runtime's own d3d9",
+            "DirectX 9 Bandai Namco JRPG with the silent-exit-on-launch pattern (PCGamingWiki); Ano's DXVK covers Direct3D 10 and 11 only, so Direct3D 9 goes to the runtime's own d3d9",
             "vcrun2019 + d3dcompiler_47 unblock its device creation"
           ],
           "settings": {
@@ -4999,7 +4999,7 @@
           "id": "dxvk-(ue5-fallback)",
           "label": "Recommended (UE5)",
           "isDefault": true,
-          "whenToUse": "Default configuration; Whisky picks the backend for the installed runtime",
+          "whenToUse": "Default configuration; Ano picks the backend for the installed runtime",
           "rationale": [
             "UE5 Nanite/Lumen has been reported to show missing or untextured models on D3DMetal",
             "DirectX 12 only (PCGamingWiki); DXVK has no Direct3D 12 path and its preset turns d3d12 off, so the game uses the recommended backend (D3DMetal with the GPTK payload)"
@@ -5253,7 +5253,7 @@
           "isDefault": true,
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
-            "DirectX 9 RTS title (PCGamingWiki); Whisky's DXVK covers Direct3D 10 and 11 only, so Direct3D 9 goes to the runtime's own d3d9",
+            "DirectX 9 RTS title (PCGamingWiki); Ano's DXVK covers Direct3D 10 and 11 only, so Direct3D 9 goes to the runtime's own d3d9",
             "vcrun2022 + d3dcompiler_47 cover the shader-init dependencies"
           ],
           "settings": {
@@ -6052,9 +6052,9 @@
       "notes": [],
       "knownIssues": [
         {
-          "description": "Play inside Steam starts the launcher without Whisky's launch arguments, so its page stays white",
+          "description": "Play inside Steam starts the launcher without Ano's launch arguments, so its page stays white",
           "severity": "major",
-          "workaround": "Start Warframe from Whisky's Library, or add --in-process-gpu to its launch options in Steam"
+          "workaround": "Start Warframe from Ano's Library, or add --in-process-gpu to its launch options in Steam"
         }
       ],
       "provenance": {

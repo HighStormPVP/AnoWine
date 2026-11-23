@@ -255,7 +255,7 @@ extension RunningProcessesView {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     detailRow(label: "process.column.name", value: process.imageName)
-                    detailRow(label: "process.detail.anoPID", value: String(process.winePID))
+                    detailRow(label: "process.detail.windowsPID", value: String(process.winePID))
                     if let macosPID = process.macosPID {
                         detailRow(label: "process.detail.macosPID", value: String(macosPID))
                     }

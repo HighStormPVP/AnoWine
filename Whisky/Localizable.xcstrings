@@ -29806,145 +29806,145 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يتحكم في ما إذا كانت عمليات Ano تُنهى عند إغلاق Ano"
+            "value" : "يتحكم في ما إذا كانت برامج Windows تُنهى عند إغلاق Ano"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Určuje, zda se procesy Ano ukončí při zavření Ano"
+            "value" : "Určuje, zda se programy pro Windows ukončí při zavření Ano"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bestemmer, om Ano-processer afsluttes, når Ano lukkes"
+            "value" : "Bestemmer, om Windows-programmer afsluttes, når Ano lukkes"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Legt fest, ob Ano-Prozesse beendet werden, wenn Ano geschlossen wird"
+            "value" : "Legt fest, ob Windows-Programme beendet werden, wenn Ano geschlossen wird"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controls whether Ano processes are terminated when Ano quits"
+            "value" : "Controls whether Windows programs are terminated when Ano quits"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controls whether Ano processes are terminated when Ano quits"
+            "value" : "Controls whether Windows programs are terminated when Ano quits"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controla si los procesos de Ano se cierran cuando se sale de Ano"
+            "value" : "Controla si los programas de Windows se cierran cuando se sale de Ano"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Määrittää, lopetetaanko Ano-prosessit, kun Ano suljetaan"
+            "value" : "Määrittää, lopetetaanko Windows-ohjelmat, kun Ano suljetaan"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Détermine si les processus Ano sont arrêtés à la fermeture de Ano"
+            "value" : "Détermine si les programmes Windows sont arrêtés à la fermeture d'Ano"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stabilisce se i processi Ano vengono terminati alla chiusura di Ano"
+            "value" : "Stabilisce se i programmi Windows vengono terminati alla chiusura di Ano"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano の終了時に Ano のプロセスを停止するかどうかを設定します"
+            "value" : "Ano の終了時に Windows プログラムを停止するかどうかを設定します"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano를 종료할 때 Ano 프로세스도 종료할지 결정합니다"
+            "value" : "Ano를 종료할 때 Windows 프로그램도 종료할지 결정합니다"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bepaalt of Ano-processen worden beëindigd wanneer Ano wordt afgesloten"
+            "value" : "Bepaalt of Windows-programma's worden beëindigd wanneer Ano wordt afgesloten"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Określa, czy procesy Ano są kończone przy zamykaniu Ano"
+            "value" : "Określa, czy programy na Windowsa są kończone przy zamykaniu Ano"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controla se os processos do Ano são encerrados quando o Ano é fechado"
+            "value" : "Controla se os programas do Windows são encerrados quando o Ano é fechado"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Controla se os processos do Ano são terminados quando o Ano fecha"
+            "value" : "Controla se os programas do Windows são terminados quando o Ano fecha"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stabilește dacă procesele Ano sunt oprite când Ano se închide"
+            "value" : "Stabilește dacă programele Windows sunt oprite când Ano se închide"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Определяет, завершаются ли процессы Ano при выходе из Ano"
+            "value" : "Определяет, завершаются ли программы Windows при выходе из Ano"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avgör om Ano-processer avslutas när Ano avslutas"
+            "value" : "Avgör om Windows-program avslutas när Ano avslutas"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano kapatıldığında Ano işlemlerinin sonlandırılıp sonlandırılmayacağını belirler"
+            "value" : "Ano kapatıldığında Windows programlarının sonlandırılıp sonlandırılmayacağını belirler"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Визначає, чи завершуються процеси Ano під час виходу з Ano"
+            "value" : "Визначає, чи завершуються програми Windows під час виходу з Ano"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kiểm soát việc có kết thúc các tiến trình Ano khi thoát Ano hay không"
+            "value" : "Kiểm soát việc có kết thúc các chương trình Windows khi thoát Ano hay không"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "控制 Ano 退出时是否结束 Ano 进程"
+            "value" : "控制 Ano 退出时是否结束 Windows 程序"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "控制 Ano 結束時是否終止 Ano 程序"
+            "value" : "控制 Ano 結束時是否終止 Windows 程式"
           }
         }
       }
@@ -63579,150 +63579,150 @@
         }
       }
     },
-    "process.detail.anoPID" : {
+    "process.detail.windowsPID" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID في Ano"
+            "value" : "PID في Windows"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID v Ano"
+            "value" : "PID ve Windows"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano-PID"
+            "value" : "Windows-PID"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano-PID"
+            "value" : "Windows-PID"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID de Ano"
+            "value" : "PID de Windows"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano-PID"
+            "value" : "Windows-PID"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID Ano"
+            "value" : "PID Windows"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID Ano"
+            "value" : "PID Windows"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano-PID"
+            "value" : "Windows-PID"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID w Ano"
+            "value" : "PID w Windows"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID do Ano"
+            "value" : "PID do Windows"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID do Ano"
+            "value" : "PID do Windows"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID Ano"
+            "value" : "PID Windows"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID в Ano"
+            "value" : "PID в Windows"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano-PID"
+            "value" : "Windows-PID"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID у Ano"
+            "value" : "PID у Windows"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "PID Ano"
+            "value" : "PID Windows"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano PID"
+            "value" : "Windows PID"
           }
         }
       }
@@ -70387,145 +70387,145 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إنهاء عمليات Ano عند إغلاق Ano"
+            "value" : "إنهاء برامج Windows عند إغلاق Ano"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ukončit Ano procesy při uzavření Ano"
+            "value" : "Ukončit programy pro Windows při uzavření Ano"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Afslut Ano-processer, når Ano lukkes"
+            "value" : "Afslut Windows-programmer, når Ano lukkes"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano-Prozesse beim Schließen von Ano beenden"
+            "value" : "Windows-Programme beim Schließen von Ano beenden"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate Ano processes when Ano closes"
+            "value" : "Terminate Windows programs when Ano closes"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminate Ano processes when Ano closes"
+            "value" : "Terminate Windows programs when Ano closes"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminar procesos de Ano cuando Ano cierre"
+            "value" : "Terminar programas de Windows cuando Ano cierre"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sulje Ano-prosessit kun Ano suljetaan"
+            "value" : "Sulje Windows-ohjelmat kun Ano suljetaan"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminer les processus d'Ano à la fermeture de Ano"
+            "value" : "Terminer les programmes Windows à la fermeture d'Ano"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Termina i processi Ano quando Ano chiude"
+            "value" : "Termina i programmi Windows quando Ano chiude"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano の終了時に Ano の全プロセスを停止する"
+            "value" : "Ano の終了時に Windows プログラムをすべて停止する"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano를 종료할 때 Ano 프로세스도 종료"
+            "value" : "Ano를 종료할 때 Windows 프로그램도 종료"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beëindig de Ano processen wanneer Ano sluit"
+            "value" : "Beëindig de Windows-programma's wanneer Ano sluit"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zakończ proces Ano, gdy Ano zostanie zamknięte"
+            "value" : "Zakończ programy na Windowsa, gdy Ano zostanie zamknięte"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Encerrar processos do Ano ao fechar o Ano"
+            "value" : "Encerrar programas do Windows ao fechar o Ano"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Termine processos Ano quando o Ano fechar"
+            "value" : "Termine programas do Windows quando o Ano fechar"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Închide procesele Ano atunci când Ano se închide"
+            "value" : "Închide programele Windows atunci când Ano se închide"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Закрывать процессы Ano при закрытии Ano"
+            "value" : "Закрывать программы Windows при закрытии Ano"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avsluta Ano-processer när Ano stängs"
+            "value" : "Avsluta Windows-program när Ano stängs"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano kapandığında Ano işlemlerini sonlandır"
+            "value" : "Ano kapandığında Windows programlarını sonlandır"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Завершити процеси Ano, коли закривається Ano"
+            "value" : "Завершити програми Windows, коли закривається Ano"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buộc Ano phải tắt khi Ano tắt"
+            "value" : "Tắt các chương trình Windows khi Ano tắt"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "关闭 Ano 时结束 Ano 进程"
+            "value" : "关闭 Ano 时结束 Windows 程序"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano 關閉時終止 Ano 進程"
+            "value" : "Ano 關閉時終止 Windows 程式"
           }
         }
       }

@@ -46,7 +46,7 @@
     {
       "id": "switch-backend",
       "title": "Reset Graphics Backend to Recommended",
-      "description": "The backend chosen for this bottle is implicated in the crash. Recommended lets Whisky pick the backend this runtime supports best for each program.",
+      "description": "The backend chosen for this bottle is implicated in the crash. Recommended lets Ano pick the backend this runtime supports best for each program.",
       "category": "graphics",
       "actionType": "switchBackend",
       "risk": "low",

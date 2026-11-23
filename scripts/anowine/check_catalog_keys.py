@@ -50,7 +50,7 @@ DOTTED = re.compile(r"[a-z][A-Za-z0-9]*(?:\.[A-Za-z0-9_-]+)+")
 # Literals that look like keys but name something else.
 NOT_A_KEY_BEFORE = re.compile(r"(?:accessibilityIdentifier|identifier:|forKey:|forKeyPath:|subsystem:"
                               r"|category:|Notification\.Name|withIdentifier:|named:|systemName:|systemImage:"
-                              r"|bundleIdentifier|label:)\s*\(?\s*$")
+                              r"|bundleIdentifier)\s*\(?\s*$")
 # A dotted literal ending in a file extension is a file name (`steam.exe`).
 FILE_EXTENSIONS = {"exe", "log", "json", "dll", "plist", "txt", "msi", "bat", "lnk", "sh", "app", "zip",
                    "tar", "gz", "xz", "reg", "ini", "cfg", "dmg", "pdf", "png", "icns", "inf", "sys", "drv"}
