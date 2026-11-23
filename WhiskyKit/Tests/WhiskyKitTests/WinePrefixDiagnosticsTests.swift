@@ -30,7 +30,7 @@ final class WinePrefixDiagnosticsTests: XCTestCase {
 
         let report = diagnostics.reportString(error: "Test error")
 
-        XCTAssertTrue(report.contains("Wine Prefix Diagnostics"))
+        XCTAssertTrue(report.contains("Ano Prefix Diagnostics"))
         XCTAssertTrue(report.contains("Error: Test error"))
         XCTAssertTrue(report.contains("[PREFIX STATE]"))
         XCTAssertTrue(report.contains("Prefix path: /path/to/prefix"))

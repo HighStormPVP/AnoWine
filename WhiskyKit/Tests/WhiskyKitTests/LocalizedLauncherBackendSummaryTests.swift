@@ -122,7 +122,7 @@ final class LocalizedLauncherBackendSummaryTests: XCTestCase {
         let localized = try XCTUnwrap(GraphicsBackendCheck.localizedSummary(for: result))
 
         XCTAssertEqual(result.outcome, .fail)
-        XCTAssertEqual(localized, "troubleshooting.check.backend.mismatch WineD3D DXVK")
+        XCTAssertEqual(localized, "troubleshooting.check.backend.mismatch AnoD3D DXVK")
         assertCatalogKey(localized)
         XCTAssertEqual(result.summary, "Backend is anod3d, expected dxvk")
     }

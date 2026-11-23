@@ -27,7 +27,7 @@ final class AudioFixActionTests: XCTestCase {
             "audio-disabled": .enableAudioDriver,
             "low-buffer-size": .useDefaultLatency,
             "tone-not-audible": .restoreAudio,
-            "wine-audio-test-error": .restoreAudio,
+            "ano-audio-test-error": .restoreAudio,
             "no-default-device": .openSoundSettings,
             "no-output-channels": .openSoundSettings
         ]

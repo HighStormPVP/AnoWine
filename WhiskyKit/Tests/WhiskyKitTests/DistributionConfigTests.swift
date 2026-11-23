@@ -21,16 +21,6 @@ import SemanticVersion
 import XCTest
 
 final class DistributionConfigTests: XCTestCase {
-    // MARK: - Base URL Tests
-
-    func testBaseURL() {
-        XCTAssertEqual(DistributionConfig.baseURL, "https://highstormpvp.github.io/AnoWine")
-    }
-
-    func testBaseURLIsHTTPS() {
-        XCTAssertTrue(DistributionConfig.baseURL.hasPrefix("https://"))
-    }
-
     // MARK: - Version Plist URL Tests
 
     func testVersionPlistURL() {
@@ -55,18 +45,6 @@ final class DistributionConfigTests: XCTestCase {
 
     func testReleasesBaseURLIsHTTPS() {
         XCTAssertTrue(DistributionConfig.releasesBaseURL.hasPrefix("https://"))
-    }
-
-    // MARK: - Appcast URL Tests
-
-    func testAppcastURL() {
-        let expectedURL = "https://highstormpvp.github.io/AnoWine/appcast.xml"
-        XCTAssertEqual(DistributionConfig.appcastURL, expectedURL)
-    }
-
-    func testAppcastURLIsValid() {
-        let urlString = DistributionConfig.appcastURL
-        XCTAssertNotNil(URL(string: urlString), "Appcast URL should be a valid URL")
     }
 
     // MARK: - Libraries URL Construction Tests
@@ -375,12 +353,6 @@ final class DistributionConfigTests: XCTestCase {
         XCTAssertNotNil(librariesURL, "Libraries URL should be valid")
         XCTAssertEqual(librariesURL?.scheme, "https")
         XCTAssertEqual(librariesURL?.host, "github.com")
-
-        // Appcast URL
-        let appcastURL = URL(string: DistributionConfig.appcastURL)
-        XCTAssertNotNil(appcastURL, "Appcast URL should be valid")
-        XCTAssertEqual(appcastURL?.scheme, "https")
-        XCTAssertEqual(appcastURL?.host, "highstormpvp.github.io")
     }
 }
 

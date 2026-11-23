@@ -52,7 +52,7 @@ final class FixApplicatorTests: XCTestCase {
         ))
 
         XCTAssertEqual(preview.settingName, String(localized: "config.graphics.backend"))
-        XCTAssertEqual(preview.currentValue, "WineD3D")
+        XCTAssertEqual(preview.currentValue, "AnoD3D")
         XCTAssertEqual(preview.newValue, "DXVK")
         XCTAssertTrue(preview.isReversible)
     }

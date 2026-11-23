@@ -43,6 +43,21 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(hits({"Whisky/Views/A.swift": swift}),
                          [("Whisky/Views/A.swift", "1"), ("Whisky/Views/A.swift", "6")])
 
+    def test_the_repo_url_stays_but_github_io_does_not(self):
+        # The repo keeps its name (renaming it is outward-facing); github.io is
+        # blocked on the owner's network and never allowed.
+        swift = ('let a = "https://github.com/HighStormPVP/AnoWine/issues"\n'
+                 'let b = "https://raw.githubusercontent.com/HighStormPVP/AnoWine/main/dist/pages"\n'
+                 'let c = "https://highstormpvp.github.io/AnoWine"\n'
+                 'let d = "Wine bug: https://github.com/HighStormPVP/AnoWine/issues"\n'
+                 'let e = "https://github.com/HighStormPVP/AnoWineFork"\n'
+                 'let f = "https://github.com/someone/AnoWine"\n')
+        self.assertEqual(hits({"Whisky/Views/A.swift": swift}),
+                         [("Whisky/Views/A.swift", "3"), ("Whisky/Views/A.swift", "4"),
+                          ("Whisky/Views/A.swift", "5"), ("Whisky/Views/A.swift", "6")])
+        plist = "<key>SUFeedURL</key>\n<string>https://highstormpvp.github.io/AnoWine/appcast.xml</string>\n"
+        self.assertEqual(hits({"Whisky/Info.plist": plist}), [("Whisky/Info.plist", "2")])
+
     def test_tests_are_not_checked(self):
         self.assertEqual(hits({"WhiskyKit/Tests/WhiskyKitTests/A.swift": 'let a = "Wine"\n'}), [])
 

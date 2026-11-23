@@ -58,8 +58,8 @@ final class RockstarD3DDiagnosticsTests {
             return
         }
         let report = section()
-        #expect(report.contains("- **system32 d3d11.dll:** Wine's own, marker stripped (current engine)"))
-        #expect(report.contains("- **system32 dxgi.dll:** Wine's own, marker stripped (current engine)"))
+        #expect(report.contains("- **system32 d3d11.dll:** the engine's own, marker stripped (current engine)"))
+        #expect(report.contains("- **system32 dxgi.dll:** the engine's own, marker stripped (current engine)"))
         #expect(report.contains("- **system32 d3d10core.dll:** DXVK payload"))
         #expect(report.contains("- **Layout now:** swapped ("))
         #expect(report.contains("- **d3d11 source:** GPTK originals (originals/d3d11.dll)"))
@@ -114,7 +114,7 @@ final class RockstarD3DDiagnosticsTests {
 
         let report = section()
 
-        #expect(report.contains("- **Wine Direct3D swap setting:** off"))
+        #expect(report.contains("- **Ano Direct3D swap setting:** off"))
         #expect(report.contains("- **Layout now:** degraded (disabledByUser: "))
         #expect(report.contains("- **Layout at the last launch:** no launch this session"))
         #expect(report.contains("- **Swap record:** none"))
