@@ -47,7 +47,7 @@
       "sfSymbol": "shippingbox",
       "flowFile": "install-dependencies.json",
       "depth": "deep",
-      "description": "Missing .NET, VC++, DirectX, or Winetricks components"
+      "description": "Missing .NET, VC++, DirectX, or Ano-tricks components"
     },
     {
       "id": "network-download",

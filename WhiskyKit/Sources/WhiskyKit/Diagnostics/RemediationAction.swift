@@ -56,6 +56,23 @@ public struct RemediationAction: Codable, Sendable, Identifiable {
     /// Whether this action takes effect on the next launch.
     public let appliesNextLaunch: Bool
 
+    /// Every field, the verb written as `anoTricksVerb`: the bundled data
+    /// carries no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case description
+        case category
+        case actionType
+        case risk
+        case settingKeyPath
+        case settingValue
+        case winetricksVerb = "anoTricksVerb"
+        case whatWillChange
+        case undoPath
+        case appliesNextLaunch
+    }
+
     /// Types of remediation actions.
     public enum ActionType: String, Codable, Sendable {
         /// Change a bottle or program setting.

@@ -38,8 +38,8 @@
       "id": "check_audio_driver",
       "type": "check",
       "phase": "checks",
-      "title": "Check Wine audio driver",
-      "description": "Verifying the Wine audio driver configuration in the registry.",
+      "title": "Check Ano audio driver",
+      "description": "Verifying the Ano audio driver configuration in the registry.",
       "checkId": "audio.driver_check",
       "params": {
         "expected": "auto,coreaudio"
@@ -60,11 +60,11 @@
       "id": "fix_audio_driver",
       "type": "fix",
       "phase": "fix",
-      "title": "Configure Wine audio driver",
-      "description": "Setting the Wine audio driver to the recommended value for macOS compatibility.",
+      "title": "Configure Ano audio driver",
+      "description": "Setting the Ano audio driver to the recommended value for macOS compatibility.",
       "fixId": "set-audio-driver",
       "fixPreview": {
-        "settingName": "Wine Audio Driver",
+        "settingName": "Ano Audio Driver",
         "currentValueKey": "currentDriver",
         "newValue": "auto",
         "scope": "bottle"
@@ -124,7 +124,7 @@
       "type": "check",
       "phase": "checks",
       "title": "Check audio sample rate",
-      "description": "Verifying that the system audio sample rate is compatible with Wine audio output.",
+      "description": "Verifying that the system audio sample rate is compatible with Ano audio output.",
       "checkId": "audio.device_check",
       "params": {
         "check": "sample_rate_compat"
@@ -146,7 +146,7 @@
       "type": "info",
       "phase": "checks",
       "title": "Sample rate mismatch",
-      "description": "The system audio sample rate may not be compatible with Wine. Try changing the sample rate in macOS Audio MIDI Setup to 44100 Hz or 48000 Hz.",
+      "description": "The system audio sample rate may not be compatible with Ano. Try changing the sample rate in macOS Audio MIDI Setup to 44100 Hz or 48000 Hz.",
       "on": {
         "continue": "escalate"
       }

@@ -242,7 +242,7 @@ extension FixPreviewView {
     /// of them.
     private var resolvedParams: [String: String] {
         var params = node.params ?? [:]
-        if node.fixId == "install-winetricks-verb", params["verb"] == nil {
+        if node.fixId == "install-ano-tricks-verb", params["verb"] == nil {
             let missing = missingVerbs
             if !missing.isEmpty {
                 params["verb"] = missing.joined(separator: ", ")
@@ -288,7 +288,7 @@ extension FixPreviewView {
         guard let fixId = node.fixId else { return }
         let params = resolvedParams
 
-        if fixId == "install-winetricks-verb" {
+        if fixId == "install-ano-tricks-verb" {
             let verbs = params["verb"].map(WinetricksVerbCheck.verbs(in:)) ?? []
             guard !verbs.isEmpty else {
                 engine.skipStep()

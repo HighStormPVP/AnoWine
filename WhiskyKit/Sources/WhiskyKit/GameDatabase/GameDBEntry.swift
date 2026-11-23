@@ -62,6 +62,15 @@ public struct GameConstraints: Codable, Sendable, Equatable {
     /// Backend capabilities required (e.g., ["dxr"]).
     public let requiredBackendCapabilities: [String]?
 
+    /// Every field, the engine version written as `minAnoVersion`: the bundled
+    /// data carries no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case cpuArchitectures
+        case minMacOSVersion
+        case minWineVersion = "minAnoVersion"
+        case requiredBackendCapabilities
+    }
+
     public init(
         cpuArchitectures: [String]? = nil,
         minMacOSVersion: String? = nil,
@@ -100,6 +109,16 @@ public struct TestedWith: Codable, Sendable, Equatable {
     public let whiskyVersion: String?
     /// The CPU architecture used during testing (e.g., "arm64").
     public let cpuArchitecture: String?
+
+    /// Every field, the engine version written as `anoVersion`: the bundled
+    /// data carries no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case lastTestedAt
+        case macOSVersion
+        case wineVersion = "anoVersion"
+        case whiskyVersion
+        case cpuArchitecture
+    }
 
     public init(
         lastTestedAt: Date,
@@ -275,6 +294,22 @@ public struct GameConfigVariant: Codable, Sendable, Equatable {
     public let launchArguments: [String]?
     /// Information about when and how this variant was tested.
     public let testedWith: TestedWith?
+
+    /// Every field, the verbs written as `anoTricksVerbs`: the bundled data
+    /// carries no `wine` key.
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case isDefault
+        case whenToUse
+        case rationale
+        case settings
+        case environmentVariables
+        case dllOverrides
+        case winetricksVerbs = "anoTricksVerbs"
+        case launchArguments
+        case testedWith
+    }
 
     public init(
         id: String,

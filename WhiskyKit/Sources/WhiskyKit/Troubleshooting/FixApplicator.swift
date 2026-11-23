@@ -89,7 +89,7 @@ public struct FixPreview: Sendable {
 /// | `set-buffer-size` | DirectSound buffer size | Yes |
 /// | `enable-esync` | Enhanced sync mode (none to MSync) | Yes |
 /// | `enable-controller-compat` | Controller compatibility mode | Yes |
-/// | `install-winetricks-verb` | Winetricks verb installation | No |
+/// | `install-ano-tricks-verb` | Winetricks verb installation | No |
 /// | `run-enhanced-diagnostics` | Program ANODEBUG preset | Yes |
 /// | `restart-ano-server` | ano-server process restart | No |
 /// | `set-registry-value` | Arbitrary Wine registry value | Yes |
@@ -107,7 +107,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
     public static let knownFixIds: Set<String> = [
         "switch-backend", "enable-dxvk-async", "set-audio-driver",
         "set-buffer-size", "enable-esync", "enable-controller-compat",
-        "install-winetricks-verb", "run-enhanced-diagnostics",
+        "install-ano-tricks-verb", "run-enhanced-diagnostics",
         "restart-ano-server", "set-registry-value", "apply-launcher-fixes",
         "apply-game-config"
     ]
@@ -196,7 +196,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
                 isReversible: true
             )
 
-        case "install-winetricks-verb":
+        case "install-ano-tricks-verb":
             let verb = params["verb"] ?? String(localized: "troubleshooting.fix.value.unknown")
             return FixPreview(
                 settingName: String(localized: "troubleshooting.fix.setting.anoTricksVerb"),
@@ -388,7 +388,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
                 result: .applied
             )
 
-        case "install-winetricks-verb":
+        case "install-ano-tricks-verb":
             // Winetricks installation is async and non-reversible.
             // The actual install is delegated to the Winetricks infrastructure.
             let verb = params["verb"] ?? "unknown"
@@ -614,7 +614,7 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
             guard let snapshot = GameConfigSnapshot.load(from: bottle.url) else { return false }
             return (try? GameConfigApplicator.revert(bottle: bottle, snapshot: snapshot)) != nil
 
-        case "install-winetricks-verb",
+        case "install-ano-tricks-verb",
              "apply-launcher-fixes",
              "restart-ano-server":
             // Non-reversible fixes cannot be undone

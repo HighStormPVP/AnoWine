@@ -25,7 +25,7 @@ import Foundation
 /// Returns `.alreadyConfigured` if all verbs are present, `.fail` with
 /// evidence listing missing verbs otherwise.
 public struct WinetricksVerbCheck: TroubleshootingCheck {
-    public let checkId = "winetricks.verb_check"
+    public let checkId = "anoTricks.verb_check"
 
     public init() {}
 

@@ -12,10 +12,10 @@
       "checkId": "crash.log_classify",
       "params": {},
       "on": {
-        "pass": "check_winetricks",
+        "pass": "check_ano_tricks",
         "fail": "check_graphics_backend",
-        "unknown": "check_winetricks",
-        "error": "check_winetricks"
+        "unknown": "check_ano_tricks",
+        "error": "check_ano_tricks"
       },
       "evidenceMap": {
         "primaryCategory": "Issue category",
@@ -36,11 +36,11 @@
         "scope": "program_or_bottle"
       },
       "on": {
-        "pass": "check_winetricks",
-        "already_configured": "check_winetricks",
+        "pass": "check_ano_tricks",
+        "already_configured": "check_ano_tricks",
         "fail": "fix_switch_backend",
-        "unknown": "check_winetricks",
-        "error": "check_winetricks"
+        "unknown": "check_ano_tricks",
+        "error": "check_ano_tricks"
       },
       "evidenceMap": {
         "current": "Current backend",
@@ -67,16 +67,16 @@
       "requiresConfirmation": false,
       "on": {
         "applied": "verify_fix",
-        "skipped": "check_winetricks"
+        "skipped": "check_ano_tricks"
       }
     },
-    "check_winetricks": {
-      "id": "check_winetricks",
+    "check_ano_tricks": {
+      "id": "check_ano_tricks",
       "type": "check",
       "phase": "checks",
-      "title": "Check Winetricks verbs",
-      "description": "The crash suggests a memory access violation. Checking for common Winetricks fixes.",
-      "checkId": "winetricks.verb_check",
+      "title": "Check Ano-tricks verbs",
+      "description": "The crash suggests a memory access violation. Checking for common Ano-tricks fixes.",
+      "checkId": "anoTricks.verb_check",
       "params": {
         "verbs": "vcrun2019,dotnet48,d3dcompiler_47"
       },
@@ -98,7 +98,7 @@
       "phase": "fix",
       "title": "Install recommended components",
       "description": "Install missing runtime components that may resolve the access violation crash.",
-      "fixId": "install-winetricks-verb",
+      "fixId": "install-ano-tricks-verb",
       "isReversible": false,
       "requiresConfirmation": true,
       "on": {
@@ -114,7 +114,7 @@
       "description": "Try launching the program again to see if the crash is resolved.",
       "on": {
         "yes": "resolved",
-        "no": "check_winetricks"
+        "no": "check_ano_tricks"
       }
     },
     "resolved": {

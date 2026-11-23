@@ -26,7 +26,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -50,7 +50,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "dotnet48",
             "xact"
@@ -58,7 +58,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -93,7 +93,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -116,13 +116,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -158,7 +158,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -181,11 +181,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -220,7 +220,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -248,13 +248,13 @@
               "mode": "n,b"
             }
           ],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -290,7 +290,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -314,7 +314,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2013",
             "vcrun2019",
             "d3dx9_43"
@@ -322,7 +322,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -362,7 +362,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -371,7 +371,7 @@
           "isDefault": true,
           "whenToUse": "Use DX11 mode for best stability on Apple Silicon",
           "rationale": [
-            "DX11 mode is more stable than Vulkan under Wine translation",
+            "DX11 mode is more stable than Vulkan in Ano",
             "D3DMetal provides good DX11 translation on Apple Silicon",
             "Visual C++ runtime is required for the game engine"
           ],
@@ -386,13 +386,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-08T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -400,7 +400,7 @@
       ],
       "notes": [
         "Launch bg3_dx11.exe for the DX11 renderer (more stable than Vulkan)",
-        "Visual C++ 2022 runtime must be installed via winetricks",
+        "Visual C++ 2022 runtime must be installed via ano-tricks",
         "Large character models may cause brief frame drops during combat"
       ],
       "knownIssues": [
@@ -446,7 +446,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -456,7 +456,7 @@
           "whenToUse": "Game does not work due to EA launcher and anti-cheat requirements",
           "rationale": [
             "Requires EA App launcher which has compatibility issues",
-            "Easy Anti-Cheat kernel driver does not work under Wine",
+            "Easy Anti-Cheat kernel driver does not work in Ano",
             "Multiplayer-only game requires anti-cheat for all modes"
           ],
           "settings": {
@@ -470,11 +470,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-11-10T00:00:00Z",
             "macOSVersion": "15.1.0",
-            "wineVersion": "9.7",
+            "anoVersion": "9.7",
             "cpuArchitecture": "arm64"
           }
         }
@@ -482,7 +482,7 @@
       "notes": [
         "Requires both EA App launcher and Easy Anti-Cheat, both of which are problematic",
         "This is a multiplayer-only game; anti-cheat cannot be disabled",
-        "Unlikely to work until anti-cheat vendors support Wine/macOS"
+        "Unlikely to work until anti-cheat vendors support Proton or macOS"
       ],
       "knownIssues": [
         {
@@ -525,7 +525,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "11.0"
+        "minAnoVersion": "11.0"
       },
       "variants": [
         {
@@ -549,7 +549,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "launchArguments": [
             "-nogfxgpudriven",
             "-nogfxgpuupload",
@@ -560,7 +560,7 @@
         }
       ],
       "notes": [
-        "Untested on Whisky's runtime: the launch arguments come from a report on a different Wine build"
+        "Untested on Whisky's runtime: the launch arguments come from a report on a different engine build"
       ],
       "knownIssues": [
         {
@@ -598,7 +598,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -608,7 +608,7 @@
           "whenToUse": "Community-tested configuration",
           "rationale": [
             "Source engine title broke on Sequoia beta \u2014 Sequoia compat mode unblocks",
-            "DXVK D3D9 path more stable than wineD3D for Source on Apple Silicon"
+            "DXVK D3D9 path more stable than AnoD3D for Source on Apple Silicon"
           ],
           "settings": {
             "graphicsBackend": "dxvk",
@@ -621,13 +621,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -664,7 +664,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -688,11 +688,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-15T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -700,7 +700,7 @@
       ],
       "notes": [
         "Perfect performance with no configuration needed",
-        "Speedrun timer works correctly under Wine",
+        "Speedrun timer works correctly in Ano",
         "Everest mod loader is compatible with additional setup"
       ],
       "knownIssues": [],
@@ -736,7 +736,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -759,13 +759,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -775,7 +775,7 @@
         {
           "description": "HDRP shader-compile crash on launch; no reliable workaround as of macOS 15.4",
           "severity": "critical",
-          "workaround": "None \u2014 track upstream Wine HDRP support"
+          "workaround": "None \u2014 track the engine's HDRP support upstream"
         }
       ],
       "provenance": {
@@ -806,7 +806,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -816,7 +816,7 @@
           "whenToUse": "Community-tested configuration",
           "rationale": [
             "Built on FNA/MonoGame/.NET Framework \u2014 needs dotnet48 for stable load",
-            "DXVK improves Unity-style framebuffer handling over wineD3D"
+            "DXVK improves Unity-style framebuffer handling over AnoD3D"
           ],
           "settings": {
             "graphicsBackend": "dxvk",
@@ -829,14 +829,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019",
             "dotnet48"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -872,7 +872,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -897,13 +897,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-06T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -956,7 +956,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -966,7 +966,7 @@
           "whenToUse": "Works great with D3DMetal on any Mac",
           "rationale": [
             "2D hand-drawn art style is not GPU intensive",
-            "Unity engine works well under Wine",
+            "Unity engine works well in Ano",
             "D3DMetal provides smooth 60 FPS gameplay"
           ],
           "settings": {
@@ -980,11 +980,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-15T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1026,7 +1026,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1052,13 +1052,13 @@
             "D3DM_SUPPORT_DXR": "0"
           },
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-10T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1083,13 +1083,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-10T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1142,7 +1142,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1166,7 +1166,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "cjkfonts",
             "fakekorean",
             "vcrun2022"
@@ -1174,7 +1174,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -1215,7 +1215,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1239,11 +1239,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-14T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1252,7 +1252,7 @@
       "notes": [
         "Online play requires disabling anti-cheat protections if present",
         "Esync is recommended for proper thread synchronization",
-        "Save files are stored in the Wine prefix AppData directory"
+        "Save files are stored in the bottle's AppData directory"
       ],
       "knownIssues": [
         {
@@ -1291,7 +1291,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1315,11 +1315,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-18T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1368,17 +1368,17 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
           "id": "known-broken",
           "label": "Known Broken",
           "isDefault": true,
-          "whenToUse": "Game does not work; BattlEye blocks Wine execution",
+          "whenToUse": "Game does not work; BattlEye blocks it from running in Ano",
           "rationale": [
-            "BattlEye anti-cheat does not support Wine/Proton",
-            "Bungie has not enabled BattlEye Wine support",
+            "BattlEye anti-cheat does not support Ano or Proton",
+            "Bungie has not enabled BattlEye's Proton support",
             "Previously worked briefly but was patched out"
           ],
           "settings": {
@@ -1392,25 +1392,25 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-11-20T00:00:00Z",
             "macOSVersion": "15.1.0",
-            "wineVersion": "9.7",
+            "anoVersion": "9.7",
             "cpuArchitecture": "arm64"
           }
         }
       ],
       "notes": [
-        "Destiny 2 previously worked under Wine but Bungie has not enabled BattlEye support",
+        "Destiny 2 previously worked on Ano's engine but Bungie has not enabled BattlEye support",
         "Online-only game; cannot bypass anti-cheat for any game mode",
         "Was briefly playable in 2023 before being blocked"
       ],
       "knownIssues": [
         {
-          "description": "BattlEye anti-cheat blocks game launch; Bungie has not enabled Wine support",
+          "description": "BattlEye anti-cheat blocks game launch; Bungie has not enabled BattlEye's Proton support",
           "severity": "critical",
-          "workaround": "None; Bungie must enable BattlEye Wine/Proton support"
+          "workaround": "None; Bungie must enable BattlEye's Proton support"
         }
       ],
       "provenance": {
@@ -1444,7 +1444,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "10.0"
+        "minAnoVersion": "10.0"
       },
       "variants": [
         {
@@ -1468,14 +1468,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "corefonts"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -1528,7 +1528,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1538,7 +1538,7 @@
           "whenToUse": "Simple graphics; works easily with default settings",
           "rationale": [
             "Isometric RPG with modest GPU requirements",
-            "Unity engine works well under Wine translation",
+            "Unity engine works well in Ano",
             "No special configuration needed"
           ],
           "settings": {
@@ -1552,11 +1552,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-20T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1565,7 +1565,7 @@
       "notes": [
         "Works perfectly with default settings; minimal GPU requirements",
         "Full voice acting and dialogue system work flawlessly",
-        "Save files are stored in the Wine prefix AppData directory"
+        "Save files are stored in the bottle's AppData directory"
       ],
       "knownIssues": [],
       "provenance": {
@@ -1600,7 +1600,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1624,11 +1624,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-12T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1676,7 +1676,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1702,13 +1702,13 @@
             "D3DM_SUPPORT_DXR": "0"
           },
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-15T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -1759,7 +1759,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1783,14 +1783,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "xact"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -1828,7 +1828,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1856,13 +1856,13 @@
               "mode": "n,b"
             }
           ],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -1897,7 +1897,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -1920,11 +1920,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -1961,10 +1961,10 @@
           "id": "not-supported",
           "label": "Not Supported",
           "isDefault": true,
-          "whenToUse": "This game cannot run under Wine due to kernel-level anti-cheat",
+          "whenToUse": "This game cannot run in Ano due to kernel-level anti-cheat",
           "rationale": [
-            "Easy Anti-Cheat kernel mode does not work under Wine",
-            "Epic Games has not enabled EAC Wine/Proton support for Fortnite",
+            "Easy Anti-Cheat kernel mode does not work in Ano",
+            "Epic Games has not enabled EAC's Proton support for Fortnite",
             "All game modes require anti-cheat to be active"
           ],
           "settings": {
@@ -1978,25 +1978,25 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-10-01T00:00:00Z",
             "macOSVersion": "15.0.0",
-            "wineVersion": "9.6",
+            "anoVersion": "9.6",
             "cpuArchitecture": "arm64"
           }
         }
       ],
       "notes": [
-        "Easy Anti-Cheat in kernel mode blocks all Wine/Proton execution",
-        "Epic Games has not opted into EAC Wine support for Fortnite",
+        "Easy Anti-Cheat in kernel mode blocks the game from running in Ano or Proton",
+        "Epic Games has not opted into EAC's Proton support for Fortnite",
         "Consider cloud gaming services as an alternative"
       ],
       "knownIssues": [
         {
-          "description": "Easy Anti-Cheat prevents game launch; Epic has not enabled Wine support",
+          "description": "Easy Anti-Cheat prevents game launch; Epic has not enabled EAC's Proton support",
           "severity": "critical",
-          "workaround": "None; Epic must enable EAC Wine/Proton support, which they have not done"
+          "workaround": "None; Epic must enable EAC's Proton support, which they have not done"
         }
       ],
       "provenance": {
@@ -2027,7 +2027,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2036,8 +2036,8 @@
           "isDefault": true,
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
-            "In-game H.264 cutscenes render as white screens because Wine's GStreamer can't decode H.264",
-            "Winetricks 'mf' verb installs the Media Foundation runtime so videos play"
+            "In-game H.264 cutscenes render as white screens because the engine's GStreamer can't decode H.264",
+            "Ano-tricks 'mf' verb installs the Media Foundation runtime so videos play"
           ],
           "settings": {
             "graphicsBackend": "dxvk",
@@ -2050,7 +2050,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "mf",
             "mfplat",
             "vcrun2022"
@@ -2058,7 +2058,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2095,7 +2095,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2119,13 +2119,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-05T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -2174,7 +2174,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2183,7 +2183,7 @@
           "isDefault": true,
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
-            "Illegal-instruction crash on Apple Silicon Wine = unsupported AVX in 64-bit code",
+            "Illegal-instruction crash in Ano on Apple Silicon = unsupported AVX in 64-bit code",
             "DXVK provides reliable D3D translation for the RE Engine",
             "vcrun2022 supplies the runtime needed by the RE Engine launcher"
           ],
@@ -2198,13 +2198,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2243,7 +2243,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2269,11 +2269,11 @@
             "PULSE_LATENCY_MSEC": "60"
           },
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-22T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -2321,7 +2321,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2344,13 +2344,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2387,7 +2387,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2411,11 +2411,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-04T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -2430,7 +2430,7 @@
         {
           "description": "Long loading times between levels compared to native",
           "severity": "minor",
-          "workaround": "Use an SSD for the Wine bottle to improve load times"
+          "workaround": "Use an SSD for the Ano bottle to improve load times"
         }
       ],
       "provenance": {
@@ -2462,7 +2462,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2488,13 +2488,13 @@
             "D3DM_SUPPORT_DXR": "0"
           },
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2025-09-15T00:00:00Z",
             "macOSVersion": "14.6.0",
-            "wineVersion": "9.5",
+            "anoVersion": "9.5",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2508,7 +2508,7 @@
         {
           "description": "Game may fail to launch or crash during loading screens",
           "severity": "major",
-          "workaround": "No reliable workaround known; try different Wine versions"
+          "workaround": "No reliable workaround known; try different engine versions"
         }
       ],
       "provenance": {
@@ -2541,7 +2541,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2565,11 +2565,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-18T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -2611,7 +2611,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2634,13 +2634,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2677,7 +2677,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2701,13 +2701,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-03T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -2759,7 +2759,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2782,14 +2782,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2825,7 +2825,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2848,14 +2848,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2891,7 +2891,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2914,13 +2914,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -2959,7 +2959,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -2982,13 +2982,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3032,7 +3032,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3055,13 +3055,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3097,7 +3097,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3107,7 +3107,7 @@
           "whenToUse": "Community-tested configuration",
           "rationale": [
             "MT Framework engine; cutscene freezes come from missing Media Foundation",
-            "The mf winetrick addresses the Iceborne ending cutscene hang",
+            "The mf ano-tricks verb addresses the Iceborne ending cutscene hang",
             "DirectX 11 and 12 (PCGamingWiki); the earlier DXVK recommendation was about the cutscene fix, not a DirectX 11 path, so the game uses the recommended backend and d3d12 stays loadable"
           ],
           "settings": {
@@ -3121,14 +3121,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019",
             "mf"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3164,7 +3164,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3188,14 +3188,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2013",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3235,7 +3235,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3258,14 +3258,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "dotnet48"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3305,17 +3305,17 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
           "id": "known-broken",
           "label": "Known Broken",
           "isDefault": true,
-          "whenToUse": "Game does not work; anti-cheat blocks Wine execution",
+          "whenToUse": "Game does not work; anti-cheat blocks it from running in Ano",
           "rationale": [
             "BattlEye anti-cheat is required for all game modes",
-            "Krafton has not enabled BattlEye Wine/Proton support",
+            "Krafton has not enabled BattlEye's Proton support",
             "Free-to-play game with mandatory anti-cheat"
           ],
           "settings": {
@@ -3329,25 +3329,25 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-11-15T00:00:00Z",
             "macOSVersion": "15.1.0",
-            "wineVersion": "9.7",
+            "anoVersion": "9.7",
             "cpuArchitecture": "arm64"
           }
         }
       ],
       "notes": [
-        "BattlEye anti-cheat blocks all Wine/Proton execution",
+        "BattlEye anti-cheat blocks the game from running in Ano or Proton",
         "Multiplayer-only game; anti-cheat cannot be bypassed",
-        "Unlikely to work until Krafton enables BattlEye Wine support"
+        "Unlikely to work until Krafton enables BattlEye's Proton support"
       ],
       "knownIssues": [
         {
-          "description": "BattlEye prevents game from launching under Wine",
+          "description": "BattlEye prevents game from launching in Ano",
           "severity": "critical",
-          "workaround": "None; developer must enable BattlEye Wine/Proton support"
+          "workaround": "None; developer must enable BattlEye's Proton support"
         }
       ],
       "provenance": {
@@ -3380,7 +3380,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3403,14 +3403,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3448,7 +3448,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3458,7 +3458,7 @@
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
             "mscoree errors on launch = missing .NET runtime registry keys",
-            "Sony's launcher uses .NET 6 + WebView2; install both via winetricks for the launcher to progress"
+            "Sony's launcher uses .NET 6 + WebView2; install both via ano-tricks for the launcher to progress"
           ],
           "settings": {
             "graphicsBackend": "dxvk",
@@ -3471,7 +3471,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "dotnet48",
             "dotnetdesktop6",
             "vcrun2022"
@@ -3479,7 +3479,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3515,7 +3515,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3538,13 +3538,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3581,7 +3581,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3590,9 +3590,9 @@
           "isDefault": true,
           "whenToUse": "Community-tested configuration",
           "rationale": [
-            "UE4 title with a Windows 10 mode regression in newer Wine builds; Windows 11 mode is the stable path",
-            "Performance regression is an upstream Wine bug; recommended settings sidestep it",
-            "DirectX 11 and 12 (PCGamingWiki); the earlier DXVK recommendation was about the Wine version regression, not a DirectX 11 path, so the game uses the recommended backend and d3d12 stays loadable"
+            "UE4 title with a Windows 10 mode regression in newer engine builds; Windows 11 mode is the stable path",
+            "Performance regression is an upstream engine bug; recommended settings sidestep it",
+            "DirectX 11 and 12 (PCGamingWiki); the earlier DXVK recommendation was about the engine version regression, not a DirectX 11 path, so the game uses the recommended backend and d3d12 stays loadable"
           ],
           "settings": {
             "graphicsBackend": "recommended",
@@ -3605,13 +3605,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3648,7 +3648,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3672,13 +3672,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3715,7 +3715,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3742,21 +3742,21 @@
             "ANO_LARGE_ADDRESS_AWARE": "1"
           },
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2025-12-01T00:00:00Z",
             "macOSVersion": "15.1.0",
-            "wineVersion": "9.8",
+            "anoVersion": "9.8",
             "cpuArchitecture": "arm64"
           }
         }
       ],
       "notes": [
-        "The Rockstar Games Launcher is required but has persistent issues under Wine",
+        "The Rockstar Games Launcher is required but has persistent issues in Ano",
         "Even when the launcher works, the game often fails during DRM verification",
-        "This title may become playable with future Wine/Whisky updates"
+        "This title may become playable with future Ano updates"
       ],
       "knownIssues": [
         {
@@ -3797,7 +3797,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "11.0"
+        "minAnoVersion": "11.0"
       },
       "variants": [
         {
@@ -3820,11 +3820,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-09-05T00:00:00Z",
             "macOSVersion": "26.5.2",
-            "wineVersion": "11.0",
+            "anoVersion": "11.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -3874,7 +3874,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3898,11 +3898,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-10T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -3949,7 +3949,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -3973,13 +3973,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4016,7 +4016,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4039,13 +4039,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4082,7 +4082,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "11.0"
+        "minAnoVersion": "11.0"
       },
       "variants": [
         {
@@ -4092,8 +4092,8 @@
           "whenToUse": "Recommended configuration",
           "rationale": [
             "Unreal Engine 5.7 bootstrap stub (Solarpunk.exe) checks the FileVersion of system32 msvcp140_2.dll and refuses to start without the VC++ 2015-2022 runtime",
-            "vcrun2022 installs the real runtime; Wine pre-creates the VC Runtimes registry key, so Steam's own redist step skips the install",
-            "Native-then-builtin overrides make Wine report the installed DLL's version instead of its builtin's 14.42; they live in the bottle settings because each launch's override sync replaces the registry key winetricks writes",
+            "vcrun2022 installs the real runtime; the engine pre-creates the VC Runtimes registry key, so Steam's own redist step skips the install",
+            "Native-then-builtin overrides make the engine report the installed DLL's version instead of its builtin's 14.42; they live in the bottle settings because each launch's override sync replaces the registry key ano-tricks writes",
             "DXMT leaves d3d12 unavailable, so the game falls back to D3D11 on its own, with no -dx11 argument"
           ],
           "settings": {
@@ -4128,13 +4128,13 @@
               "mode": "n,b"
             }
           ],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-10-09T00:00:00Z",
             "macOSVersion": "27.0.0",
-            "wineVersion": "11.0",
+            "anoVersion": "11.0",
             "whiskyVersion": "3.7.0",
             "cpuArchitecture": "arm64"
           }
@@ -4188,7 +4188,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4211,7 +4211,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "corefonts",
             "d3dcompiler_47",
             "vcrun2022"
@@ -4219,7 +4219,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4256,7 +4256,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4280,11 +4280,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-20T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -4292,7 +4292,7 @@
       ],
       "notes": [
         "Works perfectly with default settings on both Apple Silicon and Intel",
-        "Controller support works natively through Wine input mapping",
+        "Controller support works natively through the engine's input mapping",
         "Mods using SMAPI may require additional configuration"
       ],
       "knownIssues": [
@@ -4331,7 +4331,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "10.0"
+        "minAnoVersion": "10.0"
       },
       "variants": [
         {
@@ -4354,13 +4354,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2025-08-20T00:00:00Z",
             "macOSVersion": "14.5.0",
-            "wineVersion": "9.3",
+            "anoVersion": "9.3",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4407,7 +4407,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4431,13 +4431,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4474,7 +4474,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4497,13 +4497,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4539,7 +4539,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4562,14 +4562,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4607,7 +4607,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4630,13 +4630,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2010"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4677,7 +4677,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4700,13 +4700,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4743,7 +4743,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4753,7 +4753,7 @@
           "whenToUse": "Works out of the box with minimal configuration",
           "rationale": [
             "Simple 2D game with very low resource requirements",
-            "XNA framework works well under Wine",
+            "XNA framework works well in Ano",
             "No special workarounds needed"
           ],
           "settings": {
@@ -4767,11 +4767,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-20T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -4779,8 +4779,8 @@
       ],
       "notes": [
         "Works perfectly with default settings on any Mac",
-        "Multiplayer hosting and joining works through Wine networking",
-        "tModLoader for mods may require .NET runtime via winetricks"
+        "Multiplayer hosting and joining works through the engine's networking",
+        "tModLoader for mods may require .NET runtime via ano-tricks"
       ],
       "knownIssues": [],
       "provenance": {
@@ -4816,7 +4816,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4825,7 +4825,7 @@
           "isDefault": true,
           "whenToUse": "Community-tested configuration",
           "rationale": [
-            "Renders through OpenGL: opengl32 goes through Wine's macOS driver to Apple's OpenGL, so the graphics backend setting does not affect it, and this configuration leaves it unchanged"
+            "Renders through OpenGL: opengl32 goes through the engine's macOS driver to Apple's OpenGL, so the graphics backend setting does not affect it, and this configuration leaves it unchanged"
           ],
           "settings": {
             "dxvkAsync": false,
@@ -4836,13 +4836,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -4887,7 +4887,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -4910,11 +4910,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         },
@@ -4941,21 +4941,21 @@
             "DXVK_ASYNC": "1"
           },
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
       ],
       "notes": [
         "Vanilla Skyrim SE plays well; modded play is heavier and may need DXVK",
-        "Avoid third-party 'optimization guides' that recommend stale Wine flags"
+        "Avoid third-party 'optimization guides' that recommend stale engine flags"
       ],
       "knownIssues": [
         {
@@ -4992,7 +4992,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5015,13 +5015,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5058,17 +5058,17 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
-          "id": "recommended-wined3d",
-          "label": "Recommended (WineD3D)",
+          "id": "recommended-anod3d",
+          "label": "Recommended (AnoD3D)",
           "isDefault": true,
-          "whenToUse": "WineD3D works best for this older DX9 title",
+          "whenToUse": "AnoD3D works best for this older DX9 title",
           "rationale": [
-            "Older DX9 game works best with WineD3D OpenGL backend",
-            "WineD3D has the most mature DX9 support",
+            "Older DX9 game works best with AnoD3D OpenGL backend",
+            "AnoD3D has the most mature DX9 support",
             "No additional components needed"
           ],
           "settings": {
@@ -5082,11 +5082,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-12-15T00:00:00Z",
             "macOSVersion": "15.2.0",
-            "wineVersion": "9.8",
+            "anoVersion": "9.8",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -5095,11 +5095,11 @@
           "id": "d3dmetal-alternative",
           "label": "D3DMetal (Alternative)",
           "isDefault": false,
-          "whenToUse": "Try if WineD3D has rendering issues",
+          "whenToUse": "Try if AnoD3D has rendering issues",
           "rationale": [
             "D3DMetal may provide better performance on some systems",
-            "Alternative if WineD3D has OpenGL compatibility issues",
-            "Worth trying if the game crashes with WineD3D"
+            "Alternative if AnoD3D has OpenGL compatibility issues",
+            "Worth trying if the game crashes with AnoD3D"
           ],
           "settings": {
             "graphicsBackend": "d3dMetal",
@@ -5112,11 +5112,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-12-15T00:00:00Z",
             "macOSVersion": "15.2.0",
-            "wineVersion": "9.8",
+            "anoVersion": "9.8",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -5124,14 +5124,14 @@
       ],
       "notes": [
         "GOG version avoids Steam launcher; works without DRM",
-        "WineD3D fallback provides best DX9 compatibility for this older title",
+        "AnoD3D fallback provides best DX9 compatibility for this older title",
         "Enhanced Edition is recommended over the base game"
       ],
       "knownIssues": [
         {
           "description": "Occasional lighting glitches in interior scenes",
           "severity": "minor",
-          "workaround": "Switch between WineD3D and D3DMetal variants to see which renders better"
+          "workaround": "Switch between AnoD3D and D3DMetal variants to see which renders better"
         }
       ],
       "provenance": {
@@ -5166,7 +5166,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5190,11 +5190,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-12T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -5244,7 +5244,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5267,14 +5267,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5312,7 +5312,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5335,7 +5335,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019",
             "dotnet48",
             "corefonts"
@@ -5343,7 +5343,7 @@
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5381,7 +5381,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "10.0"
+        "minAnoVersion": "10.0"
       },
       "variants": [
         {
@@ -5405,13 +5405,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-01-08T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -5465,7 +5465,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5475,7 +5475,7 @@
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
             "Divide-by-zero in upc_r2_loader64 = Ubisoft Connect launcher bug, not the game",
-            "DXVK + Ubisoft Connect winetricks helps; some users still hit the launcher loop"
+            "DXVK + Ubisoft Connect ano-tricks helps; some users still hit the launcher loop"
           ],
           "settings": {
             "graphicsBackend": "dxvk",
@@ -5488,14 +5488,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "dotnet48"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5539,7 +5539,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5562,13 +5562,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2008"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5603,7 +5603,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5613,7 +5613,7 @@
           "whenToUse": "Community-tested configuration",
           "rationale": [
             "Requires working Ubisoft Connect overlay; covered by trackmania-2020 ubiconnect pattern",
-            "DXVK improves stability over wineD3D for the DX11 build"
+            "DXVK improves stability over AnoD3D for the DX11 build"
           ],
           "settings": {
             "graphicsBackend": "dxvk",
@@ -5631,13 +5631,13 @@
               "mode": "n,b"
             }
           ],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5674,7 +5674,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5697,13 +5697,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5739,7 +5739,7 @@
           "arm64"
         ],
         "minMacOSVersion": "15.0.0",
-        "minWineVersion": "10.0"
+        "minAnoVersion": "10.0"
       },
       "variants": [
         {
@@ -5757,11 +5757,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-10-16T00:00:00Z",
             "macOSVersion": "27.0.1",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5805,7 +5805,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5814,7 +5814,7 @@
           "isDefault": true,
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
-            "ILLEGAL_INSTRUCTION at fixed offset = AVX instruction not supported on Apple Silicon Wine",
+            "ILLEGAL_INSTRUCTION at fixed offset = AVX instruction not supported in Ano on Apple Silicon",
             "Disable AVX in bottle performance settings"
           ],
           "settings": {
@@ -5828,13 +5828,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5871,7 +5871,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -5881,7 +5881,7 @@
           "whenToUse": "Everything works with defaults",
           "rationale": [
             "GameMaker-based game with minimal system requirements",
-            "Runs perfectly under any Wine configuration",
+            "Runs perfectly under any Ano configuration",
             "No special settings needed"
           ],
           "settings": {
@@ -5895,11 +5895,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-01-22T00:00:00Z",
             "macOSVersion": "15.3.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "whiskyVersion": "3.0.0",
             "cpuArchitecture": "arm64"
           }
@@ -5908,7 +5908,7 @@
       "notes": [
         "Runs flawlessly with absolutely no configuration needed",
         "All game features including controller support work perfectly",
-        "Save files are in the expected AppData location within the Wine prefix"
+        "Save files are in the expected AppData location within the bottle"
       ],
       "knownIssues": [],
       "provenance": {
@@ -5941,10 +5941,10 @@
           "id": "not-supported",
           "label": "Not Supported",
           "isDefault": true,
-          "whenToUse": "This game cannot run under Wine due to kernel-level anti-cheat",
+          "whenToUse": "This game cannot run in Ano due to kernel-level anti-cheat",
           "rationale": [
             "Vanguard anti-cheat requires a Windows kernel driver",
-            "The kernel driver cannot operate under Wine or macOS",
+            "The kernel driver cannot operate in Ano or on macOS",
             "There is no offline or anti-cheat-free mode"
           ],
           "settings": {
@@ -5958,11 +5958,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2025-10-01T00:00:00Z",
             "macOSVersion": "15.0.0",
-            "wineVersion": "9.6",
+            "anoVersion": "9.6",
             "cpuArchitecture": "arm64"
           }
         }
@@ -5976,7 +5976,7 @@
         {
           "description": "Vanguard kernel-level anti-cheat prevents the game from launching",
           "severity": "critical",
-          "workaround": "None; this is a fundamental incompatibility with Wine/macOS"
+          "workaround": "None; this is a fundamental incompatibility with Ano and macOS"
         }
       ],
       "provenance": {
@@ -6009,7 +6009,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -6018,7 +6018,7 @@
           "isDefault": true,
           "whenToUse": "Recommended community-tested configuration",
           "rationale": [
-            "The launcher's embedded Chromium (CEF) paints from a separate GPU process into a window the launcher owns, which Wine's macOS driver does not show: the page runs and takes clicks but stays white. --in-process-gpu keeps that painting in the launcher's own process (WineHQ bugs 56463 and 58543)",
+            "The launcher's embedded Chromium (CEF) paints from a separate GPU process into a window the launcher owns, which the engine's macOS driver does not show: the page runs and takes clicks but stays white. --in-process-gpu keeps that painting in the launcher's own process (upstream bugs 56463 and 58543)",
             "DXVK avoids the D3DMetal CEF rendering bug; these settings also reach Launcher.exe, so the launcher draws on DXVK",
             "DirectX 11 and 12, selectable in the launcher (PCGamingWiki); on DXVK, play in DirectX 11 mode",
             "corefonts supplies the Verdana and Arial that the launcher's stylesheet falls back to"
@@ -6034,7 +6034,7 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019",
             "corefonts"
           ],
@@ -6044,7 +6044,7 @@
           "testedWith": {
             "lastTestedAt": "2026-10-23T00:00:00Z",
             "macOSVersion": "27.0.1",
-            "wineVersion": "11.0",
+            "anoVersion": "11.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -6089,7 +6089,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -6122,13 +6122,13 @@
               "mode": "n,b"
             }
           ],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2010"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -6167,7 +6167,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -6191,14 +6191,14 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2022",
             "d3dcompiler_47"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -6233,16 +6233,16 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
-          "id": "wined3d-winxp",
-          "label": "wined3d + WinXP",
+          "id": "anod3d-winxp",
+          "label": "AnoD3D + WinXP",
           "isDefault": true,
           "whenToUse": "DDraw classic game",
           "rationale": [
-            "DDraw/D3D classic that needs the wined3d backend",
+            "DDraw/D3D classic that needs the AnoD3D backend",
             "WinXP version setting matches the game's expectations"
           ],
           "settings": {
@@ -6256,11 +6256,11 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [],
+          "anoTricksVerbs": [],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }
@@ -6295,7 +6295,7 @@
           "x86_64"
         ],
         "minMacOSVersion": "14.0.0",
-        "minWineVersion": "9.0"
+        "minAnoVersion": "9.0"
       },
       "variants": [
         {
@@ -6304,8 +6304,8 @@
           "isDefault": true,
           "whenToUse": "Community-tested configuration",
           "rationale": [
-            "32-bit DX9 PS2-era port loads faster on wineD3D than DXVK on Apple Silicon",
-            "DXVK shader compile causes 2-5min loads; wineD3D bypasses"
+            "32-bit DX9 PS2-era port loads faster on AnoD3D than DXVK on Apple Silicon",
+            "DXVK shader compile causes 2-5min loads; AnoD3D bypasses"
           ],
           "settings": {
             "graphicsBackend": "anod3d",
@@ -6318,13 +6318,13 @@
           },
           "environmentVariables": {},
           "dllOverrides": [],
-          "winetricksVerbs": [
+          "anoTricksVerbs": [
             "vcrun2019"
           ],
           "testedWith": {
             "lastTestedAt": "2026-04-30T00:00:00Z",
             "macOSVersion": "15.4.0",
-            "wineVersion": "10.0",
+            "anoVersion": "10.0",
             "cpuArchitecture": "arm64"
           }
         }

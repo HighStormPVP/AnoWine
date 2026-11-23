@@ -13,9 +13,9 @@
       "params": {},
       "on": {
         "pass": "branch_by_launcher",
-        "fail": "check_wine_dns",
-        "unknown": "check_wine_dns",
-        "error": "check_wine_dns"
+        "fail": "check_ano_dns",
+        "unknown": "check_ano_dns",
+        "error": "check_ano_dns"
       },
       "evidenceMap": {
         "detectedLauncher": "Detected launcher"
@@ -29,7 +29,7 @@
       "description": "Routing to launcher-specific network troubleshooting steps.",
       "on": {
         "Steam": "check_steam_download",
-        "default": "check_wine_dns"
+        "default": "check_ano_dns"
       }
     },
     "check_steam_download": {
@@ -59,7 +59,7 @@
       "type": "fix",
       "phase": "fix",
       "title": "Restart Steam",
-      "description": "Killing the Wine server and relaunching Steam can resolve download stalls caused by stuck processes.",
+      "description": "Killing the Ano server and relaunching Steam can resolve download stalls caused by stuck processes.",
       "fixId": "restart-ano-server",
       "isReversible": false,
       "requiresConfirmation": true,
@@ -75,23 +75,23 @@
       "title": "Change Steam download region",
       "description": "Steam download stalls can sometimes be resolved by changing the download region. Open Steam Settings > Downloads and try selecting a different region closer to your location.",
       "on": {
-        "continue": "check_wine_dns"
+        "continue": "check_ano_dns"
       }
     },
-    "check_wine_dns": {
-      "id": "check_wine_dns",
+    "check_ano_dns": {
+      "id": "check_ano_dns",
       "type": "check",
       "phase": "checks",
-      "title": "Checking for a Wine DNS override",
-      "description": "A DNS server override in the Wine registry can point downloads at a stale resolver instead of the system one.",
+      "title": "Checking for an Ano DNS override",
+      "description": "A DNS server override in the Ano registry can point downloads at a stale resolver instead of the system one.",
       "checkId": "registry.value_check",
       "params": {
         "key": "HKLM\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters",
         "valueName": "NameServer"
       },
       "on": {
-        "pass": "fix_wine_dns",
-        "fail": "fix_wine_dns",
+        "pass": "fix_ano_dns",
+        "fail": "fix_ano_dns",
         "already_configured": "escalate",
         "unknown": "escalate",
         "error": "escalate"
@@ -101,12 +101,12 @@
         "expectedValue": "Expected value"
       }
     },
-    "fix_wine_dns": {
-      "id": "fix_wine_dns",
+    "fix_ano_dns": {
+      "id": "fix_ano_dns",
       "type": "fix",
       "phase": "fix",
-      "title": "Clear the Wine DNS override",
-      "description": "Removes the DNS server override from the Wine registry so Wine resolves names through macOS. Takes effect on the next launch.",
+      "title": "Clear the Ano DNS override",
+      "description": "Removes the DNS server override from the Ano registry so Ano resolves names through macOS. Takes effect on the next launch.",
       "fixId": "set-registry-value",
       "isReversible": true,
       "requiresConfirmation": false,
@@ -119,7 +119,7 @@
         "valueName": "NameServer",
         "valueType": "string",
         "value": "",
-        "settingName": "Wine DNS override"
+        "settingName": "Ano DNS override"
       }
     },
     "verify_fix": {
@@ -130,7 +130,7 @@
       "description": "Try the download or connection again to check whether the issue is resolved.",
       "on": {
         "yes": "resolved",
-        "no": "check_wine_dns"
+        "no": "check_ano_dns"
       }
     },
     "escalate": {

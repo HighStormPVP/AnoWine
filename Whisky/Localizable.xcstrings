@@ -112456,13 +112456,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tested with Ano %@."
+            "value" : "Tested with engine %@."
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tested with Ano %@."
+            "value" : "Tested with engine %@."
           }
         }
       }
@@ -112520,13 +112520,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano %@+"
+            "value" : "Engine %@+"
           }
         },
         "en-GB" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ano %@+"
+            "value" : "Engine %@+"
           }
         }
       }

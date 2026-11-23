@@ -7,9 +7,9 @@
       "id": "check_installed_verbs",
       "type": "check",
       "phase": "checks",
-      "title": "Check installed Winetricks verbs",
+      "title": "Check installed Ano-tricks verbs",
       "description": "Scanning for commonly required runtime components: Visual C++, .NET, DirectX, and DXVK.",
-      "checkId": "winetricks.verb_check",
+      "checkId": "anoTricks.verb_check",
       "params": {
         "verbs": "vcrun2019,dotnet48,d3dx9,dxvk"
       },
@@ -40,8 +40,8 @@
       "type": "fix",
       "phase": "fix",
       "title": "Install missing dependencies",
-      "description": "Install the missing runtime components via Winetricks. This may take several minutes and cannot be undone automatically.",
-      "fixId": "install-winetricks-verb",
+      "description": "Install the missing runtime components via Ano-tricks. This may take several minutes and cannot be undone automatically.",
+      "fixId": "install-ano-tricks-verb",
       "isReversible": false,
       "requiresConfirmation": true,
       "on": {
@@ -86,7 +86,7 @@
       "type": "info",
       "phase": "checks",
       "title": "Missing DLL files detected",
-      "description": "Some expected DLL files are missing from the bottle. Try installing them manually via Winetricks or check if an alternate verb provides the needed files.",
+      "description": "Some expected DLL files are missing from the bottle. Try installing them manually via Ano-tricks or check if an alternate verb provides the needed files.",
       "on": {
         "continue": "check_game_config"
       }
@@ -115,7 +115,7 @@
       "type": "info",
       "phase": "checks",
       "title": "Known dependency configuration available",
-      "description": "A known-good dependency list exists for this program in the game database. Check the Game Config section for recommended Winetricks verbs.",
+      "description": "A known-good dependency list exists for this program in the game database. Check the Game Config section for recommended Ano-tricks verbs.",
       "on": {
         "continue": "escalate"
       }
