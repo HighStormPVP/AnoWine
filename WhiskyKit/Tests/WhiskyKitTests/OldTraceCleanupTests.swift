@@ -70,6 +70,68 @@ final class OldTraceCleanupTests: XCTestCase {
         )
     }
 
+    func testAFreshInstallCleansNothingAndIsMarkedDone() throws {
+        let places = try makePlaces()
+        let tricksCache = places.home.appending(path: ".cache").appending(path: "winetricks")
+        try file(tricksCache.appending(path: "vc_redist.x86.exe"))
+        let tricksTemp = places.temporaryFolder.appending(path: "winetricks.AbCd1234")
+        try file(tricksTemp.appending(path: "release.json"))
+        try backdate([tricksTemp])
+        XCTAssertFalse(exists(places.applicationFolder.appending(path: "Libraries").appending(path: "Wine")))
+
+        let removed = try XCTUnwrap(OldTraceCleanup.runIfNeeded(defaults: defaults, places: places))
+
+        XCTAssertEqual(removed, [], "Ano 6-8's runtime was never here, so neither were its traces")
+        XCTAssertTrue(exists(tricksCache), "another winetricks may use it")
+        XCTAssertTrue(exists(tricksTemp), "not Ano's")
+        XCTAssertEqual(defaults.integer(forKey: "oldTracesCleanupVersion"), 1)
+    }
+
+    func testTheWinetricksCacheStaysWhenAnotherWinetricksIsInstalled() throws {
+        let places = try makePlaces()
+        let tricksCache = places.home.appending(path: ".cache").appending(path: "winetricks")
+        try file(tricksCache.appending(path: "vc_redist.x86.exe"))
+        let isListed = { OldTraceCleanup.targets(in: places, isServerLive: { _ in false }).contains(tricksCache) }
+        XCTAssertTrue(isListed(), "nobody else uses it")
+
+        let markers = [
+            places.systemRoot.appending(path: "opt/homebrew/bin/winetricks"),
+            places.systemRoot.appending(path: "usr/local/bin/winetricks"),
+            places.systemRoot.appending(path: "opt/local/bin/winetricks"),
+            places.home.appending(path: "Library/Application Support/com.isaacmarovitz.Whisky"),
+            places.home.appending(path: "Library/Application Support/com.franke.Whisky")
+        ]
+        for marker in markers {
+            if marker.lastPathComponent == "winetricks" {
+                try file(marker, "#!/bin/sh\n")
+            } else {
+                try FileManager.default.createDirectory(at: marker, withIntermediateDirectories: true)
+            }
+            XCTAssertFalse(isListed(), "kept for \(marker.path(percentEncoded: false))")
+            try FileManager.default.removeItem(at: marker)
+        }
+        XCTAssertTrue(isListed(), "listed again once they are gone")
+    }
+
+    func testATemporaryItemYoungerThanADayStays() throws {
+        let places = try makePlaces()
+        let temp = places.temporaryFolder
+        let young = temp.appending(path: "winetricks.young")
+        let old = temp.appending(path: "winetricks.old")
+        try file(young.appending(path: "release.json"))
+        try file(old.appending(path: "release.json"))
+        let youngScript = try file(temp.appending(path: "whisky-winetricks-young.sh"), "export WINEPREFIX=/b\n")
+        let oldScript = try file(temp.appending(path: "whisky-winetricks-old.sh"), "export WINEPREFIX=/b\n")
+        try backdate([old, oldScript])
+
+        OldTraceCleanup.clean(places) { _ in false }
+
+        XCTAssertTrue(exists(young), "another app's winetricks run may still use it")
+        XCTAssertTrue(exists(youngScript))
+        XCTAssertFalse(exists(old))
+        XCTAssertFalse(exists(oldScript))
+    }
+
     // MARK: - Servers
 
     func testALiveServerFolderStays() throws {
@@ -130,6 +192,8 @@ final class OldTraceCleanupTests: XCTestCase {
         try file(cache.appending(path: "winetricks").appending(path: "vc_redist.x86.exe"))
         let tricksTemp = places.temporaryFolder.appending(path: "winetricks.AbCd1234")
         try FileManager.default.createDirectory(at: tricksTemp, withIntermediateDirectories: true)
+        try backdate([tricksTemp])
+        try makeOldRuntime(in: places)
         let cachePath = cache.path(percentEncoded: false)
         try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: cachePath)
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: cachePath) }
@@ -146,13 +210,15 @@ final class OldTraceCleanupTests: XCTestCase {
         XCTAssertEqual(OldTraceCleanup.doneDefaultsKey, "oldTracesCleanupVersion")
         XCTAssertEqual(OldTraceCleanup.currentVersion, 1)
         let places = try makePlaces()
-        try FileManager.default.createDirectory(
-            at: places.temporaryFolder.appending(path: "winetricks.first"), withIntermediateDirectories: true
-        )
+        try makeOldRuntime(in: places)
+        let first = places.temporaryFolder.appending(path: "winetricks.first")
+        try FileManager.default.createDirectory(at: first, withIntermediateDirectories: true)
+        try backdate([first])
         XCTAssertEqual(OldTraceCleanup.runIfNeeded(defaults: defaults, places: places)?.count, 1)
 
         let later = places.temporaryFolder.appending(path: "winetricks.later")
         try FileManager.default.createDirectory(at: later, withIntermediateDirectories: true)
+        try backdate([later])
         XCTAssertNil(OldTraceCleanup.runIfNeeded(defaults: defaults, places: places))
         XCTAssertTrue(exists(later))
     }
@@ -168,9 +234,11 @@ final class OldTraceCleanupTests: XCTestCase {
         OldTraceCleanup.clean(old) { _ in false }
         XCTAssertFalse(exists(oldWrapper), "an old wrapper goes")
     }
+}
 
-    // MARK: - Helpers
+// MARK: - Helpers
 
+extension OldTraceCleanupTests {
     /// Creates one of every trace on the list and returns them; a stale
     /// server folder is among them.
     private func makeEveryTrace(in places: OldTraceCleanup.Places) throws -> [URL] {
@@ -195,14 +263,15 @@ final class OldTraceCleanupTests: XCTestCase {
             registryFile(temp.appending(path: "whisky-dll-overrides-1.reg"), "[HKCU\\Software\\Wine\\DllOverrides]"),
             file(wrapperURL(places), Self.oldWrapper)
         ]
+        try backdate([tricksTemp] + files)
         return [tricksCache, server, tricksTemp] + caches + files
     }
 
     /// Files beside the traces that stay, among them today's files under
-    /// the same names, which say Ano.
+    /// the same names, which say Ano; dated back, so only their text keeps them.
     private func makeFilesBesideThem(in places: OldTraceCleanup.Places) throws -> [URL] {
         let temp = places.temporaryFolder
-        return try [
+        let kept = try [
             file(places.home.appending(path: ".cache").appending(path: "other").appending(path: "file")),
             file(temp.appending(path: "keep.txt")),
             file(places.applicationFolder.appending(path: "Proxy/bin/other")),
@@ -211,6 +280,8 @@ final class OldTraceCleanupTests: XCTestCase {
             registryFile(temp.appending(path: "whisky-registry-2.reg"), "[HKEY_CURRENT_USER\\Software\\Ano]"),
             file(places.userCacheFolder.appending(path: "io.github.highstormpvp.Ano.core").appending(path: "x"))
         ]
+        try backdate(kept)
+        return kept
     }
 
     /// A fake set of places under the test's folder, each folder created.
@@ -222,10 +293,16 @@ final class OldTraceCleanupTests: XCTestCase {
             userCacheFolder: base.appending(path: "C"),
             applicationFolder: base.appending(path: "Application Support"),
             serverRoot: base.appending(path: "tmp"),
+            systemRoot: base.appending(path: "root"),
             uid: getuid()
         )
         let folders = [
-            places.home, places.temporaryFolder, places.userCacheFolder, places.applicationFolder, places.serverRoot
+            places.home,
+            places.temporaryFolder,
+            places.userCacheFolder,
+            places.applicationFolder,
+            places.serverRoot,
+            places.systemRoot
         ]
         for folder in folders {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -239,6 +316,21 @@ final class OldTraceCleanupTests: XCTestCase {
 
     private func wrapperURL(_ places: OldTraceCleanup.Places) -> URL {
         places.applicationFolder.appending(path: "Proxy").appending(path: "bin").appending(path: "ano-loader")
+    }
+
+    /// Ano 6-8's runtime folder, which says this Mac had them.
+    private func makeOldRuntime(in places: OldTraceCleanup.Places) throws {
+        let runtime = places.applicationFolder.appending(path: "Libraries").appending(path: "Wine")
+        try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: true)
+    }
+
+    /// Dates each item two days back, past the day a temporary item is kept.
+    private func backdate(_ items: [URL]) throws {
+        let twoDaysAgo = Date(timeIntervalSinceNow: -2 * 24 * 60 * 60)
+        for item in items {
+            let path = item.path(percentEncoded: false)
+            try FileManager.default.setAttributes([.modificationDate: twoDaysAgo], ofItemAtPath: path)
+        }
     }
 
     /// Writes `text` to `url`, creating its folders.
@@ -260,54 +352,5 @@ final class OldTraceCleanupTests: XCTestCase {
     private func exists(_ url: URL) -> Bool {
         var info = stat()
         return lstat(url.path(percentEncoded: false), &info) == 0
-    }
-
-    /// Starts another process that holds a write lock on `lock` with
-    /// `fcntl(F_SETLK)`, as a running server holds its `lock` file, and
-    /// returns once it holds it.
-    private func startLockHolder(on lock: URL) throws -> Process {
-        let path = lock.path(percentEncoded: false)
-        // Darwin's struct flock: l_start, l_len (off_t), l_pid (pid_t), l_type, l_whence (short).
-        let perl = """
-        open(my $f, ">>", $ARGV[0]) or die "open: $!"; my $l = pack("qqlss", 0, 0, 0, F_WRLCK, 0); \
-        fcntl($f, F_SETLK, $l) or die "lock: $!"; $| = 1; print "locked\\n"; sleep 120;
-        """
-        // lockf is fcntl(F_SETLK) over the whole file.
-        let python = """
-        import fcntl, sys, time
-        f = open(sys.argv[1], "a")
-        fcntl.lockf(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        print("locked", flush=True)
-        time.sleep(120)
-        """
-        let holders: [(tool: String, arguments: [String])] = [
-            ("/usr/bin/perl", ["-MFcntl", "-e", perl, path]),
-            ("/usr/bin/python3", ["-c", python, path])
-        ]
-        guard let holder = holders.first(where: { FileManager.default.isExecutableFile(atPath: $0.tool) }) else {
-            throw XCTSkip("Neither /usr/bin/perl nor /usr/bin/python3 is here to hold a lock from another process")
-        }
-        let process = Process()
-        process.executableURL = URL(filePath: holder.tool)
-        process.arguments = holder.arguments
-        let output = Pipe()
-        let errors = Pipe()
-        process.standardOutput = output
-        process.standardError = errors
-        try process.run()
-        // One line once it holds the lock; end of file if it could not.
-        let line = String(data: output.fileHandleForReading.availableData, encoding: .utf8) ?? ""
-        guard line == "locked\n" else {
-            process.waitUntilExit()
-            let reason = String(data: errors.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            throw LockHolderFailed(tool: holder.tool, reason: reason)
-        }
-        return process
-    }
-
-    private struct LockHolderFailed: Error, CustomStringConvertible {
-        let tool: String
-        let reason: String
-        var description: String { "\(tool) could not take the lock: \(reason)" }
     }
 }
