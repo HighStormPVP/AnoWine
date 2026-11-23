@@ -457,7 +457,8 @@ decoded), the remediations' `anoTricksVerb` and the renamed ids, so no entry dro
 |---|---|
 | Wine version (the engine's) | engine version ("Ano version" reads as the app's) |
 | Wine's own Direct3D / d3d11, the Wine builtin marker | the engine's own …, the engine's builtin marker |
-| Wine PID, Wine username | Windows PID (the one `taskkill` takes), Windows username |
+| Wine PID, Wine username (logs) | Windows PID (the one `taskkill` takes), Windows username; the UI still says "Ano PID" and "Ano processes" (3c-4c) |
+| "like Wine" as Rosetta's example of x86 code | "like Ano's engine", in every language (plain "Ano" would call the native app x86 code) |
 | WhiskyWine (the runtime), WineD3D, winetricks | Ano runtime, AnoD3D, ano-tricks |
 | "BattlEye / EAC Wine/Proton support" | "BattlEye's / EAC's Proton support" (the vendors' opt-in) |
 | "does not work under Wine", "the Wine prefix AppData" | "does not work in Ano", "the bottle's AppData" |

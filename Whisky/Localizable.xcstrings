@@ -72755,19 +72755,19 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تسمح Rosetta بأكواد x86، مثل Ano، بالعمل على الماك الخاص بك."
+            "value" : "تسمح Rosetta بأكواد x86، مثل محرك Ano، بالعمل على الماك الخاص بك."
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta umožňuje x86 kódu, jakým je Ano, běžet na vašem Macu."
+            "value" : "Rosetta umožňuje x86 kódu, jakým je prostředí Ano, běžet na vašem Macu."
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta tillader x86 kode, som Ano, til at køre på din Mac."
+            "value" : "Rosetta tillader x86 kode, som Anos engine, til at køre på din Mac."
           }
         },
         "de" : {
@@ -72791,7 +72791,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta permite que programas de arquitectura x86 (Ano por ejemplo) funcionen en tu Mac."
+            "value" : "Rosetta permite que programas de arquitectura x86 (el motor de Ano, por ejemplo) funcionen en tu Mac."
           }
         },
         "fi" : {
@@ -72803,67 +72803,67 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta permet au code x86, comme Ano, de s'exécuter sur votre Mac."
+            "value" : "Rosetta permet au code x86, comme le moteur d'Ano, de s'exécuter sur votre Mac."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta permette al codice x86, come Ano, di funzionare sul tuo Mac."
+            "value" : "Rosetta permette al codice x86, come il motore di Ano, di funzionare sul tuo Mac."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta は、Ano のような x86 バイナリを Mac 上で実行できるようにします。"
+            "value" : "Rosetta は、Ano のエンジンのような x86 バイナリを Mac 上で実行できるようにします。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta는 Ano와 같은 x86 코드를 당신의 Mac에서 실행할 수 있게 해 줍니다."
+            "value" : "Rosetta는 Ano 엔진과 같은 x86 코드를 당신의 Mac에서 실행할 수 있게 해 줍니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta laat x86 code, zoals Ano, uitgevoerd worden op je Mac."
+            "value" : "Rosetta laat x86 code, zoals de engine van Ano, uitgevoerd worden op je Mac."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta pozwala kodowi x86, tak jak Ano, na uruchamianie na komputerze Mac."
+            "value" : "Rosetta pozwala kodowi x86, tak jak silnik Ano, na uruchamianie na komputerze Mac."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta permite código x86, como Ano, a rodar em seu Mac."
+            "value" : "Rosetta permite código x86, como o motor do Ano, a rodar em seu Mac."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta permite que código x86, como o Ano, execute no seu Mac."
+            "value" : "Rosetta permite que código x86, como o motor do Ano, execute no seu Mac."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta permite codului x86, ca de exemplu Ano, să ruleze pe Mac-ul dvs."
+            "value" : "Rosetta permite codului x86, ca de exemplu motorul Ano, să ruleze pe Mac-ul dvs."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta позволяет программам x86, таким как Ano, работать на вашем Mac."
+            "value" : "Rosetta позволяет программам x86, таким как среда Ano, работать на вашем Mac."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Med Rosetta kan x86-kod, som Ano, köras på din Mac."
+            "value" : "Med Rosetta kan x86-kod, som Anos motor, köras på din Mac."
           }
         },
         "tr" : {
@@ -72875,25 +72875,25 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta дозволяє запускати x86 код (напр. Ano) на вашому Mac."
+            "value" : "Rosetta дозволяє запускати x86 код (напр. рушій Ano) на вашому Mac."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta cho phép các ứng dụng x86 như Ano chạy trên máy Mac của bạn."
+            "value" : "Rosetta cho phép các ứng dụng x86 như engine của Ano chạy trên máy Mac của bạn."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta 让您的 Mac 可以运行 Ano 等 x86 架构的程序。"
+            "value" : "Rosetta 让您的 Mac 可以运行 Ano 引擎等 x86 架构的程序。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rosetta 允許 x86 代碼（如 Ano）在 Mac 上運行。"
+            "value" : "Rosetta 允許 x86 代碼（如 Ano 引擎）在 Mac 上運行。"
           }
         }
       }

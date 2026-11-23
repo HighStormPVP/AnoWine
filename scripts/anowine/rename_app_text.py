@@ -71,10 +71,11 @@ def _r(languages, pattern, replacement, why):
     return Rewording(languages, re.compile(pattern), replacement, why)
 
 
+ENGINE = "Rosetta runs the x86 engine; the Ano app itself is native"
+
 REWORDINGS = (
     # English: what the text says about the engine and the real Wine project.
-    _r(ENGLISH, r"\blike Wine,", "like Ano's engine,",
-       "Rosetta runs the x86 engine; the Ano app itself is native"),
+    _r(ENGLISH, r"\blike Wine,", "like Ano's engine,", ENGINE),
     _r(ENGLISH, r"\bAno cannot find Wine's own Direct3D for this engine\b", "Ano cannot find this engine's own Direct3D",
        "Wine's own Direct3D is the engine's built-in d3d11"),
     _r(ENGLISH, r"\bWine's own Direct3D\b", "the engine's own Direct3D",
@@ -250,6 +251,35 @@ RUNTIME_WORDING = {
     },
 }
 
+# Where a translation gives Wine as the example of the x86 code Rosetta runs,
+# plain "Ano" would say the app is x86 code (it is native): the example is the
+# engine, in the word each language's other strings use for it ("The installed
+# engine can run D3DMetal"). de, fi and tr compare Rosetta with it instead,
+# which stays true; English is a REWORDINGS entry.
+ENGINE_WORDING = {
+    "setup.rosetta.subtitle": {
+        "ar": ("مثل Wine", "مثل محرك Ano"),
+        "cs": ("jakým je Wine", "jakým je prostředí Ano"),
+        "da": ("som Wine", "som Anos engine"),
+        "es": ("(Wine por ejemplo)", "(el motor de Ano, por ejemplo)"),
+        "fr": ("comme Wine", "comme le moteur d'Ano"),
+        "it": ("come Wine", "come il motore di Ano"),
+        "ja": ("Wine のような", "Ano のエンジンのような"),
+        "ko": ("Wine과 같은", "Ano 엔진과 같은"),
+        "nl": ("zoals Wine", "zoals de engine van Ano"),
+        "pl": ("tak jak Wine", "tak jak silnik Ano"),
+        "pt-BR": ("como Wine", "como o motor do Ano"),
+        "pt-PT": ("como o Wine", "como o motor do Ano"),
+        "ro": ("ca de exemplu Wine", "ca de exemplu motorul Ano"),
+        "ru": ("таким как Wine", "таким как среда Ano"),
+        "sv": ("som Wine", "som Anos motor"),
+        "uk": ("(напр. Wine)", "(напр. рушій Ano)"),
+        "vi": ("như Wine", "như engine của Ano"),
+        "zh-Hans": ("运行 Wine 等", "运行 Ano 引擎等"),
+        "zh-Hant": ("（如 Wine）", "（如 Ano 引擎）"),
+    },
+}
+
 
 @dataclass
 class Change:
@@ -273,12 +303,14 @@ def rename_text(text: str, lang: str, changes=None, where: str = "") -> str:
     """The text rule, with the rewordings for lang first. A value a rewording
     touched is added to changes (before and after the whole rule)."""
     original, why = text, []
-    runtime = RUNTIME_WORDING.get(rename_key(where), {}).get(lang) if where else None
-    if runtime and WINE.search(text):
-        if runtime[0] not in text:
-            raise RenameError(f"{where} [{lang}]: RUNTIME_WORDING expects {runtime[0]!r} in {text!r}")
-        text = text.replace(runtime[0], runtime[1])
-        why.append(RUNTIME)
+    for name, table, reason in (("RUNTIME_WORDING", RUNTIME_WORDING, RUNTIME),
+                                ("ENGINE_WORDING", ENGINE_WORDING, ENGINE)):
+        wording = table.get(rename_key(where), {}).get(lang) if where else None
+        if wording and WINE.search(text):
+            if wording[0] not in text:
+                raise RenameError(f"{where} [{lang}]: {name} expects {wording[0]!r} in {text!r}")
+            text = text.replace(wording[0], wording[1])
+            why.append(reason)
     for rewording in REWORDINGS:
         if rewording.applies(lang):
             new = rewording.pattern.sub(rewording.replacement, text)
