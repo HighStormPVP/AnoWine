@@ -77,7 +77,12 @@ public enum ProxyEnvironment {
 
     /// The folder holding the `ano-loader` wrapper.
     public static var wrapperFolder: URL {
-        WhiskyWineInstaller.applicationFolder.appending(path: "Proxy").appending(path: "bin")
+        wrapperFolder(inApplicationFolder: WhiskyWineInstaller.applicationFolder)
+    }
+
+    /// The folder holding the `ano-loader` wrapper under `applicationFolder`.
+    static func wrapperFolder(inApplicationFolder applicationFolder: URL) -> URL {
+        applicationFolder.appending(path: "Proxy").appending(path: "bin")
     }
 
     static let wrapperScript = """

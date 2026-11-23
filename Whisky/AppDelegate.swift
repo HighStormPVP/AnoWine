@@ -50,6 +50,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await TempFileTracker.shared.cleanupOldFiles(olderThan: 24 * 60 * 60)
         }
 
+        // Once, in the background: remove what earlier versions left outside
+        // the bottles under Wine's names (never a running server's folder).
+        // Not under UI tests, which must leave the runner's files alone.
+        if !WhiskyApp.isUITesting {
+            Task.detached(priority: .utility) {
+                OldTraceCleanup.runIfNeeded()
+            }
+        }
+
         // Startup orphan process detection
         // Probe each known bottle's wineserver to detect processes from previous sessions
         Task {
