@@ -466,8 +466,8 @@ final class StalenessCheckerTests: XCTestCase {
         XCTAssertTrue(result.reasons.contains(.wineVersionMismatch))
         XCTAssertNotNil(result.warningMessage)
         XCTAssertTrue(
-            result.warningMessage?.contains("Wine 9.0") == true,
-            "Warning should mention tested Wine version"
+            result.warningMessage?.contains("Ano 9.0") == true,
+            "Warning should mention the tested engine version"
         )
     }
 
