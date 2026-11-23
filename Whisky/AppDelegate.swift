@@ -36,6 +36,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Settings and the GPTK store that earlier versions kept under Wine's
+        // names take the new ones before anything reads them: the runtime
+        // update check (ContentView), the GPTK steps at launch (WhiskyApp) and
+        // Settings all run after this. Synchronous; a few file system calls.
+        AppMigrations.runAtLaunch()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         if !hasShownMoveToApplicationsAlert, !AppDelegate.insideAppsFolder {
             DispatchQueue.main.asyncAfter(deadline: .now()) {
