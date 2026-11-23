@@ -40,11 +40,11 @@ public enum WhiskyWineInstallError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .tarballNotFound:
-            String(localized: "setup.whiskywine.error.tarballMissing")
+            String(localized: "setup.anoRuntime.error.tarballMissing")
         case .runtimeIncomplete:
-            String(localized: "setup.whiskywine.error.runtimeIncomplete")
+            String(localized: "setup.anoRuntime.error.runtimeIncomplete")
         case .restoreFailed:
-            String(localized: "setup.whiskywine.error.restoreFailed")
+            String(localized: "setup.anoRuntime.error.restoreFailed")
         }
     }
 }

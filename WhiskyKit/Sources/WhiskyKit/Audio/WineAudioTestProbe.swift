@@ -62,7 +62,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
             return AudioProbeResult(
                 probeId: id,
                 status: .skipped,
-                summary: String(localized: "audio.probe.wineTest.unavailable"),
+                summary: String(localized: "audio.probe.anoTest.unavailable"),
                 evidence: ["WhiskyAudioTest.exe not found in app bundle"]
             )
         }
@@ -80,7 +80,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
             return AudioProbeResult(
                 probeId: id,
                 status: .error,
-                summary: String(localized: "audio.probe.wineTest.launchFailed"),
+                summary: String(localized: "audio.probe.anoTest.launchFailed"),
                 evidence: ["Error launching Wine process", "Exe path: \(exePath)"]
             )
         }
@@ -163,7 +163,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
             return AudioProbeResult(
                 probeId: id,
                 status: .error,
-                summary: String(localized: "audio.probe.wineTest.noResult"),
+                summary: String(localized: "audio.probe.anoTest.noResult"),
                 evidence: evidence
             )
         }
@@ -175,7 +175,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
             return AudioProbeResult(
                 probeId: id,
                 status: .error,
-                summary: String(localized: "audio.probe.wineTest.unparseable"),
+                summary: String(localized: "audio.probe.anoTest.unparseable"),
                 evidence: evidence
             )
         }
@@ -200,7 +200,7 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
             return AudioProbeResult(
                 probeId: id,
                 status: .passed,
-                summary: String(localized: "audio.probe.wineTest.ok \(result.api)"),
+                summary: String(localized: "audio.probe.anoTest.ok \(result.api)"),
                 evidence: evidence
             )
         }
@@ -209,17 +209,17 @@ public final class WineAudioTestProbe: AudioProbe, @unchecked Sendable {
         let codeStr = result.code.map { String($0) } ?? "unknown"
         findings.append(AudioFinding(
             id: "wine-audio-test-error",
-            description: String(localized: "audio.finding.wineTestFailed \(result.api)"),
+            description: String(localized: "audio.finding.anoTestFailed \(result.api)"),
             confidence: .high,
-            evidence: String(localized: "audio.finding.wineTestFailed.evidence \(codeStr)"),
-            suggestedAction: String(localized: "audio.finding.wineTestFailed.action")
+            evidence: String(localized: "audio.finding.anoTestFailed.evidence \(codeStr)"),
+            suggestedAction: String(localized: "audio.finding.anoTestFailed.action")
         ))
         evidence.append("Error code: \(codeStr)")
 
         return AudioProbeResult(
             probeId: id,
             status: .warning,
-            summary: String(localized: "audio.probe.wineTest.failed \(result.api) \(codeStr)"),
+            summary: String(localized: "audio.probe.anoTest.failed \(result.api) \(codeStr)"),
             evidence: evidence,
             findings: findings
         )

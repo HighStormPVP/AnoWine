@@ -72,10 +72,10 @@ struct WhiskyWineDownloadView: View {
     var body: some View {
         VStack {
             VStack {
-                Text("setup.whiskywine.download")
+                Text("setup.anoRuntime.download")
                     .font(.title)
                     .fontWeight(.bold)
-                Text("setup.whiskywine.download.subtitle")
+                Text("setup.anoRuntime.download.subtitle")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -124,7 +124,7 @@ extension WhiskyWineDownloadView {
                 .padding(.horizontal)
 
             HStack(spacing: 12) {
-                Button("setup.whiskywine.copyDiagnostics") {
+                Button("setup.anoRuntime.copyDiagnostics") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(
                         diagnostics.reportString(stage: "download", error: error),
@@ -163,14 +163,14 @@ extension WhiskyWineDownloadView {
             HStack {
                 HStack {
                     Text(String(
-                        format: String(localized: "setup.whiskywine.progress"),
+                        format: String(localized: "setup.anoRuntime.progress"),
                         formatBytes(bytes: completedBytes),
                         formatBytes(bytes: totalBytes)
                     ))
                         + Text(String(" "))
                         + (shouldShowEstimate()
                             ? Text(String(
-                                format: String(localized: "setup.whiskywine.eta"),
+                                format: String(localized: "setup.anoRuntime.eta"),
                                 formatRemainingTime(
                                     remainingBytes: totalBytes - completedBytes
                                 )
@@ -215,7 +215,7 @@ extension WhiskyWineDownloadView {
     @MainActor
     private func fetchVersionAndDownload() async {
         guard let versionURL = URL(string: DistributionConfig.versionPlistURL) else {
-            setDownloadFailure(String(localized: "setup.whiskywine.error.invalidVersionURL"))
+            setDownloadFailure(String(localized: "setup.anoRuntime.error.invalidVersionURL"))
             return
         }
 
@@ -243,7 +243,7 @@ extension WhiskyWineDownloadView {
             diagnostics.record("Resolved version \(versionString)")
 
             guard let downloadURL = URL(string: downloadURLString) else {
-                setDownloadFailure(String(localized: "setup.whiskywine.error.invalidDownloadURL"))
+                setDownloadFailure(String(localized: "setup.anoRuntime.error.invalidDownloadURL"))
                 return
             }
 
@@ -256,7 +256,7 @@ extension WhiskyWineDownloadView {
             let errorMessage = error.localizedDescription
             diagnostics.record("Version fetch failed: \(errorMessage)")
             setDownloadFailure(String(
-                format: String(localized: "setup.whiskywine.error.fetchVersionFailed"),
+                format: String(localized: "setup.anoRuntime.error.fetchVersionFailed"),
                 errorMessage
             ))
         }
@@ -330,7 +330,7 @@ extension WhiskyWineDownloadView {
         }
         diagnostics.record("Download failed: \(error.localizedDescription)")
         setDownloadFailure(String(
-            format: String(localized: "setup.whiskywine.error.downloadFailed"),
+            format: String(localized: "setup.anoRuntime.error.downloadFailed"),
             error.localizedDescription
         ))
     }

@@ -81,7 +81,7 @@ public enum GraphicsBackend: String, Codable, CaseIterable, Equatable, Sendable 
         case .dxmt:
             String(localized: "config.graphics.backend.dxmt.summary")
         case .wined3d:
-            String(localized: "config.graphics.backend.wined3d.summary")
+            String(localized: "config.graphics.backend.anod3d.summary")
         }
     }
 }

@@ -246,8 +246,8 @@ public struct TroubleshootingSessionStore: TroubleshootingSessionStoring {
                 oldValue: oldState,
                 newValue: newState,
                 displayMessage: currentPreflight.isWineserverRunning
-                    ? String(localized: "troubleshooting.resume.change.wineserverStarted")
-                    : String(localized: "troubleshooting.resume.change.wineserverStopped")
+                    ? String(localized: "troubleshooting.resume.change.anoServerStarted")
+                    : String(localized: "troubleshooting.resume.change.anoServerStopped")
             ))
         }
 

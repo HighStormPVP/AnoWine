@@ -14,8 +14,10 @@ Usage: rename_app_text.py [--root REPO] [--keys] [--values] [--dry-run]
           Ano/ano/ANO (`setup.whiskywine.download` -> `setup.anoRuntime.download`).
           A key that is English text takes the text rule. A new key that is
           already a key fails the run.
---values  applies the text rule to every value in every language: the REWORDINGS
-          first (each printed for review), then WhiskyWine -> "Ano runtime"
+--values  applies the text rule to every value in every language: RUNTIME_WORDING
+          (a translation that said plain "Wine" for the runtime gets its
+          language's word for the runtime) and the REWORDINGS first (each
+          printed for review), then WhiskyWine -> "Ano runtime"
           (English) or "Ano", a program name -> ano-<name> (winetricks ->
           ano-tricks, Winetricks -> Ano-tricks, wineserver -> ano-server, ...),
           then Wine/wine/WINE -> Ano/ano/ANO (WineD3D -> AnoD3D, WINEDEBUG ->
@@ -94,7 +96,159 @@ REWORDINGS = (
     _r(("ko",), r"Wine을(?=\s)", "Ano를", "Korean: object particle after a vowel"),
     _r(("ko",), r"Wine으로", "Ano로", "Korean: instrumental particle after a vowel"),
     _r(("pl",), r"\bWINE(?= \(WINEDEBUG\))", "Ano", "Polish: the name, not an all-caps word"),
+    _r(("zh-Hans",), r"Wine 运行时（Wine）", "Ano 运行时", "Chinese: 'Ano runtime (Ano)' says it twice"),
+    _r(("zh-Hant",), r"Wine 執行階段（Wine）", "Ano 執行階段", "Chinese: 'Ano runtime (Ano)' says it twice"),
 )
+
+# Where a translation says plain "Wine" for the runtime (English: "Ano runtime"),
+# plain "Ano" would name the app ("A new version of Ano is available"). Each
+# language gets its own word for the runtime, as its other strings use it:
+# key -> language -> (the text with Wine, the text with the runtime's name).
+RUNTIME = "translation said Wine for the runtime; plain Ano would name the app"
+RUNTIME_WORDING = {
+    "settings.toggle.anoRuntime.updates": {
+        "ar": ("تحديثات Wine", "تحديثات بيئة تشغيل Ano"),
+        "cs": ("vyhledávat Wine aktualizace", "vyhledávat aktualizace prostředí Ano"),
+        "da": ("efter Wine-opdateringer", "efter opdateringer af Ano-runtimen"),
+        "de": ("Updates für Wine", "Updates für die Ano-Runtime"),
+        "es": ("actualizaciones de Wine", "actualizaciones del runtime de Ano"),
+        "fi": ("Automaattisesti tarkista Wine päivityksien varalta", "Tarkista Ano-ajoympäristön päivitykset automaattisesti"),
+        "fr": ("mises à jour de Wine", "mises à jour du runtime Ano"),
+        "it": ("aggiornamenti di Wine", "aggiornamenti del runtime Ano"),
+        "ja": ("Wine のアップデート", "Ano ランタイムのアップデート"),
+        "ko": ("Wine 업데이트", "Ano 런타임 업데이트"),
+        "nl": ("op Wine updates", "op updates van de Ano-runtime"),
+        "pl": ("aktualizacji Wine", "aktualizacji silnika Ano"),
+        "pt-BR": ("atualizações do Wine", "atualizações do runtime do Ano"),
+        "ro": ("actualizări Wine", "actualizări ale runtime-ului Ano"),
+        "ru": ("обновлений Wine", "обновлений среды Ano"),
+        "sv": ("uppdateringar till Wine", "uppdateringar till Ano-runtime"),
+        "uk": ("оновлення Wine", "оновлення рушія Ano"),
+        "vi": ("bản cập nhật Wine", "bản cập nhật runtime Ano"),
+        "zh-Hans": ("Wine 更新", "Ano 运行时更新"),
+        "zh-Hant": ("Wine 更新", "Ano 執行階段更新"),
+    },
+    "setup.anoRuntime.download": {
+        "ar": ("تنزيل Wine", "تنزيل بيئة تشغيل Ano"),
+        "cs": ("Stahování Wine", "Stahování prostředí Ano"),
+        "da": ("Downloader Wine", "Downloader Ano-runtime"),
+        "de": ("Wine herunterladen", "Ano-Runtime herunterladen"),
+        "es": ("Descargando Wine", "Descargando el runtime de Ano"),
+        "fi": ("Ladataan Wine", "Ladataan Ano-ajoympäristöä"),
+        "fr": ("Téléchargement de Wine", "Téléchargement du runtime Ano"),
+        "it": ("Scarico Wine", "Scarico il runtime Ano"),
+        "ja": ("Wine をダウンロード中", "Ano ランタイムをダウンロード中"),
+        "ko": ("Wine를 다운로드 중", "Ano 런타임을 다운로드 중"),
+        "nl": ("Wine downloaden", "Ano-runtime downloaden"),
+        "pl": ("Pobieranie Wine", "Pobieranie silnika Ano"),
+        "pt-BR": ("Baixando Wine", "Baixando o runtime do Ano"),
+        "pt-PT": ("Transferindo Wine", "Transferindo o runtime do Ano"),
+        "ro": ("Se descarcă Wine", "Se descarcă runtime-ul Ano"),
+        "ru": ("Скачивание Wine", "Скачивание среды Ano"),
+        "sv": ("Hämtar Wine", "Hämtar Ano-runtime"),
+        "tr": ("Wine İndiriliyor", "Ano Çalışma Zamanı İndiriliyor"),
+        "uk": ("Завантаження Wine", "Завантаження рушія Ano"),
+        "vi": ("Đang tải xuống Wine", "Đang tải xuống runtime Ano"),
+        "zh-Hans": ("正在下载 Wine", "正在下载 Ano 运行时"),
+        "zh-Hant": ("正在下載 Wine", "正在下載 Ano 執行階段"),
+    },
+    "setup.anoRuntime.install": {
+        "ar": ("تثبيت Wine", "تثبيت بيئة تشغيل Ano"),
+        "cs": ("Instalace Wine", "Instalace prostředí Ano"),
+        "da": ("Installere Wine", "Installerer Ano-runtime"),
+        "de": ("Wine wird installiert", "Ano-Runtime wird installiert"),
+        "es": ("Instalando Wine", "Instalando el runtime de Ano"),
+        "fi": ("Asennetaan Wine", "Asennetaan Ano-ajoympäristö"),
+        "fr": ("Installation de Wine", "Installation du runtime Ano"),
+        "it": ("Installazione di Wine", "Installazione del runtime Ano"),
+        "ja": ("Wine をインストール中", "Ano ランタイムをインストール中"),
+        "ko": ("Wine 설치 중", "Ano 런타임 설치 중"),
+        "nl": ("Wine installeren", "Ano-runtime installeren"),
+        "pl": ("Instalowanie Wine", "Instalowanie silnika Ano"),
+        "pt-BR": ("Instalando Wine", "Instalando o runtime do Ano"),
+        "pt-PT": ("Instalando Wine", "Instalando o runtime do Ano"),
+        "ro": ("Se instalează Wine", "Se instalează runtime-ul Ano"),
+        "ru": ("Установка Wine", "Установка среды Ano"),
+        "sv": ("Installerar Wine", "Installerar Ano-runtime"),
+        "tr": ("Wine Yükleniyor", "Ano Çalışma Zamanı Yükleniyor"),
+        "uk": ("Встановлення Wine", "Встановлення рушія Ano"),
+        "vi": ("Đang cài đặt Wine", "Đang cài đặt runtime Ano"),
+        "zh-Hans": ("正在安装 Wine", "正在安装 Ano 运行时"),
+        "zh-Hant": ("正在安裝 Wine", "正在安裝 Ano 執行階段"),
+    },
+    "setup.anoRuntime.error.installFailed": {
+        "ar": ("فشل تثبيت Wine", "فشل تثبيت بيئة تشغيل Ano"),
+        "cs": ("Instalace Wine", "Instalace prostředí Ano"),
+        "da": ("Installationen af Wine", "Installationen af Ano-runtimen"),
+        "de": ("Die Installation von Wine", "Die Installation der Ano-Runtime"),
+        "es": ("La instalación de Wine", "La instalación del runtime de Ano"),
+        "fi": ("Wine-asennus", "Ano-ajoympäristön asennus"),
+        "fr": ("L'installation de Wine", "L'installation du runtime Ano"),
+        "it": ("Installazione di Wine", "Installazione del runtime Ano"),
+        "ja": ("Wine のインストール", "Ano ランタイムのインストール"),
+        "ko": ("Wine 설치", "Ano 런타임 설치"),
+        "nl": ("Installatie van Wine", "Installatie van de Ano-runtime"),
+        "pl": ("Instalacja Wine", "Instalacja silnika Ano"),
+        "pt-BR": ("A instalação do Wine", "A instalação do runtime do Ano"),
+        "pt-PT": ("A instalação do Wine", "A instalação do runtime do Ano"),
+        "ro": ("Instalarea Wine", "Instalarea runtime-ului Ano"),
+        "ru": ("Установка Wine", "Установка среды Ano"),
+        "sv": ("Installationen av Wine", "Installationen av Ano-runtime"),
+        "tr": ("Wine kurulumu", "Ano çalışma zamanı kurulumu"),
+        "uk": ("встановити Wine", "встановити рушій Ano"),
+        "vi": ("Cài đặt Wine", "Cài đặt runtime Ano"),
+        "zh-Hans": ("Wine 安装失败", "Ano 运行时安装失败"),
+        "zh-Hant": ("Wine 安裝失敗", "Ano 執行階段安裝失敗"),
+    },
+    "update.anoRuntime.title": {
+        "ar": ("من Wine", "من بيئة تشغيل Ano"),
+        "cs": ("nová verze Wine", "nová verze prostředí Ano"),
+        "da": ("af Wine", "af Ano-runtime"),
+        "de": ("Eine neue Wine Version", "Eine neue Version der Ano-Runtime"),
+        "es": ("versión de Wine", "versión del runtime de Ano"),
+        "fi": ("Uusi Wine versio", "Uusi Ano-ajoympäristön versio"),
+        "fr": ("version de Wine", "version du runtime Ano"),
+        "it": ("versione di Wine", "versione del runtime Ano"),
+        "ja": ("Wine の新しいバージョン", "Ano ランタイムの新しいバージョン"),
+        "ko": ("버전의 Wine를", "버전의 Ano 런타임을"),
+        "nl": ("Nieuwe Wine versie", "Nieuwe versie van de Ano-runtime"),
+        "pl": ("wersja Wine", "wersja silnika Ano"),
+        "pt-BR": ("versão do Wine", "versão do runtime do Ano"),
+        "pt-PT": ("versão do Wine", "versão do runtime do Ano"),
+        "ro": ("O Nouă Versiune Wine", "O Nouă Versiune a Runtime-ului Ano"),
+        "ru": ("версия Wine", "версия среды Ano"),
+        "sv": ("av Wine", "av Ano-runtime"),
+        "tr": ("Wine'nin yeni versiyonu", "Ano çalışma zamanının yeni versiyonu"),
+        "uk": ("версія Wine", "версія рушія Ano"),
+        "vi": ("của Wine", "của runtime Ano"),
+        "zh-Hans": ("Wine 版本", "Ano 运行时版本"),
+        "zh-Hant": ("新的Wine版本", "新的 Ano 執行階段版本"),
+    },
+    "update.anoRuntime.description": {
+        "ar": ("بتشغيل Wine %@", "بتشغيل بيئة تشغيل Ano %@"),
+        "da": ("kører Wine %@", "kører Ano-runtime %@"),
+        "de": ("Sie verwenden Wine %@, die aktuelle Version ist %@. Möchten Sie Wine aktualisieren?",
+               "Sie verwenden die Ano-Runtime %@, die aktuelle Version ist %@. Möchten Sie sie aktualisieren?"),
+        "es": ("ejecutando Wine %@", "ejecutando el runtime de Ano %@"),
+        "fi": ("on Wine %@", "on Ano-ajoympäristö %@"),
+        "fr": ("utilisez Wine %@", "utilisez le runtime Ano %@"),
+        "it": ("utilizzando Wine %@", "utilizzando il runtime Ano %@"),
+        "ja": ("現在 Wine %@", "現在 Ano ランタイム %@"),
+        "ko": ("Wine %@ 버전", "Ano 런타임 %@ 버전"),
+        "nl": ("gebruikt Wine %@", "gebruikt Ano-runtime %@"),
+        "pl": ("Używasz Wine %@", "Używasz silnika Ano %@"),
+        "pt-BR": ("Wine %@ está sendo usada", "O runtime do Ano %@ está sendo usado"),
+        "pt-PT": ("usar o Wine %@", "usar o runtime do Ano %@"),
+        "ro": ("rulați Wine %@", "rulați runtime-ul Ano %@"),
+        "ru": ("используете Wine %@", "используете среду Ano %@"),
+        "sv": ("kör Wine %@", "kör Ano-runtime %@"),
+        "tr": ("Wine %@ versiyonu", "Ano çalışma zamanı %@ versiyonu"),
+        "uk": ("використовуєте Wine %@", "використовуєте рушій Ano %@"),
+        "vi": ("sử dụng Wine phiên bản", "sử dụng runtime Ano phiên bản"),
+        "zh-Hans": ("运行 Wine %@", "运行 Ano 运行时 %@"),
+        "zh-Hant": ("使用Wine %@", "使用 Ano 執行階段 %@"),
+    },
+}
 
 
 @dataclass
@@ -119,6 +273,12 @@ def rename_text(text: str, lang: str, changes=None, where: str = "") -> str:
     """The text rule, with the rewordings for lang first. A value a rewording
     touched is added to changes (before and after the whole rule)."""
     original, why = text, []
+    runtime = RUNTIME_WORDING.get(rename_key(where), {}).get(lang) if where else None
+    if runtime and WINE.search(text):
+        if runtime[0] not in text:
+            raise RenameError(f"{where} [{lang}]: RUNTIME_WORDING expects {runtime[0]!r} in {text!r}")
+        text = text.replace(runtime[0], runtime[1])
+        why.append(RUNTIME)
     for rewording in REWORDINGS:
         if rewording.applies(lang):
             new = rewording.pattern.sub(rewording.replacement, text)

@@ -33,7 +33,7 @@ final class WhiskyUITests: WhiskyUITestCase {
         // accessibility identifiers. Look up by visible label instead.
         XCTAssertTrue(app.buttons["Open C: Drive"].exists, "Open C: Drive button missing")
         XCTAssertTrue(app.buttons["Terminal..."].exists, "Terminal button missing")
-        XCTAssertTrue(app.buttons["Winetricks..."].exists, "Winetricks button missing")
+        XCTAssertTrue(app.buttons["Ano-tricks..."].exists, "Ano-tricks button missing")
         XCTAssertTrue(app.buttons["Run..."].exists, "Run button missing")
     }
 
@@ -50,8 +50,8 @@ final class WhiskyUITests: WhiskyUITestCase {
     func testBottleConfigurationSectionsRender() throws {
         try requireBottleFixture()
         openBottleConfiguration()
-        // Wine section is the first one expanded by default
-        XCTAssertTrue(app.staticTexts["Wine"].exists)
+        // The Ano (engine) section is the first one expanded by default
+        XCTAssertTrue(app.staticTexts["Ano"].exists)
         // Other section headers render as DisclosureTriangles, not StaticTexts
         // (see testControllerAndInputSectionExists), so query them the same way.
         let sectionHeader = app.descendants(matching: .disclosureTriangle)

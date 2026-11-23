@@ -66,7 +66,7 @@ class Winetricks {
             // Don't offer repair again if this is already a retry after repair
             if isRetryAfterRepair {
                 logger.error("Validation still failing after repair attempt")
-                showRepairFailedAlert(info: String(localized: "winetricks.error.repairFailedInfo"))
+                showRepairFailedAlert(info: String(localized: "anoTricks.error.repairFailedInfo"))
                 return false
             }
             return await showPrefixErrorAlert(
@@ -159,8 +159,8 @@ class Winetricks {
     private static func showMissingResourcesAlert(command: String) {
         logger.error("Bundled winetricks resources are missing; cannot run '\(command)'")
         let alert = NSAlert()
-        alert.messageText = String(localized: "winetricks.error.missingResources")
-        alert.informativeText = String(localized: "winetricks.error.missingResourcesInfo")
+        alert.messageText = String(localized: "anoTricks.error.missingResources")
+        alert.informativeText = String(localized: "anoTricks.error.missingResourcesInfo")
         alert.alertStyle = .critical
         alert.addButton(withTitle: String(localized: "button.ok"))
         alert.runModal()
@@ -169,7 +169,7 @@ class Winetricks {
     @MainActor
     private static func showRepairFailedAlert(info: String) {
         let alert = NSAlert()
-        alert.messageText = String(localized: "winetricks.error.repairFailed")
+        alert.messageText = String(localized: "anoTricks.error.repairFailed")
         alert.informativeText = info
         alert.alertStyle = .critical
         alert.addButton(withTitle: String(localized: "button.ok"))
@@ -189,19 +189,19 @@ class Winetricks {
         case .valid:
             return false
         case .missingUserProfile:
-            errorMessage = String(localized: "winetricks.error.missingUserProfile")
+            errorMessage = String(localized: "anoTricks.error.missingUserProfile")
         case .missingAppData:
-            errorMessage = String(localized: "winetricks.error.missingAppData")
+            errorMessage = String(localized: "anoTricks.error.missingAppData")
         case .corruptedPrefix:
-            errorMessage = String(localized: "winetricks.error.corruptedPrefix")
+            errorMessage = String(localized: "anoTricks.error.corruptedPrefix")
         }
 
         let alert = NSAlert()
-        alert.messageText = String(localized: "winetricks.error.prefixTitle")
+        alert.messageText = String(localized: "anoTricks.error.prefixTitle")
         alert.informativeText = errorMessage
         alert.alertStyle = .warning
-        alert.addButton(withTitle: String(localized: "winetricks.error.repairPrefix"))
-        alert.addButton(withTitle: String(localized: "winetricks.error.copyDiagnostics"))
+        alert.addButton(withTitle: String(localized: "anoTricks.error.repairPrefix"))
+        alert.addButton(withTitle: String(localized: "anoTricks.error.copyDiagnostics"))
         alert.addButton(withTitle: String(localized: "button.cancel"))
 
         let response = alert.runModal()

@@ -608,15 +608,15 @@ struct ProgramOverrideSettingsView: View {
 
     private var winetricksSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("program.overrides.winetricks.title")
+            Text("program.overrides.anoTricks.title")
                 .font(.headline)
-            Text("program.overrides.winetricks.subtitle")
+            Text("program.overrides.anoTricks.subtitle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
             let verbs = installedVerbs
             if verbs.isEmpty {
-                Text("program.overrides.winetricks.none")
+                Text("program.overrides.anoTricks.none")
                     .foregroundStyle(.secondary)
                     .font(.callout)
             } else {
@@ -629,12 +629,12 @@ struct ProgramOverrideSettingsView: View {
                             .font(.system(.body, design: .monospaced))
                         Spacer()
                         Toggle(
-                            "program.overrides.winetricks.usedByProgram",
+                            "program.overrides.anoTricks.usedByProgram",
                             isOn: verbTagBinding(for: verb)
                         )
                         .toggleStyle(.checkbox)
                         .labelsHidden()
-                        Text("program.overrides.winetricks.usedByProgram")
+                        Text("program.overrides.anoTricks.usedByProgram")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

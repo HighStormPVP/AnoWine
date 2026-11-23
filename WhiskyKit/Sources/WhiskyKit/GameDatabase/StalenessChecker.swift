@@ -119,7 +119,7 @@ public enum StalenessChecker {
            isWineVersionStale(tested: testedWith.wineVersion, current: currentWine) {
             reasons.append(.wineVersionMismatch)
             messageParts.append(String(
-                localized: "gameConfig.staleness.wine %@",
+                localized: "gameConfig.staleness.ano %@",
                 defaultValue: "Tested with Wine \(testedWith.wineVersion)."
             ))
         }

@@ -150,7 +150,7 @@ extension GameEntryDetailView {
                 constraintTag(String(localized: "gamedb.tag.minMacOS \(minMacOS)"), icon: "laptopcomputer")
             }
             if let minWine = constraints.minWineVersion {
-                constraintTag(String(localized: "gamedb.tag.minWine \(minWine)"), icon: "wineglass")
+                constraintTag(String(localized: "gamedb.tag.minAno \(minWine)"), icon: "wineglass")
             }
         }
     }
@@ -386,7 +386,7 @@ extension GameEntryDetailView {
     private func settingsAreaWinetricks(_ variant: GameConfigVariant) -> some View {
         if let verbs = variant.winetricksVerbs, !verbs.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                Text("gameConfig.detail.winetricks")
+                Text("gameConfig.detail.anoTricks")
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 ForEach(verbs, id: \.self) { verb in

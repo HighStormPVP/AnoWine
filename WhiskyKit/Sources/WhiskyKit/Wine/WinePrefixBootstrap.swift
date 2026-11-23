@@ -33,7 +33,7 @@ public enum WinePrefixBootstrapError: LocalizedError, Equatable {
         switch self {
         case .runtimeMissing:
             String(
-                localized: "wine.prefix.bootstrap.runtimeMissing",
+                localized: "ano.prefix.bootstrap.runtimeMissing",
                 defaultValue: """
                 This bottle's Wine prefix can't be set up because the Wine runtime isn't installed. \
                 Open Whisky to install it, then try again.
@@ -41,7 +41,7 @@ public enum WinePrefixBootstrapError: LocalizedError, Equatable {
             )
         case .incomplete:
             String(
-                localized: "wine.prefix.bootstrap.incomplete",
+                localized: "ano.prefix.bootstrap.incomplete",
                 defaultValue: """
                 This bottle's Wine prefix couldn't be set up, so nothing can run in it yet. \
                 The latest Wine log has the details.

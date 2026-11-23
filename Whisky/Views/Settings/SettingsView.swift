@@ -71,7 +71,7 @@ struct SettingsView: View {
             }
             Section("settings.updates") {
                 Toggle("settings.toggle.whisky.updates", isOn: $whiskyUpdate)
-                Toggle("settings.toggle.whiskywine.updates", isOn: $checkWhiskyWineUpdates)
+                Toggle("settings.toggle.anoRuntime.updates", isOn: $checkWhiskyWineUpdates)
             }
             GPTKSettingsSection()
             ProxySettingsSection()

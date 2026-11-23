@@ -1427,7 +1427,7 @@ public class Wine {
         public var errorDescription: String? {
             switch self {
             case .payloadMissing:
-                String(localized: "wine.dxmt.error.payloadMissing")
+                String(localized: "ano.dxmt.error.payloadMissing")
             }
         }
     }

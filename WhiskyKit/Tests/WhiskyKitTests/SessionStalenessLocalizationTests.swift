@@ -185,10 +185,10 @@ final class SessionStalenessLocalizationTests: XCTestCase {
         )
 
         XCTAssertEqual(
-            started.displayMessage, String(localized: "troubleshooting.resume.change.wineserverStarted")
+            started.displayMessage, String(localized: "troubleshooting.resume.change.anoServerStarted")
         )
         XCTAssertEqual(
-            stopped.displayMessage, String(localized: "troubleshooting.resume.change.wineserverStopped")
+            stopped.displayMessage, String(localized: "troubleshooting.resume.change.anoServerStopped")
         )
         XCTAssertNotEqual(started.displayMessage, stopped.displayMessage)
         assertCatalogKey(started.displayMessage)

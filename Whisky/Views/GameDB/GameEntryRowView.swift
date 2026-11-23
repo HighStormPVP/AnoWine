@@ -133,7 +133,7 @@ struct GameEntryRowView: View {
         }
 
         if let minWine = entry.constraints?.minWineVersion {
-            tags.append(String(localized: "gamedb.tag.minWine \(minWine)"))
+            tags.append(String(localized: "gamedb.tag.minAno \(minWine)"))
         }
 
         return tags.isEmpty ? nil : tags

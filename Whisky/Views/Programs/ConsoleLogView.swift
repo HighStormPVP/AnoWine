@@ -117,7 +117,7 @@ struct ConsoleLogView: View {
             )
             if runEntry.hasWineDebugOutput {
                 filterToggle(
-                    label: String(localized: "console.log.filter.winedebug"),
+                    label: String(localized: "console.log.filter.anodebug"),
                     isOn: $showWineDebug,
                     color: .gray
                 )

@@ -153,7 +153,7 @@ extension LauncherConfigSection {
                     .foregroundColor(.orange)
 
                 Text("""
-                Launcher compatibility disables the Chromium sandbox (required for Wine). \
+                Launcher compatibility disables the Chromium sandbox (required for Ano). \
                 This allows Steam, Epic, EA App, and Rockstar launchers to function, but \
                 embedded browser content runs with full process privileges. Only use with \
                 trusted launchers from reputable companies.
@@ -531,8 +531,8 @@ extension LauncherConfigSection {
     private var rockstarWineD3DRow: some View {
         if let status = bottle.rockstarWineD3DStatus {
             Divider()
-            Toggle("launcher.config.rockstarWineD3D.toggle", isOn: $bottle.settings.rockstarWineD3D)
-                .help("launcher.config.rockstarWineD3D.help")
+            Toggle("launcher.config.rockstarAnoD3D.toggle", isOn: $bottle.settings.rockstarWineD3D)
+                .help("launcher.config.rockstarAnoD3D.help")
             rockstarWineD3DStatusText(status)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -544,23 +544,23 @@ extension LauncherConfigSection {
     private func rockstarWineD3DStatusText(_ status: RockstarWineD3DStatus) -> Text {
         switch status {
         case .active:
-            Text("launcher.config.rockstarWineD3D.status.active")
+            Text("launcher.config.rockstarAnoD3D.status.active")
         case .pending, .notApplied(.gptkForwarders):
-            Text("launcher.config.rockstarWineD3D.status.pending")
+            Text("launcher.config.rockstarAnoD3D.status.pending")
         // `rockstarWineD3DStatus` reports these two as `.off` and `.pending`
         // itself; they read the same here if one ever arrives as a reason.
         case .off, .notApplied(.disabledByUser):
-            Text("launcher.config.rockstarWineD3D.status.off")
+            Text("launcher.config.rockstarAnoD3D.status.off")
         case .notApplied(.sourceUnavailable):
-            Text("launcher.config.rockstarWineD3D.status.sourceUnavailable")
+            Text("launcher.config.rockstarAnoD3D.status.sourceUnavailable")
         case .notApplied(.bottleUsesNativeD3D11):
-            Text("launcher.config.rockstarWineD3D.status.bottleUsesNativeD3D11")
+            Text("launcher.config.rockstarAnoD3D.status.bottleUsesNativeD3D11")
         case let .notApplied(.dxvkPlanGames(names)):
-            Text("launcher.config.rockstarWineD3D.status.dxvkPlanGames \(names.formatted(.list(type: .and)))")
+            Text("launcher.config.rockstarAnoD3D.status.dxvkPlanGames \(names.formatted(.list(type: .and)))")
         case let .notApplied(.unservedConsumers(names)):
-            Text("launcher.config.rockstarWineD3D.status.unservedConsumers \(names.formatted(.list(type: .and)))")
+            Text("launcher.config.rockstarAnoD3D.status.unservedConsumers \(names.formatted(.list(type: .and)))")
         case .notApplied(.swapFailed):
-            Text("launcher.config.rockstarWineD3D.status.failed")
+            Text("launcher.config.rockstarAnoD3D.status.failed")
         }
     }
 }

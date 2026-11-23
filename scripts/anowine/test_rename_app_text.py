@@ -65,6 +65,19 @@ class TextRuleTests(unittest.TestCase):
         for lang, old, new in cases:
             self.assertEqual(rename_text(old, lang), new, lang)
 
+    def test_a_translation_that_said_wine_for_the_runtime_names_the_runtime(self):
+        changes = []
+        self.assertEqual(rename_text("Nouvelle version de Wine disponible", "fr", changes, "update.whiskywine.title"),
+                         "Nouvelle version du runtime Ano disponible")
+        self.assertEqual(rename_text("Wine herunterladen", "de", None, "setup.anoRuntime.download"),
+                         "Ano-Runtime herunterladen")
+        self.assertEqual(changes[0].why, "translation said Wine for the runtime; plain Ano would name the app")
+        # Only for those keys, and a table that no longer fits the translation fails.
+        self.assertEqual(rename_text("Nouvelle version de Wine disponible", "fr", None, "other.key"),
+                         "Nouvelle version d'Ano disponible")
+        with self.assertRaises(RenameError):
+            rename_text("Version Wine", "fr", None, "update.whiskywine.title")
+
     def test_english_rewordings_stay_in_english(self):
         self.assertEqual(rename_text("Rosetta, kuten Wine, mahdollistaa", "fi"), "Rosetta, kuten Ano, mahdollistaa")
         self.assertEqual(rename_text("PID de Wine", "es"), "PID de Ano")

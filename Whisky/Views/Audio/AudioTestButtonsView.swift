@@ -51,7 +51,7 @@ struct AudioTestButtonsView: View {
     // MARK: - Test Wine Audio
 
     private var testWineAudioButton: some View {
-        Button("audio.test.wine") {
+        Button("audio.test.ano") {
             runAllProbes()
         }
         .buttonStyle(.borderedProminent)

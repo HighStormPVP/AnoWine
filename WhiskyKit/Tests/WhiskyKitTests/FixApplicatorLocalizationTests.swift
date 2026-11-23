@@ -193,8 +193,8 @@ final class FixApplicatorLocalizationTests: XCTestCase {
         let fix = try preview("install-winetricks-verb", params: ["verb": "d3dx9"])
 
         XCTAssertEqual(fix.newValue, "d3dx9")
-        XCTAssertEqual(fix.currentValue, String(localized: "gameConfig.preview.winetricksMissing"))
-        XCTAssertEqual(fix.settingName, String(localized: "troubleshooting.fix.setting.winetricksVerb"))
+        XCTAssertEqual(fix.currentValue, String(localized: "gameConfig.preview.anoTricksMissing"))
+        XCTAssertEqual(fix.settingName, String(localized: "troubleshooting.fix.setting.anoTricksVerb"))
     }
 
     func testWinetricksPreviewWithoutAVerbSaysUnknown() throws {

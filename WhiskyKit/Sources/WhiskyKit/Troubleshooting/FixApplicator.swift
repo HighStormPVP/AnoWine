@@ -199,8 +199,8 @@ public enum FixApplicator { // swiftlint:disable:this type_body_length
         case "install-winetricks-verb":
             let verb = params["verb"] ?? String(localized: "troubleshooting.fix.value.unknown")
             return FixPreview(
-                settingName: String(localized: "troubleshooting.fix.setting.winetricksVerb"),
-                currentValue: String(localized: "gameConfig.preview.winetricksMissing"),
+                settingName: String(localized: "troubleshooting.fix.setting.anoTricksVerb"),
+                currentValue: String(localized: "gameConfig.preview.anoTricksMissing"),
                 newValue: verb,
                 scope: "bottle",
                 isReversible: false

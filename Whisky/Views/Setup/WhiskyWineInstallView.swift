@@ -35,10 +35,10 @@ struct WhiskyWineInstallView: View {
     var body: some View {
         VStack {
             VStack {
-                Text("setup.whiskywine.install")
+                Text("setup.anoRuntime.install")
                     .font(.title)
                     .fontWeight(.bold)
-                Text("setup.whiskywine.install.subtitle")
+                Text("setup.anoRuntime.install.subtitle")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -95,7 +95,7 @@ struct WhiskyWineInstallView: View {
 
     private func diagnosticsButtons(error: String) -> some View {
         HStack(spacing: 12) {
-            Button("setup.whiskywine.copyDiagnostics") {
+            Button("setup.anoRuntime.copyDiagnostics") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(
                     diagnostics.reportString(stage: "install", error: error),
@@ -187,11 +187,11 @@ struct WhiskyWineInstallView: View {
             Telemetry.capture(.runtimeInstallFailed(reason: reason))
             if let message {
                 installError = String(
-                    format: String(localized: "setup.whiskywine.error.installFailed.detail"),
+                    format: String(localized: "setup.anoRuntime.error.installFailed.detail"),
                     Self.shortened(message)
                 )
             } else {
-                installError = String(localized: "setup.whiskywine.error.installFailed")
+                installError = String(localized: "setup.anoRuntime.error.installFailed")
             }
         }
     }

@@ -100,7 +100,7 @@ struct ConfigView: View {
             gameConfigRevertSection
             gameConfigEnvironmentSection
             Section("Diagnostics") {
-                Text("Analyze Wine crash output for troubleshooting guidance")
+                Text("Analyze Ano crash output for troubleshooting guidance")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

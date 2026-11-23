@@ -43,7 +43,7 @@ enum BottleCreationError: LocalizedError, Equatable {
         case .metadataCreationFailed:
             String(localized: "bottle.creation.error.metadataCreationFailed")
         case .wineVersionChangeFailed:
-            String(localized: "bottle.creation.error.wineVersionChangeFailed")
+            String(localized: "bottle.creation.error.anoVersionChangeFailed")
         case .persistenceSaveFailed:
             String(localized: "bottle.creation.error.persistenceSaveFailed")
         case .runtimeMissing:

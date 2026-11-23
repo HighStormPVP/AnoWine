@@ -198,7 +198,7 @@ extension GameConfigPreviewSheet {
     private var winetricksSection: some View {
         if let verbs = variant.winetricksVerbs, !verbs.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("gameConfig.preview.winetricksRequired")
+                Text("gameConfig.preview.anoTricksRequired")
                     .font(.subheadline)
                     .fontWeight(.semibold)
 
@@ -215,7 +215,7 @@ extension GameConfigPreviewSheet {
                         .foregroundStyle(.orange)
                 }
 
-                Text("gameConfig.preview.winetricksNote")
+                Text("gameConfig.preview.anoTricksNote")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -243,8 +243,8 @@ extension GameConfigPreviewSheet {
             Spacer()
             Text(
                 installedVerbs.contains(verb)
-                    ? String(localized: "gameConfig.preview.winetricksInstalled")
-                    : String(localized: "gameConfig.preview.winetricksMissing")
+                    ? String(localized: "gameConfig.preview.anoTricksInstalled")
+                    : String(localized: "gameConfig.preview.anoTricksMissing")
             )
             .font(.caption2)
             .foregroundStyle(installedVerbs.contains(verb) ? .green : .orange)

@@ -37,7 +37,7 @@ struct WinetricksView: View {
     var body: some View {
         VStack {
             VStack {
-                Text("winetricks.title")
+                Text("anoTricks.title")
                     .font(.title)
             }
             .padding(.bottom)
@@ -51,7 +51,7 @@ struct WinetricksView: View {
                     ForEach(winetricks, id: \.category) { category in
                         verbTable(for: category)
                             .tabItem {
-                                let key = "winetricks.category.\(category.category.rawValue)"
+                                let key = "anoTricks.category.\(category.category.rawValue)"
                                 Text(NSLocalizedString(key, comment: ""))
                             }
                     }
@@ -61,7 +61,7 @@ struct WinetricksView: View {
                         VStack {
                             ProgressView()
                                 .controlSize(.small)
-                            Text("winetricks.loading.installed")
+                            Text("anoTricks.loading.installed")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -103,7 +103,7 @@ struct WinetricksView: View {
             }
         }
         .padding()
-        .searchable(text: $searchText, placement: .toolbar, prompt: "winetricks.search.prompt")
+        .searchable(text: $searchText, placement: .toolbar, prompt: "anoTricks.search.prompt")
         .onAppear {
             Task.detached {
                 let tricks = await Winetricks.parseVerbs()
@@ -145,14 +145,14 @@ struct WinetricksView: View {
     // MARK: - Subviews
 
     private var filterPicker: some View {
-        Picker("winetricks.filter", selection: $verbFilter) {
-            Text("winetricks.filter.all")
+        Picker("anoTricks.filter", selection: $verbFilter) {
+            Text("anoTricks.filter.all")
                 .tag(VerbFilter.all)
             if installedVerbs.isEmpty {
-                Text("winetricks.filter.installed")
+                Text("anoTricks.filter.installed")
                     .tag(VerbFilter.installed)
             } else {
-                Text("winetricks.filter.installedCount \(installedVerbs.count)")
+                Text("anoTricks.filter.installedCount \(installedVerbs.count)")
                     .tag(VerbFilter.installed)
             }
         }
@@ -177,15 +177,15 @@ struct WinetricksView: View {
     private func verbTable(for category: WinetricksCategory) -> some View {
         let verbs = filteredVerbs(for: category)
         return Table(verbs, selection: $selectedTrick) {
-            TableColumn("winetricks.table.installed") { verb in
+            TableColumn("anoTricks.table.installed") { verb in
                 if installedVerbs.contains(verb.name) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                 }
             }
             .width(30)
-            TableColumn("winetricks.table.name", value: \.name)
-            TableColumn("winetricks.table.description", value: \.description)
+            TableColumn("anoTricks.table.name", value: \.name)
+            TableColumn("anoTricks.table.description", value: \.description)
         }
     }
 }

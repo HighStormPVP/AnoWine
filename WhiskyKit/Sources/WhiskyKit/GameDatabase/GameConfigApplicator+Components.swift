@@ -238,7 +238,7 @@ extension GameConfigApplicator {
         pendingWinetricksVerbs(variant: variant, installedVerbs: installedVerbs).map { verb in
             ConfigChange(
                 kind: .winetricksVerb,
-                category: String(localized: "gameConfig.detail.winetricks"),
+                category: String(localized: "gameConfig.detail.anoTricks"),
                 settingName: verb,
                 currentValue: String(localized: "gameConfig.preview.value.notInstalled"),
                 newValue: String(localized: "gameConfig.preview.value.willInstall")

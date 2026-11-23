@@ -83,9 +83,9 @@ public enum ResumableDownloadError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case let .httpStatus(code):
-            String(format: String(localized: "setup.whiskywine.error.httpError"), code)
+            String(format: String(localized: "setup.anoRuntime.error.httpError"), code)
         case .invalidResponse, .truncatedTransfer, .staleResume:
-            String(localized: "setup.whiskywine.error.interrupted")
+            String(localized: "setup.anoRuntime.error.interrupted")
         }
     }
 }

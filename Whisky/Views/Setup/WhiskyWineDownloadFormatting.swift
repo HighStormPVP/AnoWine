@@ -24,21 +24,21 @@ import WhiskyKit
 func formatHTTPError(statusCode: Int) -> String {
     let statusMessage = switch statusCode {
     case 404:
-        String(localized: "setup.whiskywine.error.fileNotFound")
+        String(localized: "setup.anoRuntime.error.fileNotFound")
     case 403:
-        String(localized: "setup.whiskywine.error.accessDenied")
+        String(localized: "setup.anoRuntime.error.accessDenied")
     case 429:
-        String(localized: "setup.whiskywine.error.rateLimit")
+        String(localized: "setup.anoRuntime.error.rateLimit")
     case 500 ... 599:
-        String(localized: "setup.whiskywine.error.serverError")
+        String(localized: "setup.anoRuntime.error.serverError")
     default:
         String(
-            format: String(localized: "setup.whiskywine.error.httpError"),
+            format: String(localized: "setup.anoRuntime.error.httpError"),
             statusCode
         )
     }
     return String(
-        format: String(localized: "setup.whiskywine.error.downloadFailed"),
+        format: String(localized: "setup.anoRuntime.error.downloadFailed"),
         statusMessage
     )
 }
@@ -100,7 +100,7 @@ extension WhiskyWineDownloadView {
             diagnostics.versionResponse = summary
             diagnostics.record("Version plist unreadable: \(summary.diagnosticDescription)")
             guard summary.isWebPage else { throw error }
-            setDownloadFailure(String(localized: "setup.whiskywine.error.blockedByNetwork"), reason: .networkBlocked)
+            setDownloadFailure(String(localized: "setup.anoRuntime.error.blockedByNetwork"), reason: .networkBlocked)
             return nil
         }
     }
@@ -119,12 +119,12 @@ extension WhiskyWineDownloadView {
         if let summary, summary.isWebPage {
             diagnostics.downloadResponse = summary
             diagnostics.record("Downloaded file is a web page: \(summary.diagnosticDescription)")
-            setDownloadFailure(String(localized: "setup.whiskywine.error.blockedByNetwork"), reason: .networkBlocked)
+            setDownloadFailure(String(localized: "setup.anoRuntime.error.blockedByNetwork"), reason: .networkBlocked)
             return
         }
         setDownloadFailure(
             String(
-                localized: "setup.whiskywine.error.checksumMismatch",
+                localized: "setup.anoRuntime.error.checksumMismatch",
                 defaultValue: """
                 The downloaded Wine runtime failed its integrity check and was not installed. \
                 This usually means the download was corrupted. Please try again.

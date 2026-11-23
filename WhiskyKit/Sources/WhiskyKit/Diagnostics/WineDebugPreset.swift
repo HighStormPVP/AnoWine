@@ -58,13 +58,13 @@ public enum WineDebugPreset: String, Codable, Sendable, CaseIterable {
     public var displayName: String {
         switch self {
         case .normal:
-            String(localized: "diagnostics.wineDebug.normal")
+            String(localized: "diagnostics.anoDebug.normal")
         case .crash:
-            String(localized: "diagnostics.wineDebug.crash")
+            String(localized: "diagnostics.anoDebug.crash")
         case .dllLoad:
-            String(localized: "diagnostics.wineDebug.dllLoad")
+            String(localized: "diagnostics.anoDebug.dllLoad")
         case .verbose:
-            String(localized: "diagnostics.wineDebug.verbose")
+            String(localized: "diagnostics.anoDebug.verbose")
         }
     }
 
@@ -86,13 +86,13 @@ public enum WineDebugPreset: String, Codable, Sendable, CaseIterable {
     public var presetDescription: String {
         switch self {
         case .normal:
-            String(localized: "diagnostics.wineDebug.normal.description")
+            String(localized: "diagnostics.anoDebug.normal.description")
         case .crash:
-            String(localized: "diagnostics.wineDebug.crash.description")
+            String(localized: "diagnostics.anoDebug.crash.description")
         case .dllLoad:
-            String(localized: "diagnostics.wineDebug.dllLoad.description")
+            String(localized: "diagnostics.anoDebug.dllLoad.description")
         case .verbose:
-            String(localized: "diagnostics.wineDebug.verbose.description")
+            String(localized: "diagnostics.anoDebug.verbose.description")
         }
     }
 }

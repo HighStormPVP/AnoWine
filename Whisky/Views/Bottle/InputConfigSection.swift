@@ -77,8 +77,8 @@ struct InputConfigSection: View {
                     // Map macOS Cmd to Windows Ctrl inside Wine
                     Toggle("Map Command Key to Windows Ctrl", isOn: $bottle.settings.commandActsAsControl)
                         .help("""
-                        Sets LeftCommandIsCtrl/RightCommandIsCtrl in Wine's Mac \
-                        driver registry so Cmd+A/C/V/S register inside Wine apps \
+                        Sets LeftCommandIsCtrl/RightCommandIsCtrl in Ano's Mac \
+                        driver registry so Cmd+A/C/V/S register inside Ano apps \
                         as Ctrl+A/C/V/S.
                         """)
                         .onChange(of: bottle.settings.commandActsAsControl) { _, newValue in

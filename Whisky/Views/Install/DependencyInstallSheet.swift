@@ -224,7 +224,7 @@ extension DependencyInstallSheet {
         HStack(spacing: 8) {
             ProgressView()
                 .controlSize(.small)
-            Text("Running winetricks for \(definition.displayName)")
+            Text("Running ano-tricks for \(definition.displayName)")
                 .foregroundStyle(.secondary)
         }
 
@@ -303,7 +303,7 @@ extension DependencyInstallSheet {
             .foregroundStyle(.orange)
         case let .error(message):
             Label(
-                String(format: String(localized: "setup.whiskywine.error.installFailed.detail"), message),
+                String(format: String(localized: "setup.anoRuntime.error.installFailed.detail"), message),
                 systemImage: "xmark.circle.fill"
             )
             .foregroundStyle(.red)
@@ -404,11 +404,11 @@ extension DependencyInstallSheet {
         case .valid:
             String(localized: "dependency.install.preflight.healthy")
         case .missingUserProfile:
-            String(localized: "winetricks.error.missingUserProfile")
+            String(localized: "anoTricks.error.missingUserProfile")
         case .missingAppData:
-            String(localized: "winetricks.error.missingAppData")
+            String(localized: "anoTricks.error.missingAppData")
         case .corruptedPrefix:
-            String(localized: "winetricks.error.corruptedPrefix")
+            String(localized: "anoTricks.error.corruptedPrefix")
         }
     }
 

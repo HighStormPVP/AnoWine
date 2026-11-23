@@ -190,7 +190,7 @@ final class LocalizedCheckSummaryMoreTests: XCTestCase {
         let localized = try XCTUnwrap(WinetricksVerbCheck.localizedSummary(for: result))
 
         XCTAssertEqual(result.outcome, .alreadyConfigured)
-        XCTAssertEqual(localized, "troubleshooting.check.winetricks.allInstalled")
+        XCTAssertEqual(localized, "troubleshooting.check.anoTricks.allInstalled")
         assertCatalogKey(localized)
     }
 
@@ -204,7 +204,7 @@ final class LocalizedCheckSummaryMoreTests: XCTestCase {
         let localized = try XCTUnwrap(WinetricksVerbCheck.localizedSummary(for: result))
 
         XCTAssertEqual(result.outcome, .fail)
-        XCTAssertEqual(localized, "troubleshooting.check.winetricks.missing 2 d3dx9, dotnet48")
+        XCTAssertEqual(localized, "troubleshooting.check.anoTricks.missing 2 d3dx9, dotnet48")
         assertCatalogKey(localized)
         XCTAssertEqual(result.summary, "2 missing verb(s): d3dx9, dotnet48")
     }
@@ -214,7 +214,7 @@ final class LocalizedCheckSummaryMoreTests: XCTestCase {
 
         XCTAssertEqual(
             WinetricksVerbCheck.localizedSummary(for: result),
-            "troubleshooting.check.winetricks.missing 1 corefonts"
+            "troubleshooting.check.anoTricks.missing 1 corefonts"
         )
     }
 

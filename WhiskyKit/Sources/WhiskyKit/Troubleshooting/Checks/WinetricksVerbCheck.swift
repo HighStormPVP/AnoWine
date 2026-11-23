@@ -106,11 +106,11 @@ public struct WinetricksVerbCheck: TroubleshootingCheck {
     public static func localizedSummary(for result: CheckResult) -> String? {
         switch result.outcome {
         case .alreadyConfigured:
-            return String(localized: "troubleshooting.check.winetricks.allInstalled")
+            return String(localized: "troubleshooting.check.anoTricks.allInstalled")
         case .fail:
             guard let missing = result.evidence["missing"], !missing.isEmpty else { return nil }
             let count = missing.components(separatedBy: ", ").count
-            return String(localized: "troubleshooting.check.winetricks.missing \(count) \(missing)")
+            return String(localized: "troubleshooting.check.anoTricks.missing \(count) \(missing)")
         case .pass, .error, .unknown:
             return nil
         }

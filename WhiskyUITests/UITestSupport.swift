@@ -102,8 +102,8 @@ class WhiskyUITestCase: XCTestCase {
         )
         configRow.click()
         require(
-            app.staticTexts["Wine"],
-            "Wine section header in Bottle Configuration",
+            app.staticTexts["Ano"],
+            "Ano section header in Bottle Configuration",
             timeout: 5
         )
     }

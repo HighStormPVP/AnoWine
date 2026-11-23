@@ -53,7 +53,7 @@ struct NetworkConfigSection: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("config.network.proxy.udp")
                     Text("config.network.proxy.killswitch")
-                    Text("config.network.proxy.winetricks")
+                    Text("config.network.proxy.anoTricks")
                     status
                 }
                 .font(.caption)

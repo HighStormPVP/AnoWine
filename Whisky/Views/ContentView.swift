@@ -241,15 +241,15 @@ struct ContentView: View {
             let updateInfo = await task.value
             if updateInfo.0 {
                 let alert = NSAlert()
-                alert.messageText = String(localized: "update.whiskywine.title")
+                alert.messageText = String(localized: "update.anoRuntime.title")
                 alert.informativeText = String(
-                    format: String(localized: "update.whiskywine.description"),
+                    format: String(localized: "update.anoRuntime.description"),
                     String(WhiskyWineInstaller.whiskyWineVersion()
                         ?? SemanticVersion(0, 0, 0)),
                     String(updateInfo.1)
                 )
                 alert.alertStyle = .warning
-                alert.addButton(withTitle: String(localized: "update.whiskywine.update"))
+                alert.addButton(withTitle: String(localized: "update.anoRuntime.update"))
                 alert.addButton(withTitle: String(localized: "button.removeAlert.cancel"))
 
                 let response = alert.runModal()

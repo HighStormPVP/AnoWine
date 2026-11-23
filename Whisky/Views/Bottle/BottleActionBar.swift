@@ -66,7 +66,7 @@ struct BottleActionBar: View {
             }
             .glassButton()
             .accessibilityIdentifier("bottle.openTerminal")
-            Button("button.winetricks") {
+            Button("button.anoTricks") {
                 showWinetricksSheet.toggle()
             }
             .glassButton()

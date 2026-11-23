@@ -45,7 +45,7 @@ struct WineConfigSection: View {
     @State private var runtimeImplementsEnhancedSync = true
 
     var body: some View {
-        Section("config.title.wine", isExpanded: $isExpanded) {
+        Section("config.title.ano", isExpanded: $isExpanded) {
             SettingItemView(
                 title: "config.winVersion",
                 description: "config.winVersion.info",

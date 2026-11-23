@@ -154,7 +154,7 @@ final class AudioLocalizationTests: XCTestCase {
             let result = await WineAudioTestProbe(bottle: bottle, testExeURL: url).run()
             XCTAssertEqual(result.status, .skipped)
             assertCatalogKey(result.summary)
-            XCTAssertEqual(StringCatalog.stem(result.summary), "audio.probe.wineTest.unavailable")
+            XCTAssertEqual(StringCatalog.stem(result.summary), "audio.probe.anoTest.unavailable")
             XCTAssertEqual(result.evidence, ["WhiskyAudioTest.exe not found in app bundle"])
             XCTAssertTrue(result.findings.isEmpty)
         }
