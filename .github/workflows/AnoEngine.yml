@@ -117,6 +117,9 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa
         with:
           determinate: false
+      # libpsl's source is a .tar.lz, which tar reads through lzip.
+      - name: lzip
+        run: sudo apt-get install -y -q --no-install-recommends lzip
       - name: Collect
         env:
           ANO_ENGINE_VERSION: ${{ inputs.version }}

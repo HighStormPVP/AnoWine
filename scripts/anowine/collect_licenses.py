@@ -31,11 +31,12 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import time
 import urllib.request
 import zipfile
 
-LIKE_LICENSE = re.compile(r"(?i)^(licen[cs]e|copying|copyright|notice|authors|patents|unlicense|legal)")
+LIKE_LICENSE = re.compile(r"(?i)(licen[cs]e|copying|copyright|notice|authors|patents|legal)")
 NIX_EXPR = r"""
 let
   flake = builtins.getFlake "github:NixOS/nixpkgs/@REV@";
@@ -109,20 +110,32 @@ def raw_github(repo_url, commit, path):
 
 
 class Source:
-    """A source tree: a folder, or an archive whose paths are inside its single top folder."""
+    """A source tree: a folder, or an archive whose paths are inside its single top folder.
+
+    A license file that is a link (COPYING -> LICENSES/LGPL-2.1-or-later.txt) is
+    read through the link, as in a checkout. Archives Python cannot open (lzip,
+    zstd) go through tar(1)."""
 
     def __init__(self, path):
         self.path = path
         self.members = None
+        self.kind = "dir"
         if os.path.isdir(path):
             return
         if zipfile.is_zipfile(path):
+            self.kind = "zip"
             names = zipfile.ZipFile(path).namelist()
         else:
-            listing = subprocess.run(["tar", "-tf", path], capture_output=True, text=True, errors="replace")
-            if listing.returncode:
-                raise RuntimeError(f"cannot list {path}: {listing.stderr.strip()}")
-            names = listing.stdout.splitlines()
+            try:
+                self.archive = tarfile.open(path)
+                self.kind = "tarfile"
+                names = self.archive.getnames()
+            except (tarfile.TarError, OSError):
+                self.kind = "tar"
+                listing = subprocess.run(["tar", "-tf", path], capture_output=True, text=True, errors="replace")
+                if listing.returncode:
+                    raise RuntimeError(f"cannot list {path}: {listing.stderr.strip()}")
+                names = listing.stdout.splitlines()
         cleaned = []
         for name in names:
             short = name
@@ -151,7 +164,7 @@ class Source:
         return found
 
     def like_license(self):
-        return sorted(n for n in self.names() if n.count("/") <= 1 and LIKE_LICENSE.match(n.rsplit("/", 1)[-1]))
+        return sorted(n for n in self.names() if n.count("/") <= 1 and LIKE_LICENSE.search(n.rsplit("/", 1)[-1]))
 
     def copy(self, rel, dest):
         """True when rel is a regular, non-empty file of the source, now copied to dest."""
@@ -165,9 +178,18 @@ class Source:
             if rel not in self.members:
                 return False
             member = self.members[rel]
-            if zipfile.is_zipfile(self.path):
+            if self.kind == "zip":
                 with zipfile.ZipFile(self.path) as archive, open(dest, "wb") as out:
                     out.write(archive.read(member))
+            elif self.kind == "tarfile":
+                try:
+                    data = self.archive.extractfile(member)  # follows symbolic and hard links
+                except KeyError:
+                    return False
+                if data is None:
+                    return False
+                with open(dest, "wb") as out:
+                    shutil.copyfileobj(data, out)
             else:
                 with open(dest, "wb") as out:
                     if subprocess.run(["tar", "-xOf", self.path, member], stdout=out).returncode:
@@ -223,7 +245,8 @@ def nix_components(rows, rev, out, problems, facts_path):
         if name not in wanted:
             continue
         attr, _, fact = wanted[name]
-        said = spdx_of(fact.get("license"))
+        # No meta.license (the xorg libraries): nixpkgs asserts nothing.
+        said = spdx_of(fact.get("license")) or "NOASSERTION"
         if not os.path.exists(fact["src"]):
             continue
         try:
