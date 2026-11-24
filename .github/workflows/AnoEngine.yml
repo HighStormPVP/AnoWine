@@ -74,10 +74,40 @@ jobs:
           path: ${{ runner.temp }}/payloads
           if-no-files-found: error
 
+  # Plan 3c-5: the renamed tree and its checks (rename_sources.py, the
+  # patches/rename patches, the spawn-site scan, stale lengths) on Linux, so a
+  # tree that fails them never takes a Mac runner. The Mac build runs them again.
+  sources:
+    name: Renamed source (Linux)
+    if: inputs.engine_run == '' && !startsWith(inputs.version, '4.')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Rename and check
+        env:
+          ANO_ENGINE_VERSION: ${{ inputs.version }}
+          ANO_ENGINE_PHASES: fetch_sources apply_patches rename_sources
+        run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
+      - name: Upload the logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-sources-logs
+          path: |
+            ${{ runner.temp }}/ano-engine/build-info.txt
+            ${{ runner.temp }}/ano-engine/logs/
+          if-no-files-found: warn
+          retention-days: 14
+
   build:
     name: Build the engine
-    needs: payloads
-    if: inputs.engine_run == '' && !cancelled() && (needs.payloads.result == 'success' || needs.payloads.result == 'skipped')
+    needs: [payloads, sources]
+    if: >-
+      inputs.engine_run == '' && !cancelled()
+      && (needs.payloads.result == 'success' || needs.payloads.result == 'skipped')
+      && (needs.sources.result == 'success' || needs.sources.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 300
     steps:

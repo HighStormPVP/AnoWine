@@ -1,0 +1,8 @@
+# Every call that starts a program in the renamed engine source (Plan 3c-5, Task 1).
+# Checked by scripts/anowine/spawn_sites.py in build-engine.sh, right after patches/rename apply:
+# a site missing here, a drops-aliases site whose function calls no ano_env_*_aliases helper,
+# or a line here that no longer matches a site stops the build.
+# One per line: path<TAB>function<TAB>call<TAB>handling<TAB>reason
+#   drops-aliases   the function drops D3DMetal's old names first (patches/rename/0005 or 0006)
+#   before-aliases  runs before ano_env_set_aliases
+#   not-a-spawn     a definition, or Windows-side code

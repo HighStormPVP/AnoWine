@@ -15,6 +15,9 @@
 #   ANO_ENGINE_VERSION  major.minor.patch stamped into the version plist
 #   ANO_ENGINE_WORK     work folder (default $RUNNER_TEMP/ano-engine)
 #   ANO_PAYLOADS        5.x: build-payloads.sh's output (DXVK built from source)
+#   ANO_ENGINE_PHASES   only these phases, in this order (default: all). The
+#                       workflow's Linux job runs fetch_sources apply_patches
+#                       rename_sources: the renamed tree and its checks.
 # Writes <out-dir>/Libraries.tar.gz, Libraries.tar.gz.sha256, the version plist
 # (WhiskyWineVersion.plist, or AnoRuntimeVersion.plist from 5.0) and
 # build-info.txt. Logs go to <work>/logs.
@@ -120,7 +123,7 @@ INFO="$WORK/build-info.txt"
 # built it (the runner's temp folder) to keep any embedded path the same.
 SDL_TEMP=${RUNNER_TEMP:-$WORK}
 SDL2_PREFIX="$SDL_TEMP/sdl2-x86_64"
-NCPU=$(sysctl -n hw.logicalcpu)
+NCPU=$(sysctl -n hw.logicalcpu 2> /dev/null || nproc)
 CCACHE=""
 
 # info <text>: a line for the log and for build-info.txt.
@@ -243,9 +246,10 @@ apply_patches() {
 
 # ---------------------------------------------------------------------------
 # rename_sources (5.x): the owner's naming rule over the whole tree, then
-# Ano's own patches (written against the renamed tree), then the binary files
-# that ship: the fonts (fontTools) and pidgen's placeholder resource. Other
-# binary files with "wine" are test data (not built) or ICU's dictionary.
+# Ano's own patches (written against the renamed tree) and the checks of the
+# patched tree (spawn sites, stale lengths), then the binary files that ship:
+# the fonts (fontTools) and pidgen's placeholder resource. Other binary files
+# with "wine" are test data (not built) or ICU's dictionary.
 # ---------------------------------------------------------------------------
 rename_sources() {
   [ "$RENAME" = 1 ] || return 0
@@ -259,6 +263,16 @@ rename_sources() {
     git -C "$SRC" apply --verbose "$patch"
     info "rename patch: $(basename "$patch")"
   done
+  # Plan 3c-5: every call that starts a program is on spawn-sites.txt, and one
+  # that passes the environment on drops D3DMetal's old names first
+  # (patches/rename/0005 and 0006).
+  code=0
+  python3 "$HERE/spawn_sites.py" "$SRC" --sites "$HERE/spawn-sites.txt" > "$LOGS/spawn-sites.txt" 2>&1 || code=$?
+  if [ "$code" != 0 ]; then
+    cat "$LOGS/spawn-sites.txt" >&2
+    die "spawn_sites.py exit $code: a spawn call is not listed or not handled (see above)"
+  fi
+  info "rename: $(tail -n 1 "$LOGS/spawn-sites.txt")"
   # A literal that lost a letter must not keep its old length (0003 fixes the
   # real ones; length-known.txt lists the numbers that are not lengths).
   python3 "$HERE/check_lengths.py" "$SRC" --known "$HERE/length-known.txt" > "$LOGS/lengths.txt" \
@@ -1070,8 +1084,9 @@ package() {
   info "tarball: $(wc -c < "$OUT/Libraries.tar.gz" | tr -d ' ') bytes, sha256 $(cut -d' ' -f1 < "$OUT/Libraries.tar.gz.sha256")"
 }
 
-PHASES="check_host fetch_sources apply_patches rename_sources nix_inputs build_tools build_sdl2 configure_wine make_wine build_dxmt
-  fetch_payloads install_tree bundle_libraries build_shims write_version verify_tree smoke_test package"
+PHASES=${ANO_ENGINE_PHASES:-"check_host fetch_sources apply_patches rename_sources nix_inputs build_tools build_sdl2
+  configure_wine make_wine build_dxmt fetch_payloads install_tree bundle_libraries build_shims write_version verify_tree
+  smoke_test package"}
 
 total=$SECONDS
 for phase in $PHASES; do
