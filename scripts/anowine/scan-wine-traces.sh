@@ -123,6 +123,22 @@ SESSION_ENV=(ANOPREFIX="$P" ANOSERVER="$A/bin/ano-server" ANODEBUG=fixme-all GST
 TRICKS_ENV=(HOME="$HOME" ANOPREFIX="$P" ANO=ano-loader ANOSERVER="$A/bin/ano-server" PATH="$A/bin:/usr/bin:/bin")
 limit() { perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' "$@"; }  # seconds, command...
 engine() { env -i "${SESSION_ENV[@]}" "$@"; }
+phase() { echo "== $(date '+%H:%M:%S') $*"; }
+# The engine's processes now, for a wait that ran out. The pattern is read
+# from a file, so this grep's own command line is not an engine process's.
+printf '%s\n' "$A/" > "$RAW/engine-pattern"
+engine_processes() {
+  ps -axww -o pid=,ppid=,ucomm=,command= > "$RAW/ps-now.txt" 2> /dev/null || true
+  grep -F -f "$RAW/engine-pattern" "$RAW/ps-now.txt" | cut -c1-240 || true
+}
+server() {  # -k or -w: stop the bottle's server, or wait for it to exit (at most 120 s)
+  local code=0
+  limit 120 env -i "${SESSION_ENV[@]}" "$A/bin/ano-server" "$1" > /dev/null 2>&1 || code=$?
+  if [ "$code" = 142 ]; then
+    echo "   ano-server $1 still waiting after 120 s; the engine's processes:"
+    engine_processes
+  fi
+}
 
 CACHE_EXISTED=0
 [ ! -d "$HOME/.cache" ] || CACHE_EXISTED=1
@@ -133,7 +149,7 @@ cleanup() {
   set +e
   rm -f "$RAW/polling"
   [ -z "$POLLER" ] || wait "$POLLER" 2> /dev/null
-  engine "$A/bin/ano-server" -k > /dev/null 2>&1
+  limit 60 env -i "${SESSION_ENV[@]}" "$A/bin/ano-server" -k > /dev/null 2>&1
   if [ "$PLANT" = 1 ]; then
     rm -rf "$HOME/.cache/plantwine"
     [ "$CACHE_EXISTED" = 1 ] || rmdir "$HOME/.cache" 2> /dev/null
@@ -144,7 +160,7 @@ cleanup() {
 trap cleanup EXIT
 
 # ---- before -------------------------------------------------------------------
-echo "== before: launchd, lsappinfo, LaunchServices, defaults domains"
+phase "before: launchd, lsappinfo, LaunchServices, defaults domains"
 launchctl list > "$RAW/launchd-list-before.txt" 2> /dev/null || true
 launchctl print "gui/$UIDN" > "$RAW/launchd-gui-before.txt" 2> /dev/null || true
 lsappinfo list > "$RAW/lsappinfo-before.txt" 2> /dev/null || true
@@ -200,21 +216,23 @@ poll &
 POLLER=$!
 
 # ---- the session ----------------------------------------------------------------
-echo "== create a bottle (ano-boot --init)"
+phase "create a bottle (ano-boot --init)"
 code=0
-limit 900 env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" ano-boot --init > "$G/output/boot.txt" 2>&1 || code=$?
-engine "$A/bin/ano-server" -w > /dev/null 2>&1 || true
+limit 600 env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" ano-boot --init > "$G/output/boot.txt" 2>&1 || code=$?
 echo "   exit $code"
+server -w
 if [ "$code" != 0 ] || [ ! -f "$P/system.reg" ]; then
   tail -n 30 "$G/output/boot.txt" || true
-  harness "ano-boot --init exited $code$([ "$code" != 142 ] || echo ' (stopped after 900 s)'); no bottle"
+  engine_processes
+  harness "ano-boot --init exited $code$([ "$code" != 142 ] || echo ' (stopped after 600 s)'); no bottle"
 fi
 
 # One server for the rest of the session: on a CI runner a new one boots the
 # bottle again for every program.
-engine "$A/bin/ano-server" -p60
+server -k
+engine "$A/bin/ano-server" -p60 < /dev/null > /dev/null 2>&1
 
-echo "== a console program (cmd /c set)"
+phase "a console program (cmd /c set)"
 code=0
 limit 300 env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" cmd /c set > "$RAW/windows-env.crlf" \
   2> "$G/output/cmd-set.txt" || code=$?
@@ -223,7 +241,7 @@ echo "   exit $code, $(wc -l < "$G/windows-env.txt" | tr -d ' ') variables"
 grep -qi '^windir=' "$G/windows-env.txt" || problem "cmd /c set printed no Windows environment (exit $code)"
 
 if [ "$PLANT" = 1 ]; then
-  echo "== plant: PLANTWINE=1 in a console program's environment, ~/.cache/plantwine/x, a log line"
+  phase "plant: PLANTWINE=1 in a console program's environment, ~/.cache/plantwine/x, a log line"
   mkdir -p "$HOME/.cache/plantwine"
   : > "$HOME/.cache/plantwine/x"
   logger "plantwine"
@@ -237,7 +255,7 @@ fi
 
 gui_tool() {  # program, seconds: open it, then kill it by PID
   local tool=$1 secs=$2 pid t=0
-  echo "== $tool (open for ${secs} s)"
+  phase "$tool (open for ${secs} s)"
   env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" "$tool" > "$G/output/$tool.txt" 2>&1 &
   pid=$!
   while [ "$t" -lt "$secs" ] && kill -0 "$pid" 2> /dev/null; do sleep 1; t=$((t + 1)); done
@@ -253,30 +271,31 @@ gui_tool() {  # program, seconds: open it, then kill it by PID
 }
 for tool in ano-cfg regedit notepad; do gui_tool "$tool" 20; done
 
-echo "== ano-tricks win10"
+phase "ano-tricks win10"
 # The verb runs ano-server -w itself, so it waits out the persistent server.
-engine "$A/bin/ano-server" -k > /dev/null 2>&1 || true
-engine "$A/bin/ano-server" -w > /dev/null 2>&1 || true
-engine "$A/bin/ano-server" -p60
+server -k
+server -w
+engine "$A/bin/ano-server" -p60 < /dev/null > /dev/null 2>&1
 code=0
-limit 900 env -i "${TRICKS_ENV[@]}" /bin/bash "$TRICKS" -q win10 > "$G/output/ano-tricks-win10.txt" 2>&1 || code=$?
+limit 600 env -i "${TRICKS_ENV[@]}" /bin/bash "$TRICKS" -q win10 > "$G/output/ano-tricks-win10.txt" 2>&1 || code=$?
 echo "   exit $code"
 if [ "$code" != 0 ] || ! grep -qx win10 "$P/ano-tricks.log" 2> /dev/null; then
   tail -n 20 "$G/output/ano-tricks-win10.txt" || true
-  problem "ano-tricks win10 exited $code$([ "$code" != 142 ] || echo ' (stopped after 900 s)')" \
+  engine_processes
+  problem "ano-tricks win10 exited $code$([ "$code" != 142 ] || echo ' (stopped after 600 s)')" \
     "or is not in the bottle's ano-tricks.log"
 fi
 
-echo "== shut down"
-engine "$A/bin/ano-server" -k > /dev/null 2>&1 || true
-engine "$A/bin/ano-server" -w > /dev/null 2>&1 || true
+phase "shut down"
+server -k
+server -w
 sleep 3
 rm -f "$RAW/polling"
 wait "$POLLER" || true
 POLLER=
 
 # ---- captures -------------------------------------------------------------------
-echo "== captures"
+phase "captures"
 awk '{ $1 = ""; $2 = ""; sub(/^ +/, ""); print }' "$RAW/ps.txt" | sort -u > "$G/processes.txt"
 awk '{ $1 = ""; sub(/^ +/, ""); print }' "$RAW/ps-env.txt" | sort -u > "$G/environments.txt"
 awk 'FNR == NR { old[$1] = 1; next }
@@ -391,7 +410,7 @@ grep -qF "$LOGMARK start" "$G/syslog.txt" \
 cp "$P"/*.reg "$P/ano-tricks.log" "$OUT/bottle/" 2> /dev/null || true
 
 # ---- the judge ------------------------------------------------------------------
-echo "== the judge: wine_tokens.py gate bottle --gate"
+phase "the judge: wine_tokens.py gate bottle --gate"
 judge=0
 python3 "$HERE/wine_tokens.py" "$G" "$P" --allowlist "$HERE/wine-allowlist.txt" --out "$OUT/tokens.tsv" --gate \
   > "$OUT/judge.txt" 2>&1 || judge=$?
