@@ -7,8 +7,9 @@
 #          [--runtime <Libraries-dir> --netprobe <netprobe.exe>]
 # With --runtime, a Windows program also runs under the Ano runtime through the
 # ano-loader wrapper, as a proxied bottle's programs do. The runtime is engine
-# 5.x (Libraries/Ano, run with the ANO* variables) or runtime 4.x (Libraries/Wine,
-# upstream's WINE* variables); the interposer gets ANO_RUNTIME_DIR either way.
+# 5.x (Libraries/Ano, run with the ANO* variables); the interposer gets
+# ANO_RUNTIME_DIR. A runtime 4.x layout (Libraries/Wine) is refused: the app
+# that carries this proxy needs 5.x (Plan 3c-5).
 # Needs sudo for tcpdump (GitHub's macOS runners have it). macOS only.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -32,11 +33,15 @@ for f in "$XRAY" "$HELPER" "$LIB" "$NATIVE"; do
 done
 ENGINE="" BIN="" V=""
 if [ -n "$RUNTIME" ]; then
-  if [ -d "$RUNTIME/Ano" ]; then
-    ENGINE="$RUNTIME/Ano" V=ANO     # engine 5.x: the renamed engine's variables
-  else
-    ENGINE="$RUNTIME/Wine" V=WINE   # runtime 4.x: upstream's
+  if [ ! -d "$RUNTIME/Ano" ]; then
+    if [ -d "$RUNTIME/Wine" ]; then
+      echo "runtime 4.x layout (Libraries/Wine) is not supported: the proxy is tested on engine 5.x (Libraries/Ano)" >&2
+    else
+      echo "no engine in $RUNTIME (expected Libraries/Ano)" >&2
+    fi
+    exit 2
   fi
+  ENGINE="$RUNTIME/Ano" V=ANO       # engine 5.x: the renamed engine's variables
   BIN="$ENGINE/bin"
   [ -x "$BIN/ano-loader" ] && [ -x "$BIN/ano-server" ] || { echo "no ano-loader or ano-server in $BIN" >&2; exit 2; }
   echo "engine: $ENGINE ($V* variables)"
