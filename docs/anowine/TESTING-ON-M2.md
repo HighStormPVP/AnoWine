@@ -110,6 +110,50 @@ Apple's files cannot be changed. This lists them. It only reads files; it change
 If it says no Game Porting Toolkit has been imported, skip this section: it needs item 5 of
 the Ano-8 list first.
 
+## Ano 9: runtime 5.0.0
+
+Ano 9 runs on runtime 5.0.0. It is the same engine as 4.9.0, built by Ano and renamed so
+that nothing in it says "wine". Bottles made by Ano 6–8 can't be used with it, so you make
+new ones. Report each item as pass or fail, with what it asks you to send.
+
+**To go back to Ano 8:**
+1. Quit Ano.
+2. Delete the folder `~/Library/Application Support/io.github.highstormpvp.Ano/Libraries`.
+3. Install Ano 8 with its install line. It downloads 4.9.0 again.
+4. Import the Game Porting Toolkit again in **Settings**: Ano 9 renamed its copy.
+
+Your old bottles still work in Ano 8, because Ano 9 never changes them.
+
+1. **Install.** Install Ano 9 and open it. It offers runtime 5.0.0; accept. **Settings**
+   then shows engine 5.0.0. Send how long the download and setup took.
+2. **Old bottles.** Your Ano 8 bottles are still in the list, marked **Made with an earlier
+   Ano**. Clicking one shows "can't be used with this one" instead of opening it.
+   Before you start, note the Steam bottle folder's **Date Modified** in Finder; it is the
+   same afterwards.
+3. **Steam in a new bottle.** Create a new bottle, install Steam in it, sign in, and open
+   the store. Download a game and start it from Ano's **Library**. Watch for Steam or a
+   game's anti-cheat saying it doesn't support this system: they can look for Wine by
+   name, and the rename may change their answer. Send a screenshot of any such message.
+4. **D3DMetal** (if you imported the Game Porting Toolkit in Ano 8). Don't import it again.
+   Set a DirectX 12 game's graphics to D3DMetal and start it. It should start without a new
+   import, because Ano 9 carries the toolkit over. This item also tells us whether D3DMetal
+   still finds the two settings it reads by their old names. If the game fails here but
+   starts with **DXVK**, say so.
+5. **DXVK.** Start a game with graphics set to DXVK, a 32-bit game if you have one: 32-bit
+   DXVK crashes on GitHub's test Macs, so we can't check it there.
+6. **Proxy.** With Hiddify running, turn the proxy on for the Steam bottle. Steam signs in
+   and Hiddify shows its connections (the limits from Ano-6 still apply: no UDP yet).
+7. **Update setting.** If you turned off **Automatically check for Ano runtime updates** in
+   Ano 8 (**Settings**, **Updates**), it is still off in Ano 9.
+8. **Rosetta's cache.** Run `clean-rosetta-cache.sh` as in "Ano 9: clean old traces" below,
+   first without and then with `--delete`, and send both last lines.
+9. **No "wine" left.** With a game running, open Activity Monitor and search for `wine`:
+   nothing shows. In Terminal, `ps ax | grep -i wine` shows only its own `grep` line.
+   `ls ~/.cache/winetricks` says "No such file or directory" (unless you have Homebrew's
+   winetricks or the original Whisky installed, which share that folder).
+10. **D3DMetal names.** If you haven't sent `ano-gptk-wine-names.txt` yet, see "D3DMetal
+    names" above; the script is attached to the ano-test-9 release too.
+
 ## Ano 9: clean old traces
 
 On its first launch Ano 9 removes what Ano 6–8 left with the old runtime's names. One trace
