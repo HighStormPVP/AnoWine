@@ -12,6 +12,9 @@ name: Ano Engine
 # its own: every trace a session with the engine leaves on the Mac.
 # Dispatch only. A build holds a Mac runner for 1.5 to 2 hours; to work on
 # `check` alone, pass engine_run to reuse an earlier run's engine.
+# With `publish` (5.x only, and only with the owner's yes), job `publish`
+# releases the checked engine as v<version>, "Latest", once `check` and `gate`
+# are green on it.
 
 on:
   workflow_dispatch:
@@ -24,6 +27,10 @@ on:
         description: "Skip the build and compare the ano-engine artifact of this run ID"
         type: string
         default: ""
+      publish:
+        description: "Publish release v<version> from the checked engine (5.x only; needs the owner's yes)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -770,3 +777,60 @@ jobs:
             ${{ runner.temp }}/reports
             !${{ runner.temp }}/reports/*/gate/outside/**
           if-no-files-found: warn
+
+  # Plan 3c-5: the release. Only the engine this run checked (engine_run, or the
+  # one it built) is published, only when `check` and `gate` passed on it, and
+  # only if its notes name its digest and its own plist names the version.
+  publish:
+    name: Publish release v${{ inputs.version }}
+    needs: [check, gate]
+    if: >-
+      always() && inputs.publish && !startsWith(inputs.version, '4.')
+      && needs.check.result == 'success' && needs.gate.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: The checked engine
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-engine
+          path: ${{ runner.temp }}/out
+          run-id: ${{ inputs.engine_run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Its digest, version and notes
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/out"
+          sha256sum -c Libraries.tar.gz.sha256
+          sha=$(sha256sum Libraries.tar.gz | cut -d' ' -f1)
+          notes="$GITHUB_WORKSPACE/docs/anowine/runtime-$VERSION-notes.md"
+          [ -f "$notes" ] || { echo "::error::no release notes at docs/anowine/runtime-$VERSION-notes.md"; exit 1; }
+          grep -q "$sha" "$notes" || { echo "::error::the notes do not name this engine's sha256 $sha"; exit 1; }
+          mkdir plist
+          tar -xzf Libraries.tar.gz -C plist --wildcards '*AnoRuntimeVersion.plist'
+          got=$(python3 -c 'import plistlib, sys; v = plistlib.load(open(sys.argv[1], "rb"))["version"]; print("%d.%d.%d" % (v["major"], v["minor"], v["patch"]))' "$(find plist -name AnoRuntimeVersion.plist | head -n 1)")
+          [ "$got" = "$VERSION" ] || { echo "::error::the engine says $got, not $VERSION"; exit 1; }
+          echo "v$VERSION: sha256 $sha"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::release v$VERSION already exists"; exit 1
+          fi
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --title "Ano runtime $VERSION" \
+            --notes-file "docs/anowine/runtime-$VERSION-notes.md" \
+            --latest \
+            "$RUNNER_TEMP/out/Libraries.tar.gz"
