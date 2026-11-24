@@ -53,11 +53,20 @@ trap 'echo "::error::scan-wine-traces.sh: line $LINENO: exit $?"; exit 2' ERR
 USAGE="usage: scan-wine-traces.sh <Libraries> <ano-tricks> <report-dir> [--app <Ano.app>] [--plant]"
 
 # A clean environment for everything this script starts. Only the CI runner's
-# work root and tool cache are passed on, to be left out of the file capture.
+# folders are passed on, to be left out of the file capture: its work root,
+# its tool cache and its installation (where its logs, _diag, grow while it
+# runs; the folder that holds bin/Runner.Worker, or the one above when that
+# is the runner's "cached" copy).
 if [ "${ANO_GATE_CLEAN:-}" != 1 ]; then
   runner_dirs=
   [ -z "${RUNNER_WORKSPACE:-}" ] || runner_dirs="$runner_dirs:$(dirname "$RUNNER_WORKSPACE")"
   [ -z "${RUNNER_TOOL_CACHE:-}" ] || runner_dirs="$runner_dirs:$RUNNER_TOOL_CACHE"
+  worker=$(ps -axo comm= | grep -m 1 '/bin/Runner\.Worker$' || true)
+  if [ -n "$worker" ]; then
+    install=$(dirname "$(dirname "$worker")")
+    [ "$(basename "$install")" != cached ] || install=$(dirname "$install")
+    runner_dirs="$runner_dirs:$install"
+  fi
   me=$(id -un)
   exec env -i ANO_GATE_CLEAN=1 ANO_GATE_RUNNER_DIRS="${runner_dirs#:}" HOME="$HOME" USER="$me" LOGNAME="$me" \
     PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin LC_ALL=C /bin/bash "$0" "$@"
@@ -290,6 +299,10 @@ phase "shut down"
 server -k
 server -w
 sleep 3
+# The end of the session: a file dated later (bazel dates its install files
+# years ahead) was not written by it.
+END=$RAW/end-marker
+touch "$END"
 rm -f "$RAW/polling"
 wait "$POLLER" || true
 POLLER=
@@ -350,9 +363,15 @@ while IFS= read -r domain; do
   defaults read "$domain" > "$G/defaults/$domain.txt" 2>&1 || true
 done < "$G/defaults-domains.txt"
 
-# Files created or changed outside the bottle. A folder counts when it was
-# created after the start; a file or link when it was created or changed.
-prune=(-path "$OUT" -o -path "$P")
+# Files created or changed outside the bottle during the session: a folder
+# counts when it was created, a file or link when it was created or changed.
+# Left out: the report, the bottle (judged as a whole), the CI runner's own
+# folders, and other apps' sandbox containers, which macOS lets only their
+# app write (since macOS 14 another program needs the user's consent even to
+# read them); Ano's own containers stay in.
+prune=(-path "$OUT" -o -path "$P"
+  -o \( -path "$HOME/Library/Containers/*" ! -path "$HOME/Library/Containers/io.github.highstormpvp.Ano*" \)
+  -o \( -path "$HOME/Library/Group Containers/*" ! -path "$HOME/Library/Group Containers/*io.github.highstormpvp.Ano*" \))
 IFS=: read -r -a runner_dirs <<< "${ANO_GATE_RUNNER_DIRS:-}"
 for d in ${runner_dirs[@]+"${runner_dirs[@]}"}; do
   if [ -d "$d" ]; then prune+=(-o -path "$(cd "$d" && pwd -P)"); fi
@@ -363,8 +382,8 @@ done
 capture_outside() {  # label, root
   local label=$1 root=$2 f rel dest size
   find "$root" -xdev \( "${prune[@]}" \) -prune -o \
-    \( \( -type d -newerBm "$MARK" \) -o \( ! -type d -newer "$MARK" \) \) -print 2> /dev/null \
-    | LC_ALL=C sort > "$RAW/outside-$label.txt" || true
+    \( \( -type d -newerBm "$MARK" ! -newerBm "$END" \) -o \( ! -type d -newer "$MARK" ! -newer "$END" \) \) \
+    -print 2> /dev/null | LC_ALL=C sort > "$RAW/outside-$label.txt" || true
   while IFS= read -r f; do
     [ "$f" != "$root" ] || continue
     echo "$f" >> "$G/outside-paths.txt"
@@ -437,6 +456,49 @@ else
   verdict="fail: tokens not on the allowlist (exit 1)"
 fi
 count() { if [ -e "$1" ]; then wc -l < "$1" | tr -d ' '; else echo "-"; fi; }
+# Where each token the judge did not allow was seen: every file (with the
+# judge's own inventory, so allowlisted phrases are blanked as it blanks
+# them), and a few lines of context from the captures.
+where() {  # tokens.tsv
+  limit 600 python3 - "$HERE" "$1" "$HERE/wine-allowlist.txt" "$G" "$P" << 'PY'
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import wine_tokens as wt
+
+tsv, allowlist, roots = sys.argv[2], Path(sys.argv[3]), [Path(r) for r in sys.argv[4:]]
+allow = wt.load_allowlist(allowlist)
+phrases = [t for t in allow if wt.is_phrase(t)]
+rows = [line.split("\t") for line in Path(tsv).read_text(encoding="utf-8").splitlines()[1:]]
+hits = [row for row in rows if not row[1].startswith("allowlisted")]
+inventory = wt._Inventory(phrases=phrases)
+for root in roots:
+    inventory.scan(root)
+gate = roots[0]
+for token, cls, count, files, example in hits:
+    print(f"### {token}\n\n{count} occurrences in {files} files ({cls})\n")
+    seen = sorted(inventory.files.get(token, ()))
+    for where in seen[:15]:
+        print(f"- {where}")
+    if len(seen) > 15:
+        print(f"- ... and {len(seen) - 15} more")
+    shown = 0
+    for where in seen:
+        if shown >= 4 or not where.startswith(gate.name + "/"):
+            continue
+        path = gate.parent / where
+        if not path.is_file() or path.is_symlink():
+            continue
+        data = wt._blank(path.read_bytes(), phrases)
+        at = data.find(token.encode())
+        if at < 0:
+            continue
+        text = data[max(0, at - 100):at + len(token) + 100].decode("utf-8", "replace")
+        print("    " + "".join(c if c.isprintable() else " " for c in text))
+        shown += 1
+    print()
+PY
+}
 {
   echo "# Mac-state gate"
   echo
@@ -463,19 +525,11 @@ count() { if [ -e "$1" ]; then wc -l < "$1" | tr -d ' '; else echo "-"; fi; }
   echo
   echo "## Tokens not on the allowlist"
   echo
-  awk -F'\t' 'NR > 1 && $2 !~ /^allowlisted/' "$OUT/tokens.tsv" 2> /dev/null > "$RAW/hits.tsv" || true
-  [ -s "$RAW/hits.tsv" ] || echo "none"
-  while IFS=$'\t' read -r token class n files example; do
-    echo "### $token"
-    echo
-    echo "$n occurrences in $files files ($class); first in $example"
-    echo
-    { find "$G" "$P" -name "*$token*" 2> /dev/null || true; } | head -n 10 | sed "s#^$OUT/##; s#^$P#bottle#; s/^/- name: /" || true
-    { grep -rlaF -- "$token" "$G" "$P" 2> /dev/null || true; } | head -n 10 \
-      | sed "s#^$OUT/##; s#^$P#bottle#; s/^/- in: /" || true
-    { grep -rhaoE -- ".{0,80}$token.{0,80}" "$G" 2> /dev/null || true; } | head -n 5 | sed 's/^/    /' || true
-    echo
-  done < "$RAW/hits.tsv"
+  if [ "$judge" = 0 ]; then
+    echo "none"
+  else
+    where "$OUT/tokens.tsv" || echo "(could not list where: see tokens.tsv)"
+  fi
 } > "$OUT/traces.md"
 echo "verdict: $verdict"
 

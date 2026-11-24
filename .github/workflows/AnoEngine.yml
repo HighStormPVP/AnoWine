@@ -705,10 +705,15 @@ jobs:
           path: ${{ runner.temp }}/tokens.tsv
           if-no-files-found: warn
 
+      # The gate's copies of the files a session left (gate/outside) keep their
+      # names, which an artifact may refuse (a colon); gate/outside-paths.txt
+      # names every one.
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: engine-compare
-          path: ${{ runner.temp }}/reports
+          path: |
+            ${{ runner.temp }}/reports
+            !${{ runner.temp }}/reports/*/gate/outside/**
           if-no-files-found: warn
