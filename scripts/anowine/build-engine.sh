@@ -15,9 +15,12 @@
 #   ANO_ENGINE_VERSION  major.minor.patch stamped into the version plist
 #   ANO_ENGINE_WORK     work folder (default $RUNNER_TEMP/ano-engine)
 #   ANO_PAYLOADS        5.x: build-payloads.sh's output (DXVK built from source)
+#   ANO_LICENSES        5.x: collect_licenses's output (the license texts of
+#                       licenses.txt); without it write_licenses collects them
 #   ANO_ENGINE_PHASES   only these phases, in this order (default: all). The
-#                       workflow's Linux job runs fetch_sources apply_patches
-#                       rename_sources: the renamed tree and its checks.
+#                       workflow's Linux jobs run fetch_sources apply_patches
+#                       rename_sources (the renamed tree and its checks) and
+#                       collect_licenses.
 # Writes <out-dir>/Libraries.tar.gz, Libraries.tar.gz.sha256, the version plist
 # (WhiskyWineVersion.plist, or AnoRuntimeVersion.plist from 5.0) and
 # build-info.txt. Logs go to <work>/logs.
@@ -43,6 +46,7 @@ GECKO_VERSION=2.47.4
 GECKO_X86_SHA=2cfc8d5c948602e21eff8a78613e1826f2d033df9672cace87fed56e8310afb6
 GECKO_X64_SHA=fd88fc7e537d058d7a8abf0c1ebc90c574892a466de86706a26d254710a82814
 SDL2_VERSION=2.32.10
+SDL2_URL=https://github.com/libsdl-org/SDL/releases/download/release-$SDL2_VERSION/SDL2-$SDL2_VERSION.tar.gz
 SDL2_SHA=5f5993c530f084535c65a6879e9b26ad441169b3e25d789d83287040a9ca5165
 DXVK_VERSION=1.10.3
 DXVK_MAC_URL=https://github.com/Gcenx/DXVK-macOS/releases/download/v1.10.3-20230507-repack/dxvk-macOS-async-v1.10.3-20230507-repack.tar.gz
@@ -358,8 +362,7 @@ build_tools() {
 build_sdl2() {
   local tarball="$SDL_TEMP/SDL2-$SDL2_VERSION.tar.gz" src="$SDL_TEMP/SDL2-$SDL2_VERSION"
   local build="$SDL_TEMP/sdl2-build"
-  fetch "https://github.com/libsdl-org/SDL/releases/download/release-$SDL2_VERSION/SDL2-$SDL2_VERSION.tar.gz" \
-    "$tarball" "$SDL2_SHA"
+  fetch "$SDL2_URL" "$tarball" "$SDL2_SHA"
   rm -rf "$src" "$build" "$SDL2_PREFIX"
   tar -xzf "$tarball" -C "$SDL_TEMP"
   logged sdl2-configure cmake -S "$src" -B "$build" -DCMAKE_BUILD_TYPE=Release \
@@ -491,19 +494,7 @@ install_ano_layout() {
   rm -f "$TOP/bin/ano"
   ln -s "../lib/$MOD/x86_64-unix/$LOADER" "$TOP/bin/ano-loader"
   [ -x "$TOP/bin/$SERVER" ] || die "no $SERVER in $TOP/bin"
-  # The LGPL notice. Its only "wine" words are the license phrase and the repo
-  # URL, both on the gate's allowlist.
-  cat > "$TOP/share/$MOD/NOTICES" << EOF
-Ano engine $VERSION
-
-This engine is a modified copy of software by the Wine project authors,
-with CrossOver's macOS changes. It is distributed under the GNU Lesser
-General Public License, version 2.1 or (at your option) any later version.
-Ano renamed its files, programs and settings and changed how it is built.
-
-The source of this engine and the scripts that build it:
-https://github.com/HighStormPVP/AnoWine
-EOF
+  # share/ano/NOTICES and share/ano/licenses: write_licenses.
   # Plan 3c-2: DXVK, renamed and built from source on Linux (build-payloads.sh).
   [ -d "${ANO_PAYLOADS:-}/DXVK" ] || die "no DXVK in ANO_PAYLOADS='${ANO_PAYLOADS:-}' (run build-payloads.sh)"
   mkdir -p Libraries/DXVK
@@ -845,6 +836,107 @@ write_version() {
   info "version: $VERSION"
 }
 
+# manifest_lines: the component lines of licenses.txt (Plan 3c-5).
+manifest_lines() { grep -vE '^[[:space:]]*(#|$)' "$HERE/licenses.txt"; }
+
+# license_pins: the URLs licenses.txt may name as url: sources, with their pins.
+license_pins() {
+  printf '%s\n' "$DXMT_GIT=git:$DXMT_COMMIT" "$LLVM_GIT=git:$LLVM_COMMIT" \
+    "$MOLTENVK_URL=tar:$MOLTENVK_SHA" "$SDL2_URL=tar:$SDL2_SHA"
+}
+
+# ---------------------------------------------------------------------------
+# collect_licenses (5.x): each component's license files (licenses.txt), word
+# for word from its source, in <work>/licenses/<component>/<path>. Needs nix
+# (the nixpkgs libraries' sources); the workflow runs it on Linux, so a
+# manifest that no longer matches nixpkgs stops before a Mac runner is taken.
+# ---------------------------------------------------------------------------
+collect_licenses() {
+  [ "$RENAME" = 1 ] || return 0
+  local pin args=()
+  while read -r pin; do args+=(--pin "$pin"); done < <(license_pins)
+  rm -rf "$WORK/licenses"
+  python3 "$HERE/collect_licenses.py" --manifest "$HERE/licenses.txt" --out "$WORK/licenses" \
+    --cache "$WORK/license-sources" --nixpkgs "$NIXPKGS_REV" --winecx "$WINECX_URL@$WINECX_COMMIT" \
+    --facts "$LOGS/license-facts.tsv" "${args[@]}" > "$LOGS/collect-licenses.log" 2>&1 \
+    || { grep -v '^fact' "$LOGS/collect-licenses.log" >&2; die "licenses.txt does not match its sources (see above)"; }
+  info "$(tail -n 1 "$LOGS/collect-licenses.log")"
+}
+
+# write_notices: NOTICES, with a row for each component of licenses.txt. No
+# "wine" outside the gate's allowlist: the engine's source is named by its pin.
+write_notices() {
+  local name version spdx source files covers modified where pin
+  cat << EOF
+Ano engine $VERSION
+
+This engine is a modified copy of software by the Wine project authors,
+with CrossOver's macOS changes. It is distributed under the GNU Lesser
+General Public License, version 2.1 or (at your option) any later version.
+Ano renamed its files, programs and settings and changed how it is built.
+
+The engine and everything it carries are listed below. The license texts of
+each are in licenses/<component>/, word for word as its source has them.
+"nixpkgs <attribute>" is that attribute of github.com/NixOS/nixpkgs at
+$NIXPKGS_REV, for x86_64-darwin.
+
+Component | Version | License | Source | Changed by Ano
+--- | --- | --- | --- | ---
+EOF
+  while IFS=$'\t' read -r name version spdx source files covers modified; do
+    case $source in
+      winecx) where="the engine's source, pinned in build-engine.sh" ;;
+      recipe) where="upstream's recipe files, pinned in build-engine.sh" ;;
+      nix:*) where="nixpkgs ${source#nix:}" ;;
+      payload:*) where="built by build-payloads.sh" ;;
+      url:*)
+        where=${source#url:}
+        pin=$(license_pins | grep -F "$where=" | head -n 1 || true)
+        case $pin in *=git:*) where="$where at ${pin##*=git:}" ;; esac ;;
+      *) die "licenses.txt: $name has an unknown source $source" ;;
+    esac
+    echo "$name | $version | $spdx | $where | $modified"
+  done < <(manifest_lines)
+  cat << EOF
+
+The source of this engine and the scripts that build it (build-engine.sh,
+build-payloads.sh and the pins in them):
+https://github.com/HighStormPVP/AnoWine
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# write_licenses (5.x): share/ano/licenses and NOTICES. The texts come from
+# collect_licenses (the workflow's Linux job, through ANO_LICENSES; run here
+# without it) and, for the payloads, from build-payloads.sh. Then every file
+# of the runtime must belong to a component whose texts are there.
+# ---------------------------------------------------------------------------
+write_licenses() {
+  [ "$RENAME" = 1 ] || return 0
+  local dest=$TOP/share/$MOD/licenses from=${ANO_LICENSES:-} name version spdx source files covers modified file
+  if [ -z "$from" ]; then
+    collect_licenses
+    from=$WORK/licenses
+  fi
+  [ -d "$from" ] || die "no license texts in '$from' (ANO_LICENSES: the workflow's License texts job)"
+  rm -rf "$dest"
+  mkdir -p "$dest"
+  cp -R "$from/." "$dest/"
+  while IFS=$'\t' read -r name version spdx source files covers modified; do
+    case $source in payload:*) ;; *) continue ;; esac
+    for file in ${files//,/ }; do
+      [ -s "${ANO_PAYLOADS:-}/${source#payload:}/$file" ] \
+        || die "no ${source#payload:}/$file in ANO_PAYLOADS='${ANO_PAYLOADS:-}' for $name (build-payloads.sh)"
+      mkdir -p "$(dirname "$dest/$name/$file")"
+      cp "$ANO_PAYLOADS/${source#payload:}/$file" "$dest/$name/$file"
+    done
+  done < <(manifest_lines)
+  write_notices > "$TOP/share/$MOD/NOTICES"
+  bash "$HERE/check-licenses.sh" Libraries > "$LOGS/check-licenses.log" 2>&1 \
+    || { cat "$LOGS/check-licenses.log" >&2; die "the runtime does not carry every component's license (see above)"; }
+  info "$(tail -n 1 "$LOGS/check-licenses.log")"
+}
+
 # ---------------------------------------------------------------------------
 # verify_tree: refuse a tree that would not work on someone else's Mac.
 # ---------------------------------------------------------------------------
@@ -1085,8 +1177,8 @@ package() {
 }
 
 PHASES=${ANO_ENGINE_PHASES:-"check_host fetch_sources apply_patches rename_sources nix_inputs build_tools build_sdl2
-  configure_wine make_wine build_dxmt fetch_payloads install_tree bundle_libraries build_shims write_version verify_tree
-  smoke_test package"}
+  configure_wine make_wine build_dxmt fetch_payloads install_tree bundle_libraries build_shims write_version
+  write_licenses verify_tree smoke_test package"}
 
 total=$SECONDS
 for phase in $PHASES; do

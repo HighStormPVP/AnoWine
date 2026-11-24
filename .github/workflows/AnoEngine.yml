@@ -101,13 +101,52 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # Plan 3c-5: each component's license texts, word for word from its source
+  # (scripts/anowine/licenses.txt; collect_licenses.py). On Linux, so a
+  # manifest that no longer matches nixpkgs never takes a Mac runner; the
+  # build ships what this job collects.
+  licenses:
+    name: License texts (Linux)
+    if: inputs.engine_run == '' && !startsWith(inputs.version, '4.')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Nix
+        uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa
+        with:
+          determinate: false
+      - name: Collect
+        env:
+          ANO_ENGINE_VERSION: ${{ inputs.version }}
+          ANO_ENGINE_PHASES: collect_licenses
+        run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
+      - name: Upload the license texts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-licenses
+          path: ${{ runner.temp }}/ano-engine/licenses
+          if-no-files-found: error
+      - name: Upload the logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ano-licenses-logs
+          path: |
+            ${{ runner.temp }}/ano-engine/build-info.txt
+            ${{ runner.temp }}/ano-engine/logs/
+          if-no-files-found: warn
+          retention-days: 14
+
   build:
     name: Build the engine
-    needs: [payloads, sources]
+    needs: [payloads, sources, licenses]
     if: >-
       inputs.engine_run == '' && !cancelled()
       && (needs.payloads.result == 'success' || needs.payloads.result == 'skipped')
       && (needs.sources.result == 'success' || needs.sources.result == 'skipped')
+      && (needs.licenses.result == 'success' || needs.licenses.result == 'skipped')
     runs-on: macos-15
     timeout-minutes: 300
     steps:
@@ -181,6 +220,13 @@ jobs:
           name: ano-payloads
           path: ${{ runner.temp }}/payloads
 
+      - name: License texts
+        if: "!startsWith(inputs.version, '4.')"
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-licenses
+          path: ${{ runner.temp }}/licenses
+
       # Plan 3c-2: DXMT builds with LLVM 15, about 25 minutes cold. Its key is the
       # pin line in build-engine.sh; saved as soon as it exists, whatever follows.
       - name: LLVM key
@@ -199,6 +245,7 @@ jobs:
         env:
           ANO_ENGINE_VERSION: ${{ inputs.version }}
           ANO_PAYLOADS: ${{ runner.temp }}/payloads
+          ANO_LICENSES: ${{ runner.temp }}/licenses
           ANO_LLVM_DIR: ${{ runner.temp }}/llvm-15
         run: scripts/anowine/build-engine.sh "$RUNNER_TEMP/out"
 

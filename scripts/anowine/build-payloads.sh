@@ -9,6 +9,8 @@
 #   DXVK/x32/dxgi.dll                     upstream DXVK 1.10.3: the repack has no
 #                                         dxgi, and 32-bit bottles need DXVK's
 #   mono/ano-mono-11.3.0                  wine-mono, renamed in place
+#   licenses/{dxvk-macos,dxvk,mono}/      their license texts, word for word from
+#                                         their sources (scripts/anowine/licenses.txt)
 #
 # Usage: build-payloads.sh <out-dir>
 # Needs (Ubuntu 24.04): git, python3, meson, ninja, mingw-w64 (x86_64 and i686
@@ -28,6 +30,9 @@ DXVK_UP_COMMIT=e4fd5e9e8d335e8a2c0814829207cbd421f7e40e    # v1.10.3
 MONO_VERSION=11.3.0
 MONO_SHA=54a1b0111c3fe4b785eae688af94d27e64995707ad648b6fee8000381b80d298
 MONO_URL=https://dl.winehq.org/wine/wine-mono/$MONO_VERSION/wine-mono-$MONO_VERSION-x86.tar.xz
+# Its source, for its license (the binary tarball carries none).
+MONO_GIT=https://github.com/wine-mono/wine-mono.git
+MONO_COMMIT=17dd911a3ea04f21d7e4a8dcbff580ad520607eb   # tag wine-mono-11.3.0
 
 [ -n "${1:-}" ] || die "usage: build-payloads.sh <out-dir>"
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -116,6 +121,21 @@ mkdir -p "$OUT/mono"
 mv "$WORK/mono/ano-mono-$MONO_VERSION" "$OUT/mono/"
 info "mono: $(head -n 2 "$WORK/mono-rename.txt" | tr '\n' ' ')$(grep -c 'renamed in place' "$WORK/mono-rename.txt") PE files in place"
 grep -E 'table |cabinet ' "$WORK/mono-rename.txt" | sed 's/^.*: /mono: /' | tee -a "$INFO"
+
+# Plan 3c-5: each part's license, word for word from its source at its pin
+# (git show reads the commit, not the renamed tree). build-engine.sh's
+# write_licenses ships them (licenses.txt: payload:licenses/<component>).
+rm -rf "$OUT/licenses"
+mkdir -p "$OUT/licenses/dxvk-macos" "$OUT/licenses/dxvk" "$OUT/licenses/mono"
+git -C "$WORK/dxvk-macos" show "$DXVK_MAC_COMMIT:LICENSE" > "$OUT/licenses/dxvk-macos/LICENSE"
+git -C "$WORK/dxvk" show "$DXVK_UP_COMMIT:LICENSE" > "$OUT/licenses/dxvk/LICENSE"
+mono_repo=${MONO_GIT#https://github.com/}
+curl -fsSL --retry 3 -o "$OUT/licenses/mono/COPYING" \
+  "https://raw.githubusercontent.com/${mono_repo%.git}/$MONO_COMMIT/COPYING"
+for file in dxvk-macos/LICENSE dxvk/LICENSE mono/COPYING; do
+  [ -s "$OUT/licenses/$file" ] || die "empty license text licenses/$file"
+done
+info "licenses: $(cd "$OUT/licenses" && find . -type f | sort | tr '\n' ' ')"
 
 # Nothing that says wine may leave this script (the engine's gate checks again).
 for part in DXVK mono; do
