@@ -373,6 +373,25 @@ jobs:
         if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
         run: scripts/anowine/check-licenses.sh "$RUNNER_TEMP/ours/Libraries"
 
+      # Plan 3c-5, Task 1: ntdll.so exports the helpers that drop D3DMetal's
+      # old names (patches/rename/0006), the printing, NTLM and smbpasswd
+      # helpers' libraries take them from it, and the build's spawn-site scan
+      # passed.
+      - name: Alias helpers in the unix libraries
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        run: |
+          U="$RUNNER_TEMP/ours/Libraries/Ano/lib/ano/x86_64-unix"
+          exported=$(nm -gU "$U/ntdll.so")
+          for symbol in _ano_env_without_aliases _ano_env_unset_aliases; do
+            grep -E " T $symbol\$" <<< "$exported" || { echo "::error::ntdll.so does not export $symbol"; exit 1; }
+          done
+          for lib in localspl msv1_0 netapi32; do
+            echo "$lib.so:"
+            nm -m "$U/$lib.so" | grep -F _ano_env_ || { echo "::error::$lib.so does not use the helpers"; exit 1; }
+          done
+          grep -F 'spawn sites: ' "$RUNNER_TEMP/ours-download/build-info.txt" \
+            || { echo "::error::build-info.txt has no spawn-site scan"; exit 1; }
+
       # Exit 0: reproduced. Exit 2: equal only by interface; every such file
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
       # records each in spikes/REPORT.md). Exit 1: a real difference.

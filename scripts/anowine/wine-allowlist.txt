@@ -1025,3 +1025,13 @@ UnsupportedQueryViewInEntityContainerMapping	not-wine	mono System.Data.Entity: V
 ifwinexist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
 ifWinExist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
 a modified copy of Winetricks 20260125	license	the LGPL 2.1 section 2(b) notice at the top of Libraries/ano-tricks, naming the work it modifies (make_ano_tricks.py)
+
+# license: the license texts the runtime ships word for word (Plan 3c-5, licenses.txt), in
+# Libraries/Ano/share/ano/licenses; each phrase is one line of the file its reason names.
+Wine is available thanks to the work of	license	the first line of the engine's AUTHORS (licenses/engine/AUTHORS), the list its LICENSE points to
+Wine is free software; you can redistribute it	license	the engine's LICENSE (licenses/engine/LICENSE), the LGPL grant
+Wine imports code from a number of third-party projects. This file	license	the engine's third-party notices (licenses/engine/NOTICES.md), first paragraph
+Wine until release 20020228	license	a section title of the engine's third-party notices (licenses/engine/NOTICES.md): the code still under the old license
+nil@wineasy.se	license	an author's e-mail address in mpg123's AUTHORS (licenses/engine/libs/mpg123/AUTHORS), not about Wine
+Wine Mono contains code from several different projects, each of which has its own licensing.	license	the first line of mono's COPYING (licenses/mono/COPYING)
+That code is not used in the Wine Mono build.	license	a sentence of mono's COPYING (licenses/mono/COPYING), on code it leaves out
