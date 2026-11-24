@@ -374,9 +374,11 @@ jobs:
         run: scripts/anowine/check-licenses.sh "$RUNNER_TEMP/ours/Libraries"
 
       # Plan 3c-5, Task 1: ntdll.so exports the helpers that drop D3DMetal's
-      # old names (patches/rename/0006), the printing, NTLM and smbpasswd
-      # helpers' libraries take them from it, and the build's spawn-site scan
-      # passed.
+      # old names (patches/rename/0006); the printing, NTLM and smbpasswd
+      # helpers' libraries take them from it wherever a spawn call is compiled
+      # in (--without-cups leaves localspl.so only its forked print command,
+      # and netapi32.so has no smbpasswd without samba's libnetapi); and the
+      # build's spawn-site scan passed.
       - name: Alias helpers in the unix libraries
         if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
         run: |
@@ -385,12 +387,22 @@ jobs:
           for symbol in _ano_env_without_aliases _ano_env_unset_aliases; do
             grep -E " T $symbol\$" <<< "$exported" || { echo "::error::ntdll.so does not export $symbol"; exit 1; }
           done
+          fail=0
           for lib in localspl msv1_0 netapi32; do
-            echo "$lib.so:"
-            nm -m "$U/$lib.so" | grep -F _ano_env_ || { echo "::error::$lib.so does not use the helpers"; exit 1; }
+            undefined=$(nm -u "$U/$lib.so")
+            spawns=$(grep -E '^_(execl|execle|execlp|execv|execve|execvp|execvpe|fexecve|posix_spawnp?|system|popen)$' \
+              <<< "$undefined" | tr '\n' ' ' || true)
+            helpers=$(grep -E '^_ano_env_(without|unset)_aliases$' <<< "$undefined" | tr '\n' ' ' || true)
+            echo "$lib.so: spawn calls: ${spawns:-none}; helpers: ${helpers:-none}"
+            nm -m "$U/$lib.so" | grep -F _ano_env_ || true
+            if [ -n "$spawns" ] && [ -z "$helpers" ]; then
+              echo "::error::$lib.so starts programs but takes no helper from ntdll.so"
+              fail=1
+            fi
           done
           grep -F 'spawn sites: ' "$RUNNER_TEMP/ours-download/build-info.txt" \
             || { echo "::error::build-info.txt has no spawn-site scan"; exit 1; }
+          exit $fail
 
       # Exit 0: reproduced. Exit 2: equal only by interface; every such file
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
