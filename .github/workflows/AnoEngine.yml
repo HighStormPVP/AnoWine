@@ -404,6 +404,40 @@ jobs:
             || { echo "::error::build-info.txt has no spawn-site scan"; exit 1; }
           exit $fail
 
+      # Plan 3c-5, Task 3: the Mac-state gate (scripts/anowine/scan-wine-traces.sh)
+      # drives the engine through a short session and judges, with
+      # wine_tokens.py --gate, every new trace the session leaves on the Mac and
+      # the bottle. Both runs come before any other step starts the engine, so
+      # what Rosetta translates for it is new. First the self-test: a session
+      # with planted traces (PLANTWINE in a program's environment, a
+      # ~/.cache/plantwine folder, a "plantwine" log line) must fail the gate
+      # with exactly those tokens, each found by its own capture.
+      - name: The gate sees planted traces
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 40
+        run: |
+          R="$RUNNER_TEMP/reports/gate-plant"
+          code=0
+          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" --plant \
+            || code=$?
+          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
+          [ "$code" = 1 ] || { echo "::error::the planted run exited $code, expected 1"; exit 1; }
+          listed=$(awk -F'\t' 'NR > 1 && $2 !~ /^allowlisted/ {print $1}' "$R/tokens.tsv" | LC_ALL=C sort | tr '\n' ' ')
+          [ "$listed" = "PLANTWINE plantwine " ] || { echo "::error::the planted run listed: $listed"; exit 1; }
+          echo "the gate listed exactly the planted tokens: $listed"
+
+      - name: Mac state gate
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 40
+        run: |
+          R="$RUNNER_TEMP/reports/gate"
+          code=0
+          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" || code=$?
+          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
+          [ "$code" = 0 ] || { echo "::error::the gate exited $code (1: a token not on the allowlist, 2: harness)"; exit 1; }
+          grep -qx 'gate: every token is on the allowlist' "$R/judge.txt" \
+            || { echo "::error::the gate gave no verdict"; exit 1; }
+
       # Exit 0: reproduced. Exit 2: equal only by interface; every such file
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
       # records each in spikes/REPORT.md). Exit 1: a real difference.
