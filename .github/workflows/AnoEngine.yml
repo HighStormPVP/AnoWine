@@ -316,6 +316,13 @@ jobs:
           cp build-info.txt "$RUNNER_TEMP/reports/"
           cat build-info.txt
 
+      # Plan 3c-5: every file of Ano's runtime belongs to a component of
+      # scripts/anowine/licenses.txt, whose license texts ship in
+      # share/ano/licenses and which NOTICES lists.
+      - name: License texts
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        run: scripts/anowine/check-licenses.sh "$RUNNER_TEMP/ours/Libraries"
+
       # Exit 0: reproduced. Exit 2: equal only by interface; every such file
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
       # records each in spikes/REPORT.md). Exit 1: a real difference.
