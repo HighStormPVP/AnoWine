@@ -29,6 +29,17 @@
 # The judge is wine_tokens.py <report-dir>/gate <bottle> --gate with
 # wine-allowlist.txt.
 #
+# --app <Ano.app> (Plan 3c-5, Task 4) is the app build's gate, on a Mac where
+# Ano never ran. Before the session the app goes into ~/Applications, as the
+# owner installs it, and the runtime where the app keeps it (Application
+# Support/io.github.highstormpvp.Ano/Libraries); the session runs that copy.
+# After the engine's part, the bundled CLI makes a bottle and runs a program
+# in it (as check-app-on-engine.sh does), then the app is opened for 60
+# seconds and quit (osascript, or kill by PID when that fails). The app and
+# its CLI count as the engine's processes (their command lines, environments
+# and open files are captured), and the app's bottle is judged whole beside
+# the session's.
+#
 # No captured path or variable may carry the harness's: the session runs in a
 # work folder under /private/tmp from copies of its inputs, the engine gets
 # only the variables the app gives it (WineEnvironment.swift builds a fixed
@@ -47,7 +58,6 @@
 # PLANTWINE=1 in its environment, creates ~/.cache/plantwine/x and logs
 # "plantwine". It exits 1 when the gate lists exactly PLANTWINE and plantwine,
 # each found by its own capture (processes, files, system log), else 2.
-# --app <Ano.app> is Plan 3c-5 Task 4 (not built yet: exit 2).
 set -Eeuo pipefail
 trap 'echo "::error::scan-wine-traces.sh: line $LINENO: exit $?"; exit 2' ERR
 USAGE="usage: scan-wine-traces.sh <Libraries> <ano-tricks> <report-dir> [--app <Ano.app>] [--plant]"
@@ -85,7 +95,6 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[ -z "$APP" ] || harness "--app is not built yet (Plan 3c-5, Task 4)"
 
 HERE=$(cd "$(dirname "$0")" && pwd -P)
 LIB=$(cd "$LIB_ARG" 2> /dev/null && pwd -P) || harness "no folder $LIB_ARG"
@@ -97,7 +106,7 @@ mkdir -p "$OUT_ARG"
 OUT=$(cd "$OUT_ARG" && pwd -P)
 G=$OUT/gate
 RAW=$OUT/raw
-rm -rf "$G" "$RAW" "$OUT/tokens.tsv" "$OUT/judge.txt" "$OUT/traces.md" "$OUT/bottle"
+rm -rf "$G" "$RAW" "$OUT/tokens.tsv" "$OUT/judge.txt" "$OUT/traces.md" "$OUT/bottle" "$OUT/app-bottle"
 mkdir -p "$G/output" "$G/outside" "$G/defaults" "$RAW" "$OUT/bottle"
 : > "$RAW/problems.txt"
 problem() { echo "::error::scan-wine-traces.sh: $*"; echo "$*" >> "$RAW/problems.txt"; }
@@ -112,6 +121,35 @@ sudo -n test -d /private/var/db/oah || harness "no Rosetta cache at /private/var
 UIDN=$(id -u)
 USER_TMP=$(cd "$(getconf DARWIN_USER_TEMP_DIR)" && pwd -P)
 USER_CACHE=$(cd "$(getconf DARWIN_USER_CACHE_DIR)" && pwd -P)
+
+# --app: the app goes where the owner puts it (~/Applications, so it does not
+# offer to move itself) and the runtime where the app keeps it; both before
+# the session, so neither copy is a trace of it. Nothing of Ano's may be on
+# the Mac before: the app's first launch is part of the session, and what it
+# leaves must be new to be seen.
+APPDIR= APP_SUPPORT= CONTAINER= PREFS= APP_INSTALLED=0
+if [ -n "$APP" ]; then
+  APP_SRC=$(cd "$APP" 2> /dev/null && pwd -P) || harness "no folder $APP"
+  [ -x "$APP_SRC/Contents/MacOS/Ano" ] && [ -x "$APP_SRC/Contents/Resources/WhiskyCmd" ] \
+    || harness "$APP is not Ano.app (Contents/MacOS/Ano, Contents/Resources/WhiskyCmd)"
+  APPDIR=$HOME/Applications/Ano.app
+  APP_SUPPORT="$HOME/Library/Application Support/io.github.highstormpvp.Ano"
+  CONTAINER=$HOME/Library/Containers/io.github.highstormpvp.Ano
+  PREFS=$HOME/Library/Preferences/io.github.highstormpvp.Ano.plist
+  for d in "$APPDIR" "$APP_SUPPORT" "$CONTAINER" "$PREFS"; do
+    [ ! -e "$d" ] || harness "--app needs a Mac where Ano never ran, and $d is there"
+  done
+  echo "== $(date '+%H:%M:%S') install: the app in ~/Applications, the runtime in Application Support"
+  APP_INSTALLED=1
+  trap 'rm -rf "$APPDIR" "$APP_SUPPORT"' EXIT
+  mkdir -p "$HOME/Applications" "$APP_SUPPORT"
+  ditto "$APP_SRC" "$APPDIR"
+  xattr -dr com.apple.quarantine "$APPDIR" 2> /dev/null || true
+  cp -R "$LIB" "$APP_SUPPORT/Libraries"
+  LIB=$(cd "$APP_SUPPORT/Libraries" && pwd -P)
+  A=$LIB/Ano
+  [ -x "$A/bin/ano-loader" ] || harness "the runtime's copy in $LIB has no Ano/bin/ano-loader"
+fi
 
 # The work folder: the bottle and copies of the inputs. Everything runs from
 # here, so no process's working folder is the checkout.
@@ -149,6 +187,11 @@ server() {  # -k or -w: stop the bottle's server, or wait for it to exit (at mos
     engine_processes
   fi
 }
+B= APP_PID=
+app_server() {  # -k or -w, for the bottle the app's CLI made (at most 120 s)
+  [ -n "$B" ] || return 0
+  limit 120 env -i ANOPREFIX="$B" ANOSERVER="$A/bin/ano-server" "$A/bin/ano-server" "$1" > /dev/null 2>&1 || true
+}
 
 CACHE_EXISTED=0
 [ ! -d "$HOME/.cache" ] || CACHE_EXISTED=1
@@ -163,6 +206,13 @@ cleanup() {
   if [ "$PLANT" = 1 ]; then
     rm -rf "$HOME/.cache/plantwine"
     [ "$CACHE_EXISTED" = 1 ] || rmdir "$HOME/.cache" 2> /dev/null
+  fi
+  if [ "$APP_INSTALLED" = 1 ]; then
+    [ -z "$APP_PID" ] || kill -KILL "$APP_PID" 2> /dev/null
+    app_server -k
+    rm -rf "$APPDIR" "$APP_SUPPORT" "$CONTAINER"
+    defaults delete io.github.highstormpvp.Ano > /dev/null 2>&1
+    rm -f "$PREFS"
   fi
   rm -rf "$WORK"
   exit "$code"
@@ -192,6 +242,10 @@ logger "$LOGMARK start"
 # ---- the poller: engine processes, their environments and open files, and
 # what launchd and lsappinfo list while the session runs ------------------------
 for f in ps ps-env lsof lsappinfo-during launchd-list-during launchd-gui-during; do : > "$RAW/$f.txt"; done
+# With --app, the app and its CLI (whose commands hold the app's path) are
+# the session's too, and lsof also lists the files of Ano and WhiskyCmd.
+LSOF_C=(-c ano-)
+[ -z "$APP" ] || LSOF_C=(-c ano- -c Ano -c WhiskyCmd)
 poll() {
   local me n=0 pids
   sh -c 'echo $PPID' > "$RAW/poller.pid"
@@ -199,10 +253,11 @@ poll() {
   while [ -f "$RAW/polling" ]; do
     # The poller and the programs it starts are the harness, not the session.
     ps -axww -o pid=,ppid=,ucomm=,command= 2> /dev/null \
-      | awk -v me="$me" -v lib="$A/" -v work="$WORK" '
+      | awk -v me="$me" -v lib="$A/" -v work="$WORK" -v app="${APPDIR:+$APPDIR/}" '
           FNR == NR { old[$1] = 1; next }
           ($1 in old) || $1 == me || $2 == me { next }
-          index($0, lib) || index($0, work) || $3 ~ /^ano-/ { print }' "$RAW/pids-before.txt" - \
+          index($0, lib) || index($0, work) || $3 ~ /^ano-/ || (app != "" && index($0, app)) { print }' \
+          "$RAW/pids-before.txt" - \
       > "$RAW/now.txt" 2> /dev/null || true
     if [ -s "$RAW/now.txt" ]; then
       cat "$RAW/now.txt" >> "$RAW/ps.txt" || true
@@ -210,7 +265,7 @@ poll() {
       ps -Eww -o pid=,command= -p "$pids" >> "$RAW/ps-env.txt" 2> /dev/null || true
     fi
     if [ $((n % 6)) -eq 0 ]; then
-      lsof -nP -c ano- -F pcftn >> "$RAW/lsof.txt" 2> /dev/null || true
+      lsof -nP "${LSOF_C[@]}" -F pcftn >> "$RAW/lsof.txt" 2> /dev/null || true
     fi
     if [ $((n % 10)) -eq 0 ]; then
       lsappinfo list >> "$RAW/lsappinfo-during.txt" 2> /dev/null || true
@@ -296,6 +351,95 @@ if [ "$code" != 0 ] || ! grep -qx win10 "$P/ano-tricks.log" 2> /dev/null; then
     "or is not in the bottle's ano-tricks.log"
 fi
 
+# The PID of the app's process (its command starts with the app's
+# executable), or nothing. ps writes a file first, so awk's own arguments are
+# not in what it reads.
+app_pid() {
+  ps -axww -o pid=,command= > "$RAW/ps-app.txt" 2> /dev/null || true
+  awk -v exe="$APPDIR/Contents/MacOS/Ano" '
+    { pid = $1; sub(/^ *[0-9]+ /, "") }
+    index($0, exe) == 1 { print pid; exit }' "$RAW/ps-app.txt"
+}
+QUIT="-"
+if [ -n "$APP" ]; then
+  # The bundled CLI as a Terminal starts it: the login's variables and a
+  # system PATH, nothing of the runner's.
+  CLI=$APPDIR/Contents/Resources/WhiskyCmd
+  cli() {  # seconds, output file, the CLI's arguments...
+    local secs=$1 out=$2
+    shift 2
+    limit "$secs" env -i HOME="$HOME" USER="$USER" LOGNAME="$LOGNAME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+      "$CLI" "$@" > "$out" 2>&1
+  }
+  phase "the app's CLI: ano create T"
+  code=0
+  cli 120 "$G/output/ano-create.txt" create T || code=$?
+  echo "   exit $code"
+  [ "$code" = 0 ] || problem "ano create exited $code: $(tail -n 3 "$G/output/ano-create.txt")"
+
+  # As check-app-on-engine.sh runs it: --follow streams the engine's log and
+  # the exit code, so the program leaves a file in the bottle.
+  phase "the app's CLI: ano run --follow T cmd /c echo"
+  code=0
+  cli 1200 "$RAW/ano-run.crlf" run --follow T 'C:\windows\system32\cmd.exe' /c 'echo app-gate-ok> C:\app-gate.txt' \
+    || code=$?
+  tr -d '\r' < "$RAW/ano-run.crlf" > "$G/output/ano-run.txt"
+  echo "   exit $code"
+  [ ! -d "$CONTAINER/Bottles" ] || B=$(find "$CONTAINER/Bottles" -mindepth 1 -maxdepth 1 -type d -print -quit)
+  app_server -k
+  app_server -w
+  if [ -z "$B" ]; then
+    problem "ano create made no bottle under $CONTAINER/Bottles"
+  elif ! grep -q app-gate-ok "$B/drive_c/app-gate.txt" 2> /dev/null \
+       || ! grep -q "Exited with code 0" "$G/output/ano-run.txt"; then
+    tail -n 20 "$G/output/ano-run.txt" || true
+    problem "ano run: no C:\\app-gate.txt from the program, or no exit code 0" \
+      "(exit $code$([ "$code" != 142 ] || echo ', stopped after 1200 s'))"
+  fi
+
+  # The app's first launch, with the bottle its CLI made on its list. Its
+  # quit is an Apple event, which a runner may not let osascript send: then
+  # the app is killed by PID. The gate does not depend on the window drawing.
+  phase "the app: open it for 60 s"
+  open "$APPDIR" > "$G/output/open.txt" 2>&1 || problem "open $APPDIR exited $?: $(head -c 300 "$G/output/open.txt")"
+  t=0
+  while [ "$t" -lt 30 ]; do
+    APP_PID=$(app_pid)
+    [ -z "$APP_PID" ] || break
+    sleep 1
+    t=$((t + 1))
+  done
+  if [ -z "$APP_PID" ]; then
+    problem "the app was not running 30 s after open"
+  else
+    echo "   pid $APP_PID"
+    t=0
+    while [ "$t" -lt 60 ] && kill -0 "$APP_PID" 2> /dev/null; do sleep 1; t=$((t + 1)); done
+    if ! kill -0 "$APP_PID" 2> /dev/null; then
+      problem "the app exited by itself after $t s"
+    else
+      phase "the app: quit"
+      code=0
+      limit 30 osascript -e 'quit app "Ano"' > "$RAW/osascript.txt" 2>&1 || code=$?
+      t=0
+      while [ "$t" -lt 30 ] && kill -0 "$APP_PID" 2> /dev/null; do sleep 1; t=$((t + 1)); done
+      if kill -0 "$APP_PID" 2> /dev/null; then
+        QUIT="osascript exit $code$([ "$code" != 142 ] || echo ' (stopped after 30 s)')"
+        QUIT="$QUIT ($(tr '\n' ' ' < "$RAW/osascript.txt" | cut -c1-200)); the app still ran 30 s later: killed"
+        kill -TERM "$APP_PID" 2> /dev/null || true
+        for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$APP_PID" 2> /dev/null || break; sleep 1; done
+        kill -KILL "$APP_PID" 2> /dev/null || true
+      else
+        QUIT="osascript exit $code; the app quit after $t s"
+      fi
+    fi
+    echo "   quit: $QUIT"
+    APP_PID=
+  fi
+  app_server -k
+  app_server -w
+fi
+
 phase "shut down"
 server -k
 server -w
@@ -336,6 +480,15 @@ for tool in ano-cfg regedit notepad; do
 done
 grep -qF "bin/ano-loader ano-boot --init" "$G/processes.txt" || problem "ano-boot was never seen running"
 grep -qF "$TRICKS -q win10" "$G/processes.txt" || problem "ano-tricks was never seen running"
+if [ -n "$APP" ]; then
+  # A line of processes.txt is the process's name, then its command.
+  grep -qF "Ano $APPDIR/Contents/MacOS/Ano" "$G/processes.txt" || problem "the app was never seen running"
+  grep -qF "WhiskyCmd $CLI run --follow T " "$G/processes.txt" \
+    || problem "the app's CLI was never seen running a program"
+  awk -v a="$APPDIR/Contents/MacOS/Ano" 'index($0, a) == 1 && index($0, " PATH=") { found = 1 } END { exit !found }' \
+    "$G/environments.txt" || problem "ps -E showed no environment of the app, so its environment was not captured"
+  grep -q '^Ano ' "$G/open-files.txt" || problem "lsof -c Ano showed no file of the app, so its open files were not captured"
+fi
 
 # New lines in what launchd, lsappinfo and LaunchServices list.
 new_lines() {  # out, before, after...
@@ -355,6 +508,10 @@ new_lines "$G/launchd-gui.txt" "$RAW/launchd-gui-before.txt" "$RAW/launchd-gui-d
 new_lines "$G/lsappinfo.txt" "$RAW/lsappinfo-before.txt" "$RAW/lsappinfo-during.txt" "$RAW/lsappinfo-after.txt"
 new_lines "$G/launchservices.txt" "$RAW/launchservices-before.txt" "$RAW/launchservices-after.txt"
 rm -f "$RAW"/launchservices-*.txt*
+if [ -n "$APP" ]; then
+  grep -qF 'io.github.highstormpvp.Ano' "$G/lsappinfo.txt" \
+    || problem "lsappinfo never listed the app, so it was not seen as an app"
+fi
 
 # New defaults domains, with their contents.
 defaults domains 2> /dev/null | tr ',' '\n' | sed 's/^ *//' | sort -u > "$RAW/domains-after.txt" || true
@@ -366,13 +523,16 @@ done < "$G/defaults-domains.txt"
 
 # Files created or changed outside the bottle during the session: a folder
 # counts when it was created, a file or link when it was created or changed.
-# Left out: the report, the bottle (judged as a whole), the CI runner's own
-# folders, and other apps' sandbox containers, which macOS lets only their
-# app write (since macOS 14 another program needs the user's consent even to
-# read them); Ano's own containers stay in.
+# Left out: the report, the bottles (the session's and, with --app, the one
+# the app's CLI made: each judged as a whole), the CI runner's own folders,
+# and other apps' sandbox containers, which macOS lets only their app write
+# (since macOS 14 another program needs the user's consent even to read
+# them); Ano's own containers stay in. The runtime folder is a root of its
+# own (with --app it is under HOME).
 prune=(-path "$OUT" -o -path "$P"
   -o \( -path "$HOME/Library/Containers/*" ! -path "$HOME/Library/Containers/io.github.highstormpvp.Ano*" \)
   -o \( -path "$HOME/Library/Group Containers/*" ! -path "$HOME/Library/Group Containers/*io.github.highstormpvp.Ano*" \))
+[ -z "$B" ] || prune+=(-o -path "$B")
 IFS=: read -r -a runner_dirs <<< "${ANO_GATE_RUNNER_DIRS:-}"
 for d in ${runner_dirs[@]+"${runner_dirs[@]}"}; do
   if [ -d "$d" ]; then prune+=(-o -path "$(cd "$d" && pwd -P)"); fi
@@ -380,9 +540,12 @@ done
 : > "$G/outside-paths.txt"
 : > "$G/outside-large.txt"
 : > "$RAW/outside-unreadable.txt"
-capture_outside() {  # label, root
+capture_outside() {  # label, root, [a folder to leave out]...
   local label=$1 root=$2 f rel dest size
-  find "$root" -xdev \( "${prune[@]}" \) -prune -o \
+  local skip=("${prune[@]}")
+  shift 2
+  for f in "$@"; do skip+=(-o -path "$f"); done
+  find "$root" -xdev \( "${skip[@]}" \) -prune -o \
     \( \( -type d -newerBm "$MARK" ! -newerBm "$END" \) -o \( ! -type d -newer "$MARK" ! -newer "$END" \) \) \
     -print 2> /dev/null | LC_ALL=C sort > "$RAW/outside-$label.txt" || true
   while IFS= read -r f; do
@@ -404,10 +567,10 @@ capture_outside() {  # label, root
     fi
   done < "$RAW/outside-$label.txt"
 }
-capture_outside home "$HOME"
-capture_outside tmp /private/tmp
-capture_outside temp "$USER_TMP"
-capture_outside cache "$USER_CACHE"
+capture_outside home "$HOME" "$LIB"
+capture_outside tmp /private/tmp "$LIB"
+capture_outside temp "$USER_TMP" "$LIB"
+capture_outside cache "$USER_CACHE" "$LIB"
 capture_outside runtime "$LIB"
 [ -s "$G/outside-paths.txt" ] || problem "no file was created or changed outside the bottle, not even the server's folder"
 if [ "$PLANT" = 1 ]; then
@@ -430,11 +593,12 @@ grep -qF "$LOGMARK start" "$G/syslog.txt" \
   || problem "the system log capture misses the line logged at the start ($START), so its window is wrong"
 
 cp "$P"/*.reg "$P/ano-tricks.log" "$OUT/bottle/" 2> /dev/null || true
+if [ -n "$B" ]; then mkdir -p "$OUT/app-bottle" && cp "$B"/*.reg "$B/Metadata.plist" "$OUT/app-bottle/" 2> /dev/null || true; fi
 
 # ---- the judge ------------------------------------------------------------------
 phase "the judge: wine_tokens.py gate bottle --gate"
 judge=0
-python3 "$HERE/wine_tokens.py" "$G" "$P" --allowlist "$HERE/wine-allowlist.txt" --out "$OUT/tokens.tsv" --gate \
+python3 "$HERE/wine_tokens.py" "$G" "$P" ${B:+"$B"} --allowlist "$HERE/wine-allowlist.txt" --out "$OUT/tokens.tsv" --gate \
   > "$OUT/judge.txt" 2>&1 || judge=$?
 cat "$OUT/judge.txt"
 case $judge in 0 | 1) ;; *) problem "wine_tokens.py exited $judge" ;; esac
@@ -463,7 +627,7 @@ count() { if [ -e "$1" ]; then wc -l < "$1" | tr -d ' '; else echo "-"; fi; }
 # judge's own inventory, so allowlisted phrases are blanked as it blanks
 # them), and a few lines of context from the captures.
 where() {  # tokens.tsv
-  limit 600 python3 - "$HERE" "$1" "$HERE/wine-allowlist.txt" "$G" "$P" << 'PY'
+  limit 600 python3 - "$HERE" "$1" "$HERE/wine-allowlist.txt" "$G" "$P" ${B:+"$B"} << 'PY'
 import re
 import sys
 from pathlib import Path
@@ -508,6 +672,10 @@ PY
   echo "# Mac-state gate"
   echo
   echo "- runtime: $LIB"
+  if [ -n "$APP" ]; then
+    echo "- app: $APPDIR (from $APP_SRC); the bottle its CLI made: ${B:-none}"
+    echo "- the app's quit: $QUIT"
+  fi
   echo "- mode: $([ "$PLANT" = 1 ] && echo 'self-test (--plant)' || echo gate)"
   echo "- verdict: $verdict"
   echo

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """List every "wine" token in a runtime tree or a bottle.
 
-Usage: wine_tokens.py ROOT... --out FILE.tsv [--allowlist FILE] [--gate]
+Usage: wine_tokens.py ROOT... --out FILE.tsv [--allowlist FILE] [--gate] [--skip-macho]
 
 A token is a maximal run of [A-Za-z0-9_] that contains "wine" in any case.
 Tokens are taken from path names, symlink names and symlink targets, and from
 file contents: ASCII text and UTF-16LE text (as in Windows resources and wide
-strings). Folders behind symlinks are not entered.
+strings). Folders behind symlinks are not entered. With --skip-macho a Mach-O
+or fat file (its first four bytes feedface, feedfacf or cafebabe, in either
+byte order) gives its name only: the app's Swift binaries keep code-only names
+(decision 6), and their facts (macho_facts.sh) are judged instead.
 
 The TSV has one row per token: token, class, count, files, example, where
 class is `allowlisted:<category>` (from the allowlist), `not-wine-candidate`
@@ -39,6 +42,15 @@ WINE_ASCII = re.compile(rb"(?i)wine")
 WINE_UTF16 = re.compile(rb"(?i)w\x00i\x00n\x00e\x00")
 CHUNK = 1 << 20
 MAX_CARRY = 1 << 20
+# Mach-O 32- and 64-bit and fat (universal) files, in either byte order.
+MACHO_MAGICS = frozenset(bytes.fromhex(magic) for magic in
+                         ("feedface", "cefaedfe", "feedfacf", "cffaedfe", "cafebabe", "bebafeca"))
+
+
+def is_macho(path: Path) -> bool:
+    """Whether a file starts with a Mach-O or fat magic number."""
+    with open(path, "rb") as fh:
+        return fh.read(4) in MACHO_MAGICS
 
 
 def tokens_in_name(name: str) -> list:
@@ -197,8 +209,10 @@ def load_allowlist(path: Path) -> dict:
 
 
 class _Inventory:
-    def __init__(self, phrases=()):
+    def __init__(self, phrases=(), skip_macho=False):
         self.phrases = tuple(phrases)
+        self.skip_macho = skip_macho
+        self.machos = Counter()  # root -> Mach-O files that gave their names only
         self.count = Counter()
         self.files = {}
         self.example = {}
@@ -227,7 +241,11 @@ class _Inventory:
                         visit(Path(entry.path), f"{rel}{entry.name}/")
                     else:
                         self.add(label, where, "names", names)
-                        if entry.is_file(follow_symlinks=False):
+                        if not entry.is_file(follow_symlinks=False):
+                            continue
+                        if self.skip_macho and is_macho(Path(entry.path)):
+                            self.machos[label] += 1
+                        else:
                             ascii_counts, utf16_counts = tokens_in_file(Path(entry.path), phrases=self.phrases)
                             self.add(label, where, "ascii", ascii_counts)
                             self.add(label, where, "utf16", utf16_counts)
@@ -241,13 +259,15 @@ def main(argv: list) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--allowlist", type=Path)
     parser.add_argument("--gate", action="store_true", help="exit 1 if any token is not on the allowlist")
+    parser.add_argument("--skip-macho", action="store_true",
+                        help="a Mach-O or fat file gives its name only, never its contents")
     args = parser.parse_args(argv)
     try:
         allow = load_allowlist(args.allowlist) if args.allowlist else {}
     except ValueError as error:
         print(f"wine_tokens.py: {args.allowlist}: {error}", file=sys.stderr)
         return 1
-    inventory = _Inventory(phrases=[token for token in allow if is_phrase(token)])
+    inventory = _Inventory(phrases=[token for token in allow if is_phrase(token)], skip_macho=args.skip_macho)
     for root in args.roots:
         inventory.scan(root)
     rows = sorted(inventory.count.items(), key=lambda item: (-item[1], item[0]))
@@ -263,6 +283,8 @@ def main(argv: list) -> int:
         label = root.name or str(root)
         parts = [f"{source} {inventory.by_source[(label, source)]}" for source in ("names", "ascii", "utf16")]
         print(f"{label}: occurrences by source: {', '.join(parts)}")
+        if args.skip_macho:
+            print(f"{label}: {inventory.machos[label]} Mach-O files gave their names only")
     if args.gate:
         hits = [(token, n) for token, n in rows if not classify_token(token, allow).startswith("allowlisted")]
         if hits:
