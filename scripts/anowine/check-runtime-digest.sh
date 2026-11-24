@@ -1,10 +1,12 @@
 #!/bin/bash
-# Fails unless every runtime feed, dist/pages/WhiskyWineVersion*.plist, names a
-# published AnoWine runtime by its exact digest: the release v<version> asset
-# Libraries.tar.gz must have the sha256 the feed advertises. A wrong digest in
-# a feed blocks every first-run install of the apps that read it, so CI checks
-# them all. WhiskyWineVersion.plist is the frozen feed Ano 6 and 7 read;
-# WhiskyWineVersion-v4.plist is the one Ano 8 and later read.
+# Fails unless every runtime feed, dist/pages/WhiskyWineVersion*.plist and
+# dist/pages/AnoRuntimeVersion.plist, names a published AnoWine runtime by its
+# exact digest: the release v<version> asset Libraries.tar.gz must have the
+# sha256 the feed advertises. A wrong digest in a feed blocks every first-run
+# install of the apps that read it, so CI checks them all; a missing feed fails.
+# WhiskyWineVersion.plist is the frozen feed Ano 6 and 7 read (3.1.6),
+# WhiskyWineVersion-v4.plist the one Ano 8 reads (4.9.0), and
+# AnoRuntimeVersion.plist the one Ano 9 and later read (5.x, Plan 3c-5).
 #
 # Prints "digest OK <file> v<version>" for each feed that matches.
 # Usage: scripts/anowine/check-runtime-digest.sh [repo-root]
@@ -15,10 +17,11 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 fail=0
-feeds=("$ROOT"/dist/pages/WhiskyWineVersion*.plist)
+feeds=("$ROOT"/dist/pages/WhiskyWineVersion*.plist "$ROOT/dist/pages/AnoRuntimeVersion.plist")
 [ -e "${feeds[0]}" ] || { echo "::error::no runtime feeds in $ROOT/dist/pages"; exit 1; }
 for PLIST in "${feeds[@]}"; do
   NAME="$(basename "$PLIST")"
+  [ -f "$PLIST" ] || { echo "::error::$NAME is missing from dist/pages"; fail=1; continue; }
   if ! read -r VERSION WANT < <(python3 - "$PLIST" <<'EOF'
 import plistlib, sys
 d = plistlib.load(open(sys.argv[1], "rb"))
