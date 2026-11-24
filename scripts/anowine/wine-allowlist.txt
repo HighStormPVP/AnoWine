@@ -1021,6 +1021,9 @@ WinEnterpriseReadonlyControllersSid	not-wine	Windows well-known SID type (Win + 
 JRTwine	not-wine	a web crawler's name in mono's browscap.ini (JR + Twine)
 UnsupportedQueryViewInEntityContainerMapping	not-wine	mono System.Data.Entity: View + InEntity
 
+# not-wine: what the Mac-state gate's sessions saw (Plan 3c-5, scan-wine-traces.sh), read by hand.
+intertwined	not-wine	English word: Apple's Help daemon wrote it into ~/Library/Caches/com.apple.helpd (a watch-face help index, "intertwined threads") during the planted session of Ano Engine 45379123201
+
 # not-wine: what ano-tricks keeps (Plan 3c-3, make_ano_tricks.py), read by hand.
 ifwinexist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
 ifWinExist	not-wine	AutoHotkey's IfWinExist command in the verbs' scripts (If + WinExist; renamed it breaks them)
