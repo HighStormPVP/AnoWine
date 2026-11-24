@@ -6,3 +6,15 @@
 #   drops-aliases   the function drops D3DMetal's old names first (patches/rename/0005 or 0006)
 #   before-aliases  runs before ano_env_set_aliases
 #   not-a-spawn     a definition, or Windows-side code
+dlls/localspl/cups.c	convert_postscript_to_pdf	posix_spawn	drops-aliases	cxps2pdf gets ano_env_without_aliases (0006)
+dlls/localspl/cups.c	is_postscript_supported	posix_spawn	drops-aliases	cupsfilter gets ano_env_without_aliases (0006)
+dlls/localspl/cups.c	pipe_start_doc	execl	drops-aliases	the forked print command calls ano_env_unset_aliases before /bin/sh (0006)
+dlls/msv1_0/unixlib.c	ntlm_fork	posix_spawnp	drops-aliases	ntlm_auth gets ano_env_without_aliases (0006)
+dlls/msvcrt/process.c	system	system	not-a-spawn	the definition of msvcrt's own system(), Windows side: it starts the program with CreateProcess
+dlls/netapi32/unixlib.c	change_password	execvp	drops-aliases	the forked smbpasswd calls ano_env_unset_aliases before it execs (0006)
+dlls/ntdll/unix/loader.c	build_path_and_exec	posix_spawn	drops-aliases	ano-server and other engine programs get ano_env_without_aliases (0005)
+dlls/ntdll/unix/loader.c	preloader_exec	execv	drops-aliases	the loader's re-exec calls ano_env_unset_aliases first (0005)
+dlls/ntdll/unix/loader.c	preloader_exec	posix_spawn	drops-aliases	the preloader re-exec (POSIX_SPAWN_SETEXEC) after ano_env_unset_aliases (0005)
+dlls/ntdll/unix/process.c	__ano_unix_spawnvp	execvp	drops-aliases	the forked child calls ano_env_unset_aliases before it execs (0005)
+dlls/ntdll/unix/process.c	fork_and_exec	execv	drops-aliases	the forked Unix program calls ano_env_unset_aliases before it execs (0005)
+dlls/wininet/internet.c	InternetCheckConnectionW	system	not-a-spawn	wininet.dll is Windows-side (no unix library): msvcrt's system, then CreateProcess, whose environment 0005 filters

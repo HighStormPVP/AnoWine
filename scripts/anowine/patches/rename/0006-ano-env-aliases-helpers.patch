@@ -1,0 +1,145 @@
+diff --git a/dlls/localspl/cups.c b/dlls/localspl/cups.c
+index e99242a..9048f89 100644
+--- a/dlls/localspl/cups.c
++++ b/dlls/localspl/cups.c
+@@ -184,6 +184,8 @@ static BOOL pipe_start_doc(doc_t *doc, const WCHAR *cmd)
+         /* reset signals that we previously set to SIG_IGN */
+         signal(SIGPIPE, SIG_DFL);
+ 
++        /* Ano (patches/rename/0006): the print command gets none of D3DMetal's old names. */
++        ano_env_unset_aliases();
+         execl("/bin/sh", "/bin/sh", "-c", cmdA, NULL);
+         _exit(1);
+     }
+@@ -260,7 +262,8 @@ static BOOL is_postscript_supported(void)
+     BOOL ret = FALSE;
+     const char *const argv[] = {"/usr/sbin/cupsfilter", "--list-filters", "-i", "application/postscript", "-m", "application/pdf", NULL};
+     pid_t pid, wret;
+-    int status;
++    int status, spawned;
++    char **env;
+     static int postscript_supported = -1;
+ 
+     TRACE("()\n");
+@@ -272,7 +275,11 @@ static BOOL is_postscript_supported(void)
+         goto end;
+     }
+ 
+-    if (posix_spawn(&pid, argv[0], NULL, NULL, argv, *_NSGetEnviron()) != 0)
++    /* Ano (patches/rename/0006): cupsfilter gets none of D3DMetal's old names. */
++    env = ano_env_without_aliases();
++    spawned = posix_spawn(&pid, argv[0], NULL, NULL, argv, env);
++    if (env != *_NSGetEnviron()) free(env);
++    if (spawned != 0)
+     {
+         WARN("Failed to load %s\n", debugstr_a(argv[0]));
+         goto end;
+@@ -312,8 +319,9 @@ static BOOL convert_postscript_to_pdf(const char *filename, const char *pdf)
+     char ps2pdf[MAX_PATH];
+     const char *ps2pdf_argv[4];
+     pid_t pid, wret;
+-    int status;
++    int status, spawned;
+     int exit_status;
++    char **env;
+ 
+     TRACE("(%s, %s)\n", debugstr_a(filename), debugstr_a(pdf));
+ 
+@@ -325,7 +333,11 @@ static BOOL convert_postscript_to_pdf(const char *filename, const char *pdf)
+     ps2pdf_argv[2] = pdf;
+     ps2pdf_argv[3] = NULL;
+ 
+-    if (posix_spawn(&pid, ps2pdf, NULL, NULL, ps2pdf_argv, *_NSGetEnviron()) != 0)
++    /* Ano (patches/rename/0006): cxps2pdf gets none of D3DMetal's old names. */
++    env = ano_env_without_aliases();
++    spawned = posix_spawn(&pid, ps2pdf, NULL, NULL, ps2pdf_argv, env);
++    if (env != *_NSGetEnviron()) free(env);
++    if (spawned != 0)
+     {
+         WARN("Failed to load %s with arguments %s %s\n", debugstr_a(ps2pdf), debugstr_a(ps2pdf_argv[1]), debugstr_a(ps2pdf_argv[2]));
+         goto end;
+diff --git a/dlls/msv1_0/unixlib.c b/dlls/msv1_0/unixlib.c
+index 7482773..5516a17 100644
+--- a/dlls/msv1_0/unixlib.c
++++ b/dlls/msv1_0/unixlib.c
+@@ -164,6 +164,7 @@ static NTSTATUS ntlm_fork( void *args )
+     posix_spawn_file_actions_t file_actions;
+     int pipe_in[2], pipe_out[2], err;
+     NTSTATUS status = STATUS_SUCCESS;
++    char **env;
+ 
+ #ifdef HAVE_PIPE2
+     if (pipe2( pipe_in, O_CLOEXEC ) < 0)
+@@ -197,7 +198,11 @@ static NTSTATUS ntlm_fork( void *args )
+     posix_spawn_file_actions_addclose( &file_actions, pipe_in[0] );
+     posix_spawn_file_actions_addclose( &file_actions, pipe_in[1] );
+ 
+-    if ((err = posix_spawnp( &ctx->pid, params->argv[0], &file_actions, NULL, params->argv, environ )))
++    /* Ano (patches/rename/0006): ntlm_auth gets none of D3DMetal's old names. */
++    env = ano_env_without_aliases();
++    err = posix_spawnp( &ctx->pid, params->argv[0], &file_actions, NULL, params->argv, env );
++    if (env != environ) free( env );
++    if (err)
+     {
+         ctx->pid = -1;
+         write( pipe_in[1], "BH\n", 3 );
+diff --git a/dlls/netapi32/unixlib.c b/dlls/netapi32/unixlib.c
+index 2ce02db..82b0cd7 100644
+--- a/dlls/netapi32/unixlib.c
++++ b/dlls/netapi32/unixlib.c
+@@ -1037,6 +1037,8 @@ static NTSTATUS change_password( void *args )
+         dup2( pipe_out[0], 0 );
+         close( pipe_out[0] );
+         close( pipe_out[1] );
++        /* Ano (patches/rename/0006): smbpasswd gets none of D3DMetal's old names. */
++        ano_env_unset_aliases();
+         execvp( "smbpasswd", argv );
+         ERR( "can't execute smbpasswd, is it installed?\n" );
+         _exit(1);
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index 816e987..687ec7e 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -846,7 +846,10 @@ void init_environment(void)
+  * hands the old names to no other program: a forked child drops them before
+  * it execs (ano_env_unset_aliases) and every environment passed on skips them
+  * (ano_env_is_alias, ano_env_without_aliases). A child sets them again from
+- * the Ano names. scripts/anowine/aliases.txt lists them. */
++ * the Ano names. scripts/anowine/aliases.txt lists them. patches/rename/0006
++ * exports ano_env_unset_aliases and ano_env_without_aliases to the other unix
++ * libraries (include/ano/unixlib.h), as ntdll_umbstowcs is; their spawn calls
++ * are listed in scripts/anowine/spawn-sites.txt. */
+ static const char * const ano_env_aliases[][2] =
+ {
+     { "ANOD3DMETAL", "WINED3DMETAL" },
+diff --git a/dlls/ntdll/unix/unix_private.h b/dlls/ntdll/unix/unix_private.h
+index 3606980..2a41c4f 100644
+--- a/dlls/ntdll/unix/unix_private.h
++++ b/dlls/ntdll/unix/unix_private.h
+@@ -241,9 +241,7 @@ extern BOOL simulate_writecopy;
+ extern void init_environment(void);
+ extern void init_startup_info(void);
+ extern void ano_env_set_aliases(void);
+-extern void ano_env_unset_aliases(void);
+ extern BOOL ano_env_is_alias( const char *entry );
+-extern char **ano_env_without_aliases(void);
+ extern void *create_startup_info( const UNICODE_STRING *nt_image, ULONG process_flags,
+                                   const RTL_USER_PROCESS_PARAMETERS *params,
+                                   const struct pe_image_info *pe_info, DWORD *info_size );
+diff --git a/include/ano/unixlib.h b/include/ano/unixlib.h
+index e9e24b9..c5d4be6 100644
+--- a/include/ano/unixlib.h
++++ b/include/ano/unixlib.h
+@@ -254,6 +254,12 @@ NTSYSAPI DWORD ntdll_umbstowcs( const char *src, DWORD srclen, WCHAR *dst, DWORD
+ NTSYSAPI int ntdll_wcstoumbs( const WCHAR *src, DWORD srclen, char *dst, DWORD dstlen, BOOL strict );
+ NTSYSAPI int ntdll_wcsicmp( const WCHAR *str1, const WCHAR *str2 );
+ NTSYSAPI int ntdll_wcsnicmp( const WCHAR *str1, const WCHAR *str2, int n );
++/* Ano (patches/rename/0006): a program a unix library starts gets none of
++ * D3DMetal's old variable names (dlls/ntdll/unix/env.c). A forked child calls
++ * ano_env_unset_aliases before it execs; a spawn passes the copy
++ * ano_env_without_aliases returns, and frees it unless it is environ. */
++NTSYSAPI void ano_env_unset_aliases(void);
++NTSYSAPI char **ano_env_without_aliases(void);
+ 
+ /* C23 requires these functions to be defined as macros */
+ #undef wcschr
