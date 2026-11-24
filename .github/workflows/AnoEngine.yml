@@ -416,7 +416,7 @@ jobs:
         if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
         timeout-minutes: 40
         run: |
-          R="$RUNNER_TEMP/reports/gate-plant"
+          R="$RUNNER_TEMP/reports/mac-gate-plant"
           code=0
           scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" --plant \
             || code=$?
@@ -430,13 +430,48 @@ jobs:
         if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
         timeout-minutes: 40
         run: |
-          R="$RUNNER_TEMP/reports/gate"
+          R="$RUNNER_TEMP/reports/mac-gate"
           code=0
           scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" || code=$?
           [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
           [ "$code" = 0 ] || { echo "::error::the gate exited $code (1: a token not on the allowlist, 2: harness)"; exit 1; }
           grep -qx 'gate: every token is on the allowlist' "$R/judge.txt" \
             || { echo "::error::the gate gave no verdict"; exit 1; }
+
+      # Plan 3c-5, Task 3: engine 5.x's boot log on the runner says the Bluetooth
+      # driver fails to start (c00000e5) and "error loading cxcompatdb.so".
+      # Does upstream's v4.8.3, booting a bottle with its own WINE* names, say
+      # the same? Report only; after the gate, so nothing of upstream's is in it.
+      - name: Upstream's boot warnings (report only)
+        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
+        continue-on-error: true
+        timeout-minutes: 20
+        run: |
+          curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors -o "$RUNNER_TEMP/ref.tar.gz" "$REF_URL"
+          echo "$REF_SHA  $RUNNER_TEMP/ref.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/ref"
+          tar -xzf "$RUNNER_TEMP/ref.tar.gz" -C "$RUNNER_TEMP/ref"
+          rm "$RUNNER_TEMP/ref.tar.gz"
+          W="$RUNNER_TEMP/ref/Libraries/Wine"
+          LOG="$RUNNER_TEMP/reports/upstream-boot.log"
+          code=0
+          # The debug level the app uses (fixme-all); no mono or Gecko install,
+          # and no debugger dialog, so the boot cannot wait on a download.
+          # (perl first: macOS drops DYLD_* when it starts a system program.)
+          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 600 env -i HOME="$HOME" PATH=/usr/bin:/bin \
+            WINEPREFIX="$RUNNER_TEMP/ref-bottle" WINEDEBUG=fixme-all WINEDLLOVERRIDES="mscoree,mshtml=d;winedbg.exe=d" \
+            DYLD_FALLBACK_LIBRARY_PATH="$W/lib" "$W/bin/wine64" wineboot --init > "$LOG" 2>&1 || code=$?
+          env -i WINEPREFIX="$RUNNER_TEMP/ref-bottle" "$W/bin/wineserver" -k 2> /dev/null || true
+          echo "upstream v4.8.3: wineboot --init exit $code"
+          for side in "upstream v4.8.3=$LOG" "Ano 5.x (the gate's boot)=$RUNNER_TEMP/reports/mac-gate/gate/output/boot.txt"; do
+            name=${side%%=*} file=${side#*=}
+            if [ ! -f "$file" ]; then echo "$name: no boot log at $file"; continue; fi
+            bt=$(grep -c 'c00000e5' "$file" || true)
+            cx=$(grep -c 'error loading cxcompatdb.so' "$file" || true)
+            echo "$name: Bluetooth driver fails (c00000e5): $([ "$bt" -gt 0 ] && echo yes || echo no) ($bt lines);" \
+              "error loading cxcompatdb.so: $([ "$cx" -gt 0 ] && echo yes || echo no) ($cx lines)"
+            grep -E 'c00000e5|cxcompatdb' "$file" | head -n 6 || true
+          done
 
       # Exit 0: reproduced. Exit 2: equal only by interface; every such file
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
