@@ -1,255 +1,465 @@
 #!/bin/bash
-# Inventory of every trace of the word "wine" (any case) a bottle leaves on
-# the Mac. Creates a bottle, runs programs and Wine tools, runs winetricks, and
-# records:
-#   - process names, command lines, environments and open files (polled)
-#   - the Windows environment a program sees (cmd /c set)
-#   - files created or changed outside the bottle (HOME, /tmp, TMPDIR), and
-#     defaults domains, whose path or contents say wine
-#   - inside the bottle: file names, file contents, symlinks and registry keys
-#   - libraries loaded into Wine processes, shared memory and sockets
-#   - how macOS registers the GUI processes (lsappinfo) and Mach services
-#   - system and kernel extensions, launch agents and daemons, login items,
-#     LaunchServices, the Rosetta translation cache, TCC, the system log
-#   - the runtime's Mach-O files: signing identifiers, install names, linked
-#     libraries, rpaths, embedded Info.plist; and the runtime's symlinks
-# An inventory, not a check: findings never fail it.
+# scan-wine-traces.sh: the Mac-state gate for engine 5.x (Plan 3c-5, Task 3).
 #
-# Usage: scripts/anowine/scan-wine-traces.sh <Libraries-dir> <winetricks> <report-dir>
-set -uo pipefail
-LIB="$(cd "${1:?usage: scan-wine-traces.sh <Libraries-dir> <winetricks> <report-dir>}" && pwd)"
-TRICKS="${2:?winetricks script}"
-OUT="$(mkdir -p "${3:?report dir}" && cd "$3" && pwd)"
-BIN="$LIB/Wine/bin"
-WORK="$(mktemp -d /private/tmp/ano-scan.XXXXXX)"
-P="$WORK/bottle"
-# The per-user temp and cache folders (/private/var/folders/../T and ../C).
-TMPROOT="$(dirname "$(cd "${TMPDIR:-/tmp}" && pwd -P)")"
-export WINEPREFIX="$P" WINESERVER="$BIN/ano-server" WINEDEBUG=fixme-all
+# It drives the engine through a short session with a persistent server
+# (ano-server -p60): a new bottle (ano-boot --init), a console program
+# (cmd /c set, which prints the Windows environment), the GUI tools ano-cfg,
+# regedit and notepad for a few seconds each (then killed by PID), and the
+# ano-tricks verb win10. It captures, as text in <report-dir>/gate/, only what
+# is new since the session started:
+#   processes.txt     command lines of the engine's processes: a command that
+#                     contains <Libraries>/Ano/ or the work folder, or a name
+#                     that starts with ano- (ps, polled)
+#   environments.txt  their environments (ps -E)
+#   windows-env.txt   the Windows environment (cmd /c set)
+#   open-files.txt    their open files (lsof -c ano-, polled)
+#   outside/          files created or changed under HOME, the temporary and
+#                     cache folders, /private/tmp and the runtime folder,
+#                     outside the bottle, copied with their relative paths up
+#                     to 5 MB each; outside-paths.txt names every one and
+#                     outside-large.txt those too large to copy
+#   defaults/         new defaults domains with their contents
+#   launchd-list.txt, launchd-gui.txt, lsappinfo.txt, launchservices.txt:
+#                     new lines in launchctl list, launchctl print gui/<uid>,
+#                     lsappinfo list and the LaunchServices dump
+#   rosetta.txt       new files in the Rosetta cache, by name
+#   syslog.txt        the system log since the start: the engine's processes
+#                     (ano-*) and every line that says wine
+#   output/           what the session's programs printed (the app logs it)
+# The judge is wine_tokens.py <report-dir>/gate <bottle> --gate with
+# wine-allowlist.txt.
+#
+# No captured path or variable may carry the harness's: the session runs in a
+# work folder under /private/tmp from copies of its inputs, the engine gets
+# only the variables the app gives it (WineEnvironment.swift builds a fixed
+# dictionary, never the app's own environment), and this script re-runs
+# itself with a clean environment so no runner variable (GITHUB_*, RUNNER_*)
+# reaches anything it starts. The CI runner's own folders (its work root and
+# tool cache) are not Mac state an Ano user has, and the file capture skips
+# them; the runtime folder is captured on its own.
+#
+# Usage: scan-wine-traces.sh <Libraries> <ano-tricks> <report-dir> [--app <Ano.app>] [--plant]
+# Exit 0: the gate passes. Exit 1: a token not on the allowlist;
+# <report-dir>/traces.md lists each token and where it was seen. Exit 2: a
+# harness error, such as a step that never started or an empty capture where
+# one cannot be empty.
+# --plant is the self-test: the session also starts a console program with
+# PLANTWINE=1 in its environment, creates ~/.cache/plantwine/x and logs
+# "plantwine". It exits 1 when the gate lists exactly PLANTWINE and plantwine,
+# each found by its own capture (processes, files, system log), else 2.
+# --app <Ano.app> is Plan 3c-5 Task 4 (not built yet: exit 2).
+set -Eeuo pipefail
+trap 'echo "::error::scan-wine-traces.sh: line $LINENO: exit $?"; exit 2' ERR
+USAGE="usage: scan-wine-traces.sh <Libraries> <ano-tricks> <report-dir> [--app <Ano.app>] [--plant]"
 
-# ---- process poller ---------------------------------------------------------
+# A clean environment for everything this script starts. Only the CI runner's
+# work root and tool cache are passed on, to be left out of the file capture.
+if [ "${ANO_GATE_CLEAN:-}" != 1 ]; then
+  runner_dirs=
+  [ -z "${RUNNER_WORKSPACE:-}" ] || runner_dirs="$runner_dirs:$(dirname "$RUNNER_WORKSPACE")"
+  [ -z "${RUNNER_TOOL_CACHE:-}" ] || runner_dirs="$runner_dirs:$RUNNER_TOOL_CACHE"
+  me=$(id -un)
+  exec env -i ANO_GATE_CLEAN=1 ANO_GATE_RUNNER_DIRS="${runner_dirs#:}" HOME="$HOME" USER="$me" LOGNAME="$me" \
+    PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin LC_ALL=C /bin/bash "$0" "$@"
+fi
+
+harness() { echo "::error::scan-wine-traces.sh: $*"; exit 2; }
+[ $# -ge 3 ] || harness "$USAGE"
+LIB_ARG=$1 TRICKS_ARG=$2 OUT_ARG=$3
+shift 3
+PLANT=0 APP=
+while [ $# -gt 0 ]; do
+  case $1 in
+    --plant) PLANT=1 ;;
+    --app) [ $# -ge 2 ] || harness "$USAGE"; APP=$2; shift ;;
+    *) harness "$USAGE" ;;
+  esac
+  shift
+done
+[ -z "$APP" ] || harness "--app is not built yet (Plan 3c-5, Task 4)"
+
+HERE=$(cd "$(dirname "$0")" && pwd -P)
+LIB=$(cd "$LIB_ARG" 2> /dev/null && pwd -P) || harness "no folder $LIB_ARG"
+A=$LIB/Ano
+[ -x "$A/bin/ano-loader" ] && [ -x "$A/bin/ano-server" ] && [ -f "$LIB/AnoRuntimeVersion.plist" ] \
+  || harness "$LIB is not an engine 5.x Libraries folder (Ano/bin/ano-loader, AnoRuntimeVersion.plist)"
+[ -f "$TRICKS_ARG" ] || harness "no ano-tricks at $TRICKS_ARG"
+mkdir -p "$OUT_ARG"
+OUT=$(cd "$OUT_ARG" && pwd -P)
+G=$OUT/gate
+RAW=$OUT/raw
+rm -rf "$G" "$RAW" "$OUT/tokens.tsv" "$OUT/judge.txt" "$OUT/traces.md" "$OUT/bottle"
+mkdir -p "$G/output" "$G/outside" "$G/defaults" "$RAW" "$OUT/bottle"
+: > "$RAW/problems.txt"
+problem() { echo "::error::scan-wine-traces.sh: $*"; echo "$*" >> "$RAW/problems.txt"; }
+
+for tool in python3 perl lsof lsappinfo launchctl log logger defaults getconf; do
+  command -v "$tool" > /dev/null || harness "no $tool on PATH"
+done
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+[ -x "$LSREGISTER" ] || harness "no lsregister at $LSREGISTER"
+sudo -n true 2> /dev/null || harness "sudo -n does not work, so the Rosetta cache cannot be read"
+sudo -n test -d /private/var/db/oah || harness "no Rosetta cache at /private/var/db/oah (is Rosetta installed?)"
+UIDN=$(id -u)
+USER_TMP=$(cd "$(getconf DARWIN_USER_TEMP_DIR)" && pwd -P)
+USER_CACHE=$(cd "$(getconf DARWIN_USER_CACHE_DIR)" && pwd -P)
+
+# The work folder: the bottle and copies of the inputs. Everything runs from
+# here, so no process's working folder is the checkout.
+WORK=$(cd "$(mktemp -d /private/tmp/ano-gate.XXXXXX)" && pwd -P)
+P=$WORK/bottle
+mkdir -p "$WORK/tools"
+cp "$TRICKS_ARG" "$WORK/tools/ano-tricks"
+TRICKS=$WORK/tools/ano-tricks
+cd "$WORK"
+
+# What the app gives the engine (WineEnvironment.swift, base and platform
+# layers): ANOPREFIX, ANOSERVER, ANODEBUG, GST_DEBUG, and ANOESYNC on macOS
+# 15.4 and later. ano-dbg is off, as in the engine checks, so a crash cannot
+# leave a dialog waiting on the runner.
+SESSION_ENV=(ANOPREFIX="$P" ANOSERVER="$A/bin/ano-server" ANODEBUG=fixme-all GST_DEBUG=1 ANOESYNC=1
+  ANODLLOVERRIDES=ano-dbg.exe=d)
+# What the app gives ano-tricks (Winetricks+Install.swift), as check-ano-tricks.sh runs it.
+TRICKS_ENV=(HOME="$HOME" ANOPREFIX="$P" ANO=ano-loader ANOSERVER="$A/bin/ano-server" PATH="$A/bin:/usr/bin:/bin")
+limit() { perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' "$@"; }  # seconds, command...
+engine() { env -i "${SESSION_ENV[@]}" "$@"; }
+
+CACHE_EXISTED=0
+[ ! -d "$HOME/.cache" ] || CACHE_EXISTED=1
+POLLER=
+cleanup() {
+  local code=$?
+  trap - ERR
+  set +e
+  rm -f "$RAW/polling"
+  [ -z "$POLLER" ] || wait "$POLLER" 2> /dev/null
+  engine "$A/bin/ano-server" -k > /dev/null 2>&1
+  if [ "$PLANT" = 1 ]; then
+    rm -rf "$HOME/.cache/plantwine"
+    [ "$CACHE_EXISTED" = 1 ] || rmdir "$HOME/.cache" 2> /dev/null
+  fi
+  rm -rf "$WORK"
+  exit "$code"
+}
+trap cleanup EXIT
+
+# ---- before -------------------------------------------------------------------
+echo "== before: launchd, lsappinfo, LaunchServices, defaults domains"
+launchctl list > "$RAW/launchd-list-before.txt" 2> /dev/null || true
+launchctl print "gui/$UIDN" > "$RAW/launchd-gui-before.txt" 2> /dev/null || true
+lsappinfo list > "$RAW/lsappinfo-before.txt" 2> /dev/null || true
+"$LSREGISTER" -dump > "$RAW/launchservices-before.txt" 2> /dev/null || true
+defaults domains 2> /dev/null | tr ',' '\n' | sed 's/^ *//' | sort -u > "$RAW/domains-before.txt" || true
+for f in launchd-list launchd-gui lsappinfo launchservices; do
+  [ -s "$RAW/$f-before.txt" ] || harness "the $f snapshot before the session is empty, so nothing new could be told"
+done
+[ -s "$RAW/domains-before.txt" ] || harness "defaults domains printed nothing"
+
+ps -axo pid= > "$RAW/pids-before.txt"
+START=$(date '+%Y-%m-%d %H:%M:%S')
+MARK=$RAW/marker
+touch "$MARK"
+sleep 1
+LOGMARK="ano-gate-session-$(date +%s)-$$"
+logger "$LOGMARK start"
+
+# ---- the poller: engine processes, their environments and open files, and
+# what launchd and lsappinfo list while the session runs ------------------------
+for f in ps ps-env lsof lsappinfo-during launchd-list-during launchd-gui-during; do : > "$RAW/$f.txt"; done
 poll() {
-  local n=0
-  while [ -f "$WORK/polling" ]; do
-    ps -axww -o pid=,ppid=,ucomm=,command= >> "$OUT/raw-ps.txt" 2>/dev/null
-    ps -axEww -o pid=,command= 2>/dev/null | grep -E "/ano-(core|loader|server)" >> "$OUT/raw-ps-env.txt"
+  local me n=0 pids
+  sh -c 'echo $PPID' > "$RAW/poller.pid"
+  read -r me < "$RAW/poller.pid"
+  while [ -f "$RAW/polling" ]; do
+    # The poller and the programs it starts are the harness, not the session.
+    ps -axww -o pid=,ppid=,ucomm=,command= 2> /dev/null \
+      | awk -v me="$me" -v lib="$A/" -v work="$WORK" '
+          FNR == NR { old[$1] = 1; next }
+          ($1 in old) || $1 == me || $2 == me { next }
+          index($0, lib) || index($0, work) || $3 ~ /^ano-/ { print }' "$RAW/pids-before.txt" - \
+      > "$RAW/now.txt" 2> /dev/null || true
+    if [ -s "$RAW/now.txt" ]; then
+      cat "$RAW/now.txt" >> "$RAW/ps.txt" || true
+      pids=$(awk '{ printf "%s%s", s, $1; s = "," }' "$RAW/now.txt") || true
+      ps -Eww -o pid=,command= -p "$pids" >> "$RAW/ps-env.txt" 2> /dev/null || true
+    fi
     if [ $((n % 6)) -eq 0 ]; then
-      # command, FD (txt = a loaded library or program), type, name
-      lsof -nP -c ano- 2>/dev/null | awk '{print $1, $4, $5, $NF}' >> "$OUT/raw-lsof.txt"
+      lsof -nP -c ano- -F pcftn >> "$RAW/lsof.txt" 2> /dev/null || true
     fi
-    if [ $((n % 20)) -eq 0 ]; then
-      # How macOS registers the GUI processes (Dock, Cmd-Tab, Force Quit names)
-      lsappinfo list 2>/dev/null | grep -iE -B1 -A8 'wine|ano-' >> "$OUT/raw-lsappinfo.txt"
-      # Mach services Wine registers with launchd
-      launchctl print "gui/$(id -u)" 2>/dev/null | grep -i wine >> "$OUT/raw-mach.txt"
+    if [ $((n % 10)) -eq 0 ]; then
+      lsappinfo list >> "$RAW/lsappinfo-during.txt" 2> /dev/null || true
+      launchctl list >> "$RAW/launchd-list-during.txt" 2> /dev/null || true
+      launchctl print "gui/$UIDN" >> "$RAW/launchd-gui-during.txt" 2> /dev/null || true
     fi
-    n=$((n + 1)); sleep 0.3
+    n=$((n + 1))
+    sleep 0.5
   done
 }
-
-# Runs one step with a time limit; GUI tools are closed when it runs out.
-step() {
-  local name="$1" limit="$2"; shift 2
-  echo "== $name"
-  echo "== $name" >> "$OUT/steps.txt"
-  "$@" >> "$OUT/steps.txt" 2>&1 &
-  local pid=$! t=0
-  while kill -0 "$pid" 2>/dev/null && [ "$t" -lt "$limit" ]; do sleep 1; t=$((t + 1)); done
-  if kill -0 "$pid" 2>/dev/null; then
-    echo "   (stopped after ${limit}s)" | tee -a "$OUT/steps.txt"
-    kill "$pid" 2>/dev/null; "$BIN/ano-server" -k 2>/dev/null
-  fi
-  wait "$pid" 2>/dev/null; echo "   exit $?" | tee -a "$OUT/steps.txt"
-}
-
-# Machine-wide registrations, taken before and after so new entries stand out.
-LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
-system_state() {
-  {
-    echo "## system extensions"; systemextensionsctl list 2>&1
-    echo "## kernel extensions"; kmutil showloaded --list-only 2>/dev/null || kextstat 2>/dev/null
-    echo "## launch agents and daemons"
-    ls -1 "$HOME/Library/LaunchAgents" /Library/LaunchAgents /Library/LaunchDaemons 2>/dev/null
-    echo "## launchd jobs"; launchctl list 2>/dev/null
-    echo "## login and background items"; sudo -n sfltool dumpbtm 2>/dev/null
-    echo "## LaunchServices"; "$LSREGISTER" -dump 2>/dev/null | grep -iE 'wine|ano-core|ano-loader'
-    echo "## Rosetta translation cache"; sudo -n find /private/var/db/oah -iname '*wine*' 2>/dev/null
-    echo "## TCC"; sqlite3 "$HOME/Library/Application Support/com.apple.TCC/TCC.db" \
-      'select service, client from access' 2>/dev/null
-  } > "$1"
-}
-system_state "$WORK/state-before.txt"
-defaults domains 2>/dev/null | tr ',' '\n' | sed 's/^ *//' | sort > "$WORK/domains-before.txt"
-START="$(date '+%Y-%m-%d %H:%M:%S')"
-touch "$WORK/polling"; touch "$WORK/marker"; sleep 1
+touch "$RAW/polling"
 poll &
 POLLER=$!
 
-step "create bottle (ano-boot --init)" 300 env WINEDLLOVERRIDES="mscoree,mshtml=" "$BIN/ano-loader" ano-boot --init
-"$BIN/ano-server" -w
-step "run a program (cmd /c set)" 120 sh -c '"$1/ano-loader" cmd /c set > "$2/windows-env.txt"' _ "$BIN" "$OUT"
-step "run a program (reg query)" 60 "$BIN/ano-loader" reg query 'HKLM\Software\Microsoft\Windows NT\CurrentVersion'
-step "Wine tool: winecfg (closed after 15s)" 15 "$BIN/ano-loader" winecfg
-step "Wine tool: regedit (closed after 15s)" 15 "$BIN/ano-loader" regedit
-step "Wine tool: control (closed after 15s)" 15 "$BIN/ano-loader" control
-# Winetricks runs many short Wine programs. On runtime 4.9.0 each one takes
-# seconds to reach the server on a CI runner, after the server's 3 s idle exit,
-# so every call would boot the prefix again. A server that stays up for 60 s
-# after its last program keeps one boot for the whole step. Verbs that run
-# `ano-server -w` themselves (win10) wait out those 60 s and boot again, so they
-# get as long as the download verb.
-persistent_server() {
-  "$BIN/ano-server" -k 2>/dev/null; "$BIN/ano-server" -w; "$BIN/ano-server" -p60
-}
-persistent_server
-step "winetricks list-installed" 120 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q list-installed
-persistent_server
-step "winetricks win10 sound=disabled" 420 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q win10 sound=disabled
-persistent_server
-step "winetricks vcrun2019 (download verb)" 420 env WINE="$BIN/ano-loader" WINEARCH=win64 bash "$TRICKS" -q vcrun2019
-step "shut down" 60 "$BIN/ano-loader" ano-boot --shutdown
-"$BIN/ano-server" -k 2>/dev/null; "$BIN/ano-server" -w
-sleep 2
-rm -f "$WORK/polling"; wait "$POLLER" 2>/dev/null
-
-# ---- report -----------------------------------------------------------------
-R="$OUT/report.md"
-section() { printf '\n## %s\n\n```\n' "$1" >> "$R"; }
-endsection() { printf '```\n' >> "$R"; }
-cap() { head -n "${1:-80}"; }
-: > "$R"
-echo "# Wine traces" >> "$R"
-echo "Runtime: $LIB (version $(/usr/libexec/PlistBuddy -c 'Print :version:patch' "$LIB/WhiskyWineVersion.plist" 2>/dev/null))" >> "$R"
-
-section "Steps"
-grep -E "^== |^   " "$OUT/steps.txt" >> "$R"; endsection
-
-section "Process kernel names (ucomm) seen, Wine processes and anything named wine"
-awk '{print $3}' "$OUT/raw-ps.txt" | sort | uniq -c | sort -rn \
-  | grep -iE " (ano-|wine|winetricks|cabextract|start)" | cap >> "$R"; endsection
-
-section "Process command lines containing wine (distinct)"
-awk '{ $1=""; $2=""; sub(/^  /, ""); print }' "$OUT/raw-ps.txt" | grep -i wine \
-  | grep -vE "scan-wine-traces|grep -i|ps -ax" | sort | uniq -c | sort -rn | cap 60 >> "$R"; endsection
-
-section "Unix environment variables of Wine processes containing wine (name=value, distinct)"
-tr ' ' '\n' < "$OUT/raw-ps-env.txt" | grep -E "^[A-Za-z_][A-Za-z0-9_]*=" | grep -i wine | sort | uniq -c | sort -rn | cap 60 >> "$R"; endsection
-
-section "Windows environment seen by a program (cmd /c set), lines containing wine"
-tr -d '\r' < "$OUT/windows-env.txt" 2>/dev/null | grep -i wine | cap >> "$R"; endsection
-
-section "Open files and sockets of ano-* processes whose path contains wine (distinct)"
-grep -i wine "$OUT/raw-lsof.txt" 2>/dev/null | sed -E 's#/private/tmp/ano-scan\.[^/]+#<work>#' | sort | uniq -c | sort -rn | cap 60 >> "$R"; endsection
-
-# Files created or changed outside the bottle, the runtime and this scan.
-find "$HOME" /private/tmp "$TMPROOT" /Users/Shared -xdev \
-  \( -path "$WORK" -o -path "$LIB" -o -path "$OUT" -o -path "$HOME/work" -o -path "$HOME/actions-runner" \
-     -o -path "$HOME/runners" -o -path "$HOME/hostedtoolcache" -o -path "$HOME/Library/Caches/com.apple.*" \) \
-  -prune -o -newer "$WORK/marker" -print 2>/dev/null \
-  | sort -u > "$OUT/raw-outside-changed.txt"
-section "Outside the bottle: created or changed paths that contain wine"
-grep -i wine "$OUT/raw-outside-changed.txt" | cap 80 >> "$R"; endsection
-section "Outside the bottle: created or changed files whose contents contain wine"
-while IFS= read -r f; do
-  [ -f "$f" ] && [ ! -L "$f" ] && [ "$(stat -f %z "$f")" -lt 20000000 ] && grep -qai wine "$f" 2>/dev/null \
-    && echo "$f ($(grep -oai wine "$f" | wc -l | tr -d ' ') matches)"
-done < <(head -n 5000 "$OUT/raw-outside-changed.txt") | cap 80 >> "$R"; endsection
-section "Outside the bottle: all created or changed paths (first 150)"
-cap 150 < "$OUT/raw-outside-changed.txt" >> "$R"; endsection
-
-defaults domains 2>/dev/null | tr ',' '\n' | sed 's/^ *//' | sort > "$WORK/domains-after.txt"
-section "New defaults domains"
-comm -13 "$WORK/domains-before.txt" "$WORK/domains-after.txt" >> "$R"; endsection
-section "launchd jobs containing wine"
-launchctl list 2>/dev/null | grep -i wine >> "$R"; endsection
-
-system_state "$WORK/state-after.txt"
-cp "$WORK/state-before.txt" "$WORK/state-after.txt" "$OUT/" 2>/dev/null
-section "System registrations (extensions, agents, login items, LaunchServices, Rosetta cache, TCC): lines with wine, after"
-awk '/^## /{h=$0; next} tolower($0) ~ /wine/ {print h " | " $0}' "$WORK/state-after.txt" | sort -u | cap 60 >> "$R"; endsection
-section "System registrations: lines that are new after the run"
-# launchctl list rows (PID, status, label) change on their own; leave them out.
-diff "$WORK/state-before.txt" "$WORK/state-after.txt" | grep '^>' | grep -vE '^> (-|[0-9]+)[[:space:]]+-?[0-9]+[[:space:]]' \
-  | cap 60 >> "$R"; endsection
-
-section "How macOS registers Wine's GUI processes (lsappinfo: name, bundle ID, paths)"
-grep -iE 'name=|"[^"]*" ASN|bundleID|bundle path|executable path' "$OUT/raw-lsappinfo.txt" 2>/dev/null \
-  | sed -E 's/ASN:[^ ]+//; s/^ +//' | sort | uniq -c | sort -rn | cap 40 >> "$R"; endsection
-section "Mach services with wine in their name"
-sed -E 's/^[[:space:]]+//' "$OUT/raw-mach.txt" 2>/dev/null | sort | uniq -c | sort -rn | cap 20 >> "$R"; endsection
-section "Libraries and programs loaded into ano-* processes (lsof txt) whose name contains wine"
-awk '$2 == "txt" {print $4}' "$OUT/raw-lsof.txt" 2>/dev/null | grep -i wine | sed -E 's#.*/##' | sort | uniq -c \
-  | sort -rn | cap 60 >> "$R"; endsection
-section "Shared memory, semaphores and sockets of ano-* processes (lsof PSXSHM/PSXSEM/unix)"
-awk '$3 ~ /PSXSHM|PSXSEM|unix/ {print $3, $4}' "$OUT/raw-lsof.txt" 2>/dev/null \
-  | sed -E 's#server-[0-9a-f]+-[0-9a-f]+#server-<dev>-<ino>#; s#0x[0-9a-f]+#<addr>#g' | sort | uniq -c | sort -rn \
-  | cap 30 >> "$R"; endsection
-
-section "System log entries mentioning wine since the scan started (count, then first 60)"
-log show --start "$START" --style compact \
-  --predicate 'process CONTAINS[c] "wine" OR process BEGINSWITH "ano-" OR subsystem CONTAINS[c] "winehq"' \
-  2>/dev/null | grep -i wine > "$OUT/raw-syslog.txt"
-echo "lines: $(wc -l < "$OUT/raw-syslog.txt" | tr -d ' ')" >> "$R"
-sed -E 's/^[0-9-]+ [0-9:.]+ +//' "$OUT/raw-syslog.txt" | sort | uniq -c | sort -rn | cap 60 >> "$R"; endsection
-
-section "Runtime Mach-O files: code-signing identifier, install name, linked libraries or embedded app info with wine"
-find "$LIB" -type f \( -perm -u+x -o -name '*.so' -o -name '*.dylib' \) 2>/dev/null | while IFS= read -r f; do
-  file -b "$f" | grep -q Mach-O || continue
-  rel="${f#$LIB/}"
-  id="$(codesign -dv "$f" 2>&1 | sed -n 's/^Identifier=//p')"
-  case "$(echo "$id" | tr '[:upper:]' '[:lower:]')" in *wine*) echo "$rel | signing identifier: $id" ;; esac
-  otool -D "$f" 2>/dev/null | tail -n +2 | grep -i wine | sed "s#^#$rel | install name: #"
-  otool -L "$f" 2>/dev/null | tail -n +2 | grep -i wine | sed -E "s#^[[:space:]]+#$rel | links: #"
-  otool -l "$f" 2>/dev/null | grep -A2 LC_RPATH | sed -n 's/^ *path //p' | grep -i wine | sed "s#^#$rel | rpath: #"
-  launchctl plist __TEXT,__info_plist "$f" 2>/dev/null | grep -i wine | sed -E "s#^[[:space:]]+#$rel | embedded Info.plist: #"
-done | cap 80 >> "$R"; endsection
-
-section "Runtime symlinks (name -> target)"
-find "$LIB" -type l 2>/dev/null | while IFS= read -r l; do echo "${l#$LIB/} -> $(readlink "$l")"; done | cap 40 >> "$R"
-endsection
-section "Outside the bottle: new symlinks (name -> target)"
-while IFS= read -r l; do [ -L "$l" ] && echo "$l -> $(readlink "$l")"; done < "$OUT/raw-outside-changed.txt" | cap 40 >> "$R"
-endsection
-
-if [ -d "$P" ]; then
-  section "Inside the bottle: paths whose name contains wine"
-  find "$P" -iname '*wine*' 2>/dev/null | sed "s#^$P#<bottle>#" | sort > "$OUT/raw-bottle-names.txt"
-  echo "total: $(wc -l < "$OUT/raw-bottle-names.txt" | tr -d ' ')" >> "$R"
-  cap 120 < "$OUT/raw-bottle-names.txt" >> "$R"; endsection
-
-  section "Inside the bottle: files whose contents contain wine, by folder"
-  grep -rlai wine "$P" 2>/dev/null | sed "s#^$P#<bottle>#" | sort > "$OUT/raw-bottle-contents.txt"
-  echo "total files: $(wc -l < "$OUT/raw-bottle-contents.txt" | tr -d ' ') of $(find "$P" -type f | wc -l | tr -d ' ')" >> "$R"
-  sed -E 's#/[^/]+$##' "$OUT/raw-bottle-contents.txt" | sort | uniq -c | sort -rn | cap 40 >> "$R"; endsection
-
-  section "Inside the bottle: the wine strings in one system32 placeholder (kernel32.dll)"
-  LC_ALL=C grep -oai '[ -~]\{0,30\}wine[ -~]\{0,30\}' "$P/drive_c/windows/system32/kernel32.dll" 2>/dev/null | sort | uniq -c | cap 20 >> "$R"; endsection
-
-  section "Inside the bottle: files outside windows/ whose contents contain wine"
-  grep -v "^<bottle>/drive_c/windows/" "$OUT/raw-bottle-contents.txt" | cap 60 >> "$R"; endsection
-
-  section "Inside the bottle: every symlink (name -> target); wine in the name or target is marked !"
-  find "$P" -type l 2>/dev/null | while IFS= read -r l; do
-    t="$(readlink "$l")"; m=" "
-    case "$(printf '%s %s' "$l" "$t" | tr '[:upper:]' '[:lower:]')" in *wine*) m="!" ;; esac
-    echo "$m ${l#$P/} -> $t"
-  done | sort | cap 60 >> "$R"; endsection
-
-  section "Registry: keys containing wine (system.reg, user.reg, userdef.reg)"
-  for reg in system.reg user.reg userdef.reg; do
-    [ -f "$P/$reg" ] || continue
-    echo "-- $reg: $(grep -ci wine "$P/$reg") lines mention wine, $(grep -ciE '^\[.*wine' "$P/$reg") keys"
-    grep -iE '^\[.*wine' "$P/$reg" | sed -E 's/\] [0-9]+$/]/' | cap 50
-  done >> "$R"; endsection
-
-  section "Registry: values (not keys) containing wine, first 60"
-  for reg in system.reg user.reg userdef.reg; do
-    [ -f "$P/$reg" ] && grep -iE '^[@"].*wine' "$P/$reg" | sed "s#^#$reg: #"
-  done | cap 60 >> "$R"; endsection
+# ---- the session ----------------------------------------------------------------
+echo "== create a bottle (ano-boot --init)"
+code=0
+limit 900 env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" ano-boot --init > "$G/output/boot.txt" 2>&1 || code=$?
+engine "$A/bin/ano-server" -w > /dev/null 2>&1 || true
+echo "   exit $code"
+if [ "$code" != 0 ] || [ ! -f "$P/system.reg" ]; then
+  tail -n 30 "$G/output/boot.txt" || true
+  harness "ano-boot --init exited $code$([ "$code" != 142 ] || echo ' (stopped after 900 s)'); no bottle"
 fi
 
-cp "$P"/*.reg "$OUT/" 2>/dev/null
-( cd "$P" && find . -type f -o -type l ) 2>/dev/null | sort > "$OUT/raw-bottle-files.txt"
-rm -rf "$WORK"
-echo "report: $R"
-exit 0
+# One server for the rest of the session: on a CI runner a new one boots the
+# bottle again for every program.
+engine "$A/bin/ano-server" -p60
+
+echo "== a console program (cmd /c set)"
+code=0
+limit 300 env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" cmd /c set > "$RAW/windows-env.crlf" \
+  2> "$G/output/cmd-set.txt" || code=$?
+tr -d '\r' < "$RAW/windows-env.crlf" > "$G/windows-env.txt"
+echo "   exit $code, $(wc -l < "$G/windows-env.txt" | tr -d ' ') variables"
+grep -qi '^windir=' "$G/windows-env.txt" || problem "cmd /c set printed no Windows environment (exit $code)"
+
+if [ "$PLANT" = 1 ]; then
+  echo "== plant: PLANTWINE=1 in a console program's environment, ~/.cache/plantwine/x, a log line"
+  mkdir -p "$HOME/.cache/plantwine"
+  : > "$HOME/.cache/plantwine/x"
+  logger "plantwine"
+  # pause waits on its input until the pipe closes, so the program stays up
+  # while the poller looks.
+  code=0
+  { sleep 10; } | limit 120 env -i "${SESSION_ENV[@]}" PLANTWINE=1 "$A/bin/ano-loader" cmd /c pause \
+    > "$RAW/plant.txt" 2>&1 || code=$?
+  echo "   exit $code"
+fi
+
+gui_tool() {  # program, seconds: open it, then kill it by PID
+  local tool=$1 secs=$2 pid t=0
+  echo "== $tool (open for ${secs} s)"
+  env -i "${SESSION_ENV[@]}" "$A/bin/ano-loader" "$tool" > "$G/output/$tool.txt" 2>&1 &
+  pid=$!
+  while [ "$t" -lt "$secs" ] && kill -0 "$pid" 2> /dev/null; do sleep 1; t=$((t + 1)); done
+  if kill -0 "$pid" 2> /dev/null; then
+    kill -TERM "$pid" 2> /dev/null || true
+    for _ in 1 2 3 4 5; do kill -0 "$pid" 2> /dev/null || break; sleep 1; done
+    kill -KILL "$pid" 2> /dev/null || true
+    echo "   killed after ${secs} s"
+  else
+    echo "   ended by itself after ${t} s"
+  fi
+  wait "$pid" 2> /dev/null || true
+}
+for tool in ano-cfg regedit notepad; do gui_tool "$tool" 20; done
+
+echo "== ano-tricks win10"
+# The verb runs ano-server -w itself, so it waits out the persistent server.
+engine "$A/bin/ano-server" -k > /dev/null 2>&1 || true
+engine "$A/bin/ano-server" -w > /dev/null 2>&1 || true
+engine "$A/bin/ano-server" -p60
+code=0
+limit 900 env -i "${TRICKS_ENV[@]}" /bin/bash "$TRICKS" -q win10 > "$G/output/ano-tricks-win10.txt" 2>&1 || code=$?
+echo "   exit $code"
+if [ "$code" != 0 ] || ! grep -qx win10 "$P/ano-tricks.log" 2> /dev/null; then
+  tail -n 20 "$G/output/ano-tricks-win10.txt" || true
+  problem "ano-tricks win10 exited $code$([ "$code" != 142 ] || echo ' (stopped after 900 s)')" \
+    "or is not in the bottle's ano-tricks.log"
+fi
+
+echo "== shut down"
+engine "$A/bin/ano-server" -k > /dev/null 2>&1 || true
+engine "$A/bin/ano-server" -w > /dev/null 2>&1 || true
+sleep 3
+rm -f "$RAW/polling"
+wait "$POLLER" || true
+POLLER=
+
+# ---- captures -------------------------------------------------------------------
+echo "== captures"
+awk '{ $1 = ""; $2 = ""; sub(/^ +/, ""); print }' "$RAW/ps.txt" | sort -u > "$G/processes.txt"
+awk '{ $1 = ""; sub(/^ +/, ""); print }' "$RAW/ps-env.txt" | sort -u > "$G/environments.txt"
+awk 'FNR == NR { old[$1] = 1; next }
+     /^p/ { pid = substr($0, 2); skip = (pid in old); next }
+     /^c/ { cmd = substr($0, 2); next }
+     /^f/ { fd = substr($0, 2); type = ""; next }
+     /^t/ { type = substr($0, 2); next }
+     /^n/ && !skip { print cmd " " fd " " type " " substr($0, 2) }' "$RAW/pids-before.txt" "$RAW/lsof.txt" \
+  | sort -u > "$G/open-files.txt"
+
+[ -s "$G/processes.txt" ] || problem "no engine process was seen (ps)"
+# An engine program's line (it starts with the engine's path) whose words
+# after it hold the value: a variable, not env -i's arguments.
+engine_line_has() {  # file, text, [text]
+  awk -v a="$A/" -v t1="$2" -v t2="${3:-}" '
+    index($0, a) == 1 && index($0, t1) && (t2 == "" || index($0, t2)) { found = 1 }
+    END { exit !found }' "$1"
+}
+engine_line_has "$G/environments.txt" "ANOPREFIX=$P" \
+  || problem "ps -E showed no engine process with ANOPREFIX=$P, so the environments were not captured"
+grep -qF "$A/" "$G/open-files.txt" || problem "lsof -c ano- showed no file of the engine, so open files were not captured"
+for tool in ano-cfg regedit notepad; do
+  grep -qE "ano-loader $tool( |\$)" "$G/processes.txt" || problem "$tool was never seen running"
+done
+grep -qF "bin/ano-loader ano-boot --init" "$G/processes.txt" || problem "ano-boot was never seen running"
+grep -qF "$TRICKS -q win10" "$G/processes.txt" || problem "ano-tricks was never seen running"
+
+# New lines in what launchd, lsappinfo and LaunchServices list.
+new_lines() {  # out, before, after...
+  local out=$1 before=$2
+  shift 2
+  sort -u "$@" | comm -13 "$before.sorted" - > "$out"
+}
+launchctl list > "$RAW/launchd-list-after.txt" 2> /dev/null || true
+launchctl print "gui/$UIDN" > "$RAW/launchd-gui-after.txt" 2> /dev/null || true
+lsappinfo list > "$RAW/lsappinfo-after.txt" 2> /dev/null || true
+"$LSREGISTER" -dump > "$RAW/launchservices-after.txt" 2> /dev/null || true
+for f in launchd-list launchd-gui lsappinfo launchservices; do
+  sort -u "$RAW/$f-before.txt" > "$RAW/$f-before.txt.sorted"
+done
+new_lines "$G/launchd-list.txt" "$RAW/launchd-list-before.txt" "$RAW/launchd-list-during.txt" "$RAW/launchd-list-after.txt"
+new_lines "$G/launchd-gui.txt" "$RAW/launchd-gui-before.txt" "$RAW/launchd-gui-during.txt" "$RAW/launchd-gui-after.txt"
+new_lines "$G/lsappinfo.txt" "$RAW/lsappinfo-before.txt" "$RAW/lsappinfo-during.txt" "$RAW/lsappinfo-after.txt"
+new_lines "$G/launchservices.txt" "$RAW/launchservices-before.txt" "$RAW/launchservices-after.txt"
+rm -f "$RAW"/launchservices-*.txt*
+
+# New defaults domains, with their contents.
+defaults domains 2> /dev/null | tr ',' '\n' | sed 's/^ *//' | sort -u > "$RAW/domains-after.txt" || true
+comm -13 "$RAW/domains-before.txt" "$RAW/domains-after.txt" > "$G/defaults-domains.txt"
+while IFS= read -r domain; do
+  [ -n "$domain" ] || continue
+  defaults read "$domain" > "$G/defaults/$domain.txt" 2>&1 || true
+done < "$G/defaults-domains.txt"
+
+# Files created or changed outside the bottle. A folder counts when it was
+# created after the start; a file or link when it was created or changed.
+prune=(-path "$OUT" -o -path "$P")
+IFS=: read -r -a runner_dirs <<< "${ANO_GATE_RUNNER_DIRS:-}"
+for d in ${runner_dirs[@]+"${runner_dirs[@]}"}; do
+  if [ -d "$d" ]; then prune+=(-o -path "$(cd "$d" && pwd -P)"); fi
+done
+: > "$G/outside-paths.txt"
+: > "$G/outside-large.txt"
+: > "$RAW/outside-unreadable.txt"
+capture_outside() {  # label, root
+  local label=$1 root=$2 f rel dest size
+  find "$root" -xdev \( "${prune[@]}" \) -prune -o \
+    \( \( -type d -newerBm "$MARK" \) -o \( ! -type d -newer "$MARK" \) \) -print 2> /dev/null \
+    | LC_ALL=C sort > "$RAW/outside-$label.txt" || true
+  while IFS= read -r f; do
+    [ "$f" != "$root" ] || continue
+    echo "$f" >> "$G/outside-paths.txt"
+    rel=${f#"$root"/}
+    dest=$G/outside/$label/$rel
+    if [ -L "$f" ]; then
+      mkdir -p "$(dirname "$dest")" && ln -sfn "$(readlink "$f")" "$dest" || echo "$f" >> "$RAW/outside-unreadable.txt"
+    elif [ -d "$f" ]; then
+      mkdir -p "$dest" || true
+    elif [ -f "$f" ]; then
+      size=$(stat -f %z "$f" 2> /dev/null) || continue
+      if [ "$size" -gt 5242880 ]; then
+        echo "$f ($size bytes)" >> "$G/outside-large.txt"
+      else
+        mkdir -p "$(dirname "$dest")" && cp "$f" "$dest" 2> /dev/null || echo "$f" >> "$RAW/outside-unreadable.txt"
+      fi
+    fi
+  done < "$RAW/outside-$label.txt"
+}
+capture_outside home "$HOME"
+capture_outside tmp /private/tmp
+capture_outside temp "$USER_TMP"
+capture_outside cache "$USER_CACHE"
+capture_outside runtime "$LIB"
+[ -s "$G/outside-paths.txt" ] || problem "no file was created or changed outside the bottle, not even the server's folder"
+if [ "$PLANT" = 1 ]; then
+  grep -qxF "$HOME/.cache/plantwine/x" "$G/outside-paths.txt" || problem "the file capture missed ~/.cache/plantwine/x"
+fi
+
+# New files in the Rosetta cache, by name.
+sudo -n find /private/var/db/oah -newer "$MARK" ! -type d 2> /dev/null | sort > "$G/rosetta.txt" || true
+
+# The system log since the start: the engine's processes and every line that
+# says wine. The start line this script logged proves the window is right.
+PREDICATE="process BEGINSWITH \"ano-\" OR process CONTAINS[c] \"wine\" OR sender CONTAINS[c] \"wine\""
+PREDICATE="$PREDICATE OR subsystem CONTAINS[c] \"wine\" OR category CONTAINS[c] \"wine\""
+PREDICATE="$PREDICATE OR eventMessage CONTAINS[c] \"wine\" OR eventMessage CONTAINS \"$LOGMARK\""
+log show --start "$START" --info --style compact --predicate "$PREDICATE" > "$G/syslog.txt" 2> "$RAW/syslog.err" \
+  || problem "log show failed: $(head -c 300 "$RAW/syslog.err")"
+grep -qF "$LOGMARK start" "$G/syslog.txt" \
+  || problem "the system log capture misses the line logged at the start ($START), so its window is wrong"
+
+cp "$P"/*.reg "$P/ano-tricks.log" "$OUT/bottle/" 2> /dev/null || true
+
+# ---- the judge ------------------------------------------------------------------
+echo "== the judge: wine_tokens.py gate bottle --gate"
+judge=0
+python3 "$HERE/wine_tokens.py" "$G" "$P" --allowlist "$HERE/wine-allowlist.txt" --out "$OUT/tokens.tsv" --gate \
+  > "$OUT/judge.txt" 2>&1 || judge=$?
+cat "$OUT/judge.txt"
+case $judge in 0 | 1) ;; *) problem "wine_tokens.py exited $judge" ;; esac
+
+if [ "$PLANT" = 1 ] && [ ! -s "$RAW/problems.txt" ]; then
+  listed=$(awk -F'\t' 'NR > 1 && $2 !~ /^allowlisted/ { print $1 }' "$OUT/tokens.tsv" | sort | tr '\n' ' ')
+  [ "$judge" = 1 ] || problem "the planted run: the gate exited $judge, not 1"
+  [ "$listed" = "PLANTWINE plantwine " ] || problem "the planted run listed '$listed', not exactly 'PLANTWINE plantwine'"
+  engine_line_has "$G/environments.txt" "cmd /c pause " "PLANTWINE=1" \
+    || problem "the process capture missed PLANTWINE=1 in the planted program's environment"
+  grep -qF "plantwine" "$G/syslog.txt" || problem "the system log capture missed the plantwine line"
+fi
+
+# ---- the report -----------------------------------------------------------------
+if [ -s "$RAW/problems.txt" ]; then
+  verdict="harness error (exit 2)"
+elif [ "$PLANT" = 1 ]; then
+  verdict="self-test passed: the gate listed exactly the planted tokens (exit 1)"
+elif [ "$judge" = 0 ]; then
+  verdict="pass: every token is on the allowlist (exit 0)"
+else
+  verdict="fail: tokens not on the allowlist (exit 1)"
+fi
+count() { if [ -e "$1" ]; then wc -l < "$1" | tr -d ' '; else echo "-"; fi; }
+{
+  echo "# Mac-state gate"
+  echo
+  echo "- runtime: $LIB"
+  echo "- mode: $([ "$PLANT" = 1 ] && echo 'self-test (--plant)' || echo gate)"
+  echo "- verdict: $verdict"
+  echo
+  if [ -s "$RAW/problems.txt" ]; then
+    echo "## Harness errors"
+    echo
+    sed 's/^/- /' "$RAW/problems.txt"
+    echo
+  fi
+  echo "## Captures (gate/)"
+  echo
+  echo "| capture | lines |"
+  echo "|---|---|"
+  for f in processes environments windows-env open-files outside-paths outside-large launchd-list launchd-gui \
+           lsappinfo launchservices defaults-domains rosetta syslog; do
+    echo "| $f.txt | $(count "$G/$f.txt") |"
+  done
+  echo "| outside/ | $(find "$G/outside" -type f | wc -l | tr -d ' ') files copied," \
+    "$(count "$RAW/outside-unreadable.txt") unreadable |"
+  echo
+  echo "## Tokens not on the allowlist"
+  echo
+  awk -F'\t' 'NR > 1 && $2 !~ /^allowlisted/' "$OUT/tokens.tsv" 2> /dev/null > "$RAW/hits.tsv" || true
+  [ -s "$RAW/hits.tsv" ] || echo "none"
+  while IFS=$'\t' read -r token class n files example; do
+    echo "### $token"
+    echo
+    echo "$n occurrences in $files files ($class); first in $example"
+    echo
+    { find "$G" "$P" -name "*$token*" 2> /dev/null || true; } | head -n 10 | sed "s#^$OUT/##; s#^$P#bottle#; s/^/- name: /" || true
+    { grep -rlaF -- "$token" "$G" "$P" 2> /dev/null || true; } | head -n 10 \
+      | sed "s#^$OUT/##; s#^$P#bottle#; s/^/- in: /" || true
+    { grep -rhaoE -- ".{0,80}$token.{0,80}" "$G" 2> /dev/null || true; } | head -n 5 | sed 's/^/    /' || true
+    echo
+  done < "$RAW/hits.tsv"
+} > "$OUT/traces.md"
+echo "verdict: $verdict"
+
+[ ! -s "$RAW/problems.txt" ] || exit 2
+[ "$PLANT" = 0 ] || exit 1
+exit "$judge"
