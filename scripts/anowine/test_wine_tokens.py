@@ -166,5 +166,50 @@ class GateTests(unittest.TestCase):
                 self.assertEqual(ascii_counts + utf16_counts, Counter(), f"chunk={chunk}")
 
 
+# The first four bytes of a Mach-O (32- and 64-bit) or fat file, in either byte order.
+MACHO_MAGICS = (b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xce\xfa\xed\xfe", b"\xfe\xed\xfa\xce",
+                b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca")
+
+
+def scan_tokens(tmp, files, *flags):
+    """wine_tokens.main over a folder holding files; (exit code, {token: count})."""
+    root = Path(tmp) / "Ano.app"
+    root.mkdir()
+    for name, data in files.items():
+        (root / name).write_bytes(data)
+    out = Path(tmp) / "t.tsv"
+    with contextlib.redirect_stdout(io.StringIO()):
+        code = wine_tokens.main([str(root), "--out", str(out), *flags])
+    rows = [line.split("\t") for line in out.read_text(encoding="utf-8").splitlines()[1:]]
+    return code, {row[0]: int(row[2]) for row in rows}
+
+
+class SkipMachoTests(unittest.TestCase):
+    # Plan 3c-5, Task 4: the app's Swift binaries keep code-only names
+    # (decision 6), so with --skip-macho a Mach-O gives its name only; its
+    # facts (signing identifier, entitlements, load commands, embedded
+    # Info.plist) are judged instead, from macho_facts.sh.
+    def test_skip_macho_scans_the_name_only(self):
+        binary = b"\x00\x00\x00\x01WhiskyWineInstaller\x00" + "WhiskyWineInstaller".encode("utf-16-le")
+        for magic in MACHO_MAGICS:
+            with self.subTest(magic=magic.hex()), tempfile.TemporaryDirectory() as tmp:
+                code, tokens = scan_tokens(tmp, {"plainwine": magic + binary}, "--skip-macho")
+                self.assertEqual(code, 0)
+                self.assertEqual(tokens, {"plainwine": 1})
+        with tempfile.TemporaryDirectory() as tmp:  # without the flag the contents count
+            code, tokens = scan_tokens(tmp, {"plainwine": MACHO_MAGICS[0] + binary})
+            self.assertEqual(tokens, {"plainwine": 1, "WhiskyWineInstaller": 2})
+
+    def test_skip_macho_reads_other_files(self):
+        files = {"plainwine": MACHO_MAGICS[0] + b"\x00WhiskyWineInstaller\x00",
+                 "Info.plist": b"<string>WINEPREFIX</string>\n",
+                 "short": b"wine",
+                 "almost": b"\xcf\xfa\xed\x00WINEDEBUG"}
+        with tempfile.TemporaryDirectory() as tmp:
+            code, tokens = scan_tokens(tmp, files, "--skip-macho")
+            self.assertEqual(code, 0)
+            self.assertEqual(tokens, {"plainwine": 1, "WINEPREFIX": 1, "wine": 1, "WINEDEBUG": 1})
+
+
 if __name__ == "__main__":
     unittest.main()

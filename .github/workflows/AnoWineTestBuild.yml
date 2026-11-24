@@ -3,6 +3,12 @@ name: AnoWine Test Build
 # An installable, ad-hoc signed Ano.app for testing on a real Mac.
 # Not notarized: first launch needs System Settings > Privacy & Security >
 # "Open Anyway" (see docs/anowine/TESTING-ON-M2.md).
+# Plan 3c-5, Task 4: job `gate` runs the gate on every build, on a runner of
+# its own, over the Ano-test artifact the owner gets: no "wine" in the app
+# bundle (its Mach-O files judged by their facts), and none in what the app,
+# its CLI and the engine leave on the Mac (scan-wine-traces.sh --app). The
+# runtime is the ano-engine artifact of `engine_run`, or with none the one
+# dist/pages/AnoRuntimeVersion.plist names, checked by its SHA-256.
 
 on:
   push:
@@ -13,9 +19,15 @@ on:
       - 'spikes/**'
       - 'images/**'
   workflow_dispatch:
+    inputs:
+      engine_run:
+        description: "The app's gate runs on the ano-engine artifact of this Ano Engine run; empty: the runtime the feed names"
+        type: string
+        default: ""
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: anowine-test-build
@@ -89,3 +101,128 @@ jobs:
             ${{ runner.temp }}/Ano-test.zip
             ${{ runner.temp }}/m2-sandbox-check.sh
           if-no-files-found: error
+
+  gate:
+    name: The app's gate
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      - name: The app
+        uses: actions/download-artifact@v8
+        with:
+          name: Ano-test
+          path: ${{ runner.temp }}/app-download
+
+      - name: Unpack the app
+        id: app
+        run: |
+          mkdir -p "$RUNNER_TEMP/app" "$RUNNER_TEMP/reports"
+          ditto -x -k "$RUNNER_TEMP/app-download/Ano-test.zip" "$RUNNER_TEMP/app"
+          test -x "$RUNNER_TEMP/app/Ano.app/Contents/MacOS/Ano"
+
+      - name: The engine of engine_run
+        if: inputs.engine_run != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-engine
+          path: ${{ runner.temp }}/engine-download
+          run-id: ${{ inputs.engine_run }}
+          github-token: ${{ github.token }}
+
+      # With engine_run, its ano-engine artifact; without, the runtime the
+      # app's feed names (DistributionConfig.swift: the release asset
+      # v<version>/Libraries.tar.gz), checked by the feed's SHA-256 as the app
+      # checks it.
+      - name: The runtime
+        id: runtime
+        env:
+          ENGINE_RUN: ${{ inputs.engine_run }}
+        run: |
+          D="$RUNNER_TEMP/engine-download"
+          if [ -n "$ENGINE_RUN" ]; then
+            (cd "$D" && shasum -a 256 -c Libraries.tar.gz.sha256)
+            echo "runtime: the ano-engine artifact of Ano Engine run $ENGINE_RUN"
+          else
+            FEED=dist/pages/AnoRuntimeVersion.plist
+            if [ ! -f "$FEED" ]; then
+              echo "::error::no runtime for the app's gate: engine_run is empty and there is no $FEED" \
+                "(the feed comes with runtime 5.0.0, Plan 3c-5 Task 5). Dispatch with engine_run, an Ano Engine" \
+                "run whose ano-engine artifact has not expired."
+              exit 1
+            fi
+            read -r VERSION SHA < <(python3 -I - "$FEED" << 'PY'
+          import plistlib, sys
+          with open(sys.argv[1], "rb") as f:
+              d = plistlib.load(f)
+          v = d["version"]
+          print("%d.%d.%d" % (v["major"], v["minor"], v["patch"]), d["sha256"])
+          PY
+            )
+            URL="https://github.com/HighStormPVP/AnoWine/releases/download/v$VERSION/Libraries.tar.gz"
+            echo "runtime: $FEED names v$VERSION, sha256 $SHA"
+            mkdir -p "$D"
+            curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors -o "$D/Libraries.tar.gz" "$URL" \
+              || { echo "::error::cannot download $URL"; exit 1; }
+            echo "$SHA  $D/Libraries.tar.gz" | shasum -a 256 -c - \
+              || { echo "::error::$URL does not have the sha256 $FEED names"; exit 1; }
+          fi
+          mkdir -p "$RUNNER_TEMP/runtime"
+          tar -xzf "$D/Libraries.tar.gz" -C "$RUNNER_TEMP/runtime"
+          test -f "$RUNNER_TEMP/runtime/Libraries/AnoRuntimeVersion.plist"
+
+      # The bundle as shipped: every file's name and contents, except that a
+      # Mach-O file gives its name only. Swift keeps code-only names in its
+      # metadata (decision 6) and the app's literals are checked at the source
+      # (check_app_text.py, check_app_runtime_names.py); the Mach-O files are
+      # judged by their facts instead (macho_facts.sh).
+      - name: App bundle gate
+        if: always() && steps.app.outcome == 'success'
+        run: |
+          R="$RUNNER_TEMP/reports/app-bundle"
+          mkdir -p "$R"
+          scripts/anowine/macho_facts.sh "$RUNNER_TEMP/app/Ano.app" "$R/macho-facts"
+          code=0
+          python3 scripts/anowine/wine_tokens.py "$RUNNER_TEMP/app/Ano.app" "$R/macho-facts" --skip-macho \
+            --allowlist scripts/anowine/wine-allowlist.txt --out "$R/tokens.tsv" --gate > "$R/judge.txt" 2>&1 || code=$?
+          cat "$R/judge.txt"
+          [ "$code" = 0 ] || { echo "::error::the app bundle's gate exited $code"; exit 1; }
+          grep -qx 'gate: every token is on the allowlist' "$R/judge.txt" \
+            || { echo "::error::the app bundle's gate gave no verdict"; exit 1; }
+
+      # The app's session on the Mac: the engine's session of the runtime gate,
+      # then the bundled CLI makes a bottle and runs a program in it, then the
+      # app is opened for 60 seconds and quit; the runtime is where the app
+      # keeps it. Every new trace is judged.
+      - name: App Mac-state gate
+        if: always() && steps.app.outcome == 'success' && steps.runtime.outcome == 'success'
+        timeout-minutes: 75
+        run: |
+          R="$RUNNER_TEMP/reports/app-mac-gate"
+          A="$RUNNER_TEMP/app/Ano.app"
+          code=0
+          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/runtime/Libraries" "$A/Contents/Resources/ano-tricks" "$R" \
+            --app "$A" || code=$?
+          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
+          [ "$code" = 0 ] || { echo "::error::the gate exited $code (1: a token not on the allowlist, 2: harness)"; exit 1; }
+          grep -qx 'gate: every token is on the allowlist' "$R/judge.txt" \
+            || { echo "::error::the gate gave no verdict"; exit 1; }
+
+      # The copies of the files a session left (gate/outside) keep their names,
+      # which an artifact may refuse (a colon); gate/outside-paths.txt names
+      # every one.
+      - name: Upload the gate's reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-gate
+          path: |
+            ${{ runner.temp }}/reports
+            !${{ runner.temp }}/reports/*/gate/outside/**
+          if-no-files-found: warn
