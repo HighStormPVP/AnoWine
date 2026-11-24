@@ -121,6 +121,7 @@ mkdir -p "$WORK/tools"
 cp "$TRICKS_ARG" "$WORK/tools/ano-tricks"
 TRICKS=$WORK/tools/ano-tricks
 cd "$WORK"
+unset OLDPWD  # bash exports it after cd: the checkout's path
 
 # What the app gives the engine (WineEnvironment.swift, base and platform
 # layers): ANOPREFIX, ANOSERVER, ANODEBUG, GST_DEBUG, and ANOESYNC on macOS
@@ -418,9 +419,11 @@ sudo -n find /private/var/db/oah -newer "$MARK" ! -type d 2> /dev/null | sort > 
 
 # The system log since the start: the engine's processes and every line that
 # says wine. The start line this script logged proves the window is right.
+# Not the log tool's own lines: it logs its arguments, this predicate.
 PREDICATE="process BEGINSWITH \"ano-\" OR process CONTAINS[c] \"wine\" OR sender CONTAINS[c] \"wine\""
 PREDICATE="$PREDICATE OR subsystem CONTAINS[c] \"wine\" OR category CONTAINS[c] \"wine\""
 PREDICATE="$PREDICATE OR eventMessage CONTAINS[c] \"wine\" OR eventMessage CONTAINS \"$LOGMARK\""
+PREDICATE="process != \"log\" AND ($PREDICATE)"
 log show --start "$START" --info --style compact --predicate "$PREDICATE" > "$G/syslog.txt" 2> "$RAW/syslog.err" \
   || problem "log show failed: $(head -c 300 "$RAW/syslog.err")"
 grep -qF "$LOGMARK start" "$G/syslog.txt" \
@@ -461,6 +464,7 @@ count() { if [ -e "$1" ]; then wc -l < "$1" | tr -d ' '; else echo "-"; fi; }
 # them), and a few lines of context from the captures.
 where() {  # tokens.tsv
   limit 600 python3 - "$HERE" "$1" "$HERE/wine-allowlist.txt" "$G" "$P" << 'PY'
+import re
 import sys
 from pathlib import Path
 sys.path.insert(0, sys.argv[1])
@@ -490,9 +494,10 @@ for token, cls, count, files, example in hits:
         if not path.is_file() or path.is_symlink():
             continue
         data = wt._blank(path.read_bytes(), phrases)
-        at = data.find(token.encode())
-        if at < 0:
+        whole = re.search(rb"(?<![A-Za-z0-9_])" + re.escape(token.encode()) + rb"(?![A-Za-z0-9_])", data)
+        if not whole:
             continue
+        at = whole.start()
         text = data[max(0, at - 100):at + len(token) + 100].decode("utf-8", "replace")
         print("    " + "".join(c if c.isprintable() else " " for c in text))
         shown += 1
