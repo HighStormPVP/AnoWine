@@ -8,6 +8,8 @@ name: Ano Engine
 # Plan 3c: version 5.0.0 or later builds Ano's renamed engine instead, and
 # `check` makes a bottle with it and runs the gate (wine_tokens.py --gate):
 # every "wine" token in the engine and the bottle must be on the allowlist.
+# Beside it, job `gate` (Plan 3c-5) runs the Mac-state gate on a runner of
+# its own: every trace a session with the engine leaves on the Mac.
 # Dispatch only. A build holds a Mac runner for 1.5 to 2 hours; to work on
 # `check` alone, pass engine_run to reuse an earlier run's engine.
 
@@ -404,85 +406,6 @@ jobs:
             || { echo "::error::build-info.txt has no spawn-site scan"; exit 1; }
           exit $fail
 
-      # Plan 3c-5, Task 3: the Mac-state gate (scripts/anowine/scan-wine-traces.sh)
-      # drives the engine through a short session and judges, with
-      # wine_tokens.py --gate, every new trace the session leaves on the Mac and
-      # the bottle. Both runs come before any other step starts the engine, so
-      # what Rosetta translates for it is new. First the self-test: a session
-      # with planted traces (PLANTWINE in a program's environment, a
-      # ~/.cache/plantwine folder, a "plantwine" log line) must fail the gate
-      # with exactly those tokens, each found by its own capture.
-      - name: The gate sees planted traces
-        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
-        timeout-minutes: 40
-        run: |
-          R="$RUNNER_TEMP/reports/mac-gate-plant"
-          code=0
-          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" --plant \
-            || code=$?
-          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
-          [ "$code" = 1 ] || { echo "::error::the planted run exited $code, expected 1"; exit 1; }
-          listed=$(awk -F'\t' 'NR > 1 && $2 !~ /^allowlisted/ {print $1}' "$R/tokens.tsv" | LC_ALL=C sort | tr '\n' ' ')
-          [ "$listed" = "PLANTWINE plantwine " ] || { echo "::error::the planted run listed: $listed"; exit 1; }
-          echo "the gate listed exactly the planted tokens: $listed"
-
-      - name: Mac state gate
-        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
-        timeout-minutes: 40
-        run: |
-          R="$RUNNER_TEMP/reports/mac-gate"
-          code=0
-          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" || code=$?
-          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
-          [ "$code" = 0 ] || { echo "::error::the gate exited $code (1: a token not on the allowlist, 2: harness)"; exit 1; }
-          grep -qx 'gate: every token is on the allowlist' "$R/judge.txt" \
-            || { echo "::error::the gate gave no verdict"; exit 1; }
-
-      # Plan 3c-5, Task 3: engine 5.x's boot log on the runner says the Bluetooth
-      # driver fails to start (c00000e5, an err) and "error loading
-      # cxcompatdb.so" (a warn of the module channel). Does upstream's v4.8.3,
-      # booting a bottle with its own WINE* names, say the same? Both boot here
-      # the same way. Report only; after the gate, so nothing of upstream's is
-      # in it.
-      - name: Upstream's boot warnings (report only)
-        if: always() && steps.unpack.outcome == 'success' && !startsWith(inputs.version, '4.')
-        continue-on-error: true
-        timeout-minutes: 25
-        run: |
-          curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors -o "$RUNNER_TEMP/ref.tar.gz" "$REF_URL"
-          echo "$REF_SHA  $RUNNER_TEMP/ref.tar.gz" | shasum -a 256 -c -
-          mkdir -p "$RUNNER_TEMP/ref"
-          tar -xzf "$RUNNER_TEMP/ref.tar.gz" -C "$RUNNER_TEMP/ref"
-          rm "$RUNNER_TEMP/ref.tar.gz"
-          W="$RUNNER_TEMP/ref/Libraries/Wine"
-          A="$RUNNER_TEMP/ours/Libraries/Ano"
-          UP="$RUNNER_TEMP/reports/upstream-boot.log"
-          OURS="$RUNNER_TEMP/reports/ano-boot-warn.log"
-          # The module channel's warnings on; no mono or Gecko install and no
-          # debugger dialog, so neither boot can wait on a download.
-          # (perl first: macOS drops DYLD_* when it starts a system program.)
-          code=0
-          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 600 env -i HOME="$HOME" PATH=/usr/bin:/bin \
-            WINEPREFIX="$RUNNER_TEMP/ref-bottle" WINEDEBUG=warn+module WINEDLLOVERRIDES="mscoree,mshtml=d;winedbg.exe=d" \
-            DYLD_FALLBACK_LIBRARY_PATH="$W/lib" "$W/bin/wine64" wineboot --init > "$UP" 2>&1 || code=$?
-          env -i WINEPREFIX="$RUNNER_TEMP/ref-bottle" "$W/bin/wineserver" -k 2> /dev/null || true
-          echo "upstream v4.8.3: wineboot --init exit $code"
-          code=0
-          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 600 env -i HOME="$HOME" PATH=/usr/bin:/bin \
-            ANOPREFIX="$RUNNER_TEMP/ano-warn-bottle" ANODEBUG=warn+module ANODLLOVERRIDES="mscoree,mshtml=d;ano-dbg.exe=d" \
-            "$A/bin/ano-loader" ano-boot --init > "$OURS" 2>&1 || code=$?
-          env -i ANOPREFIX="$RUNNER_TEMP/ano-warn-bottle" "$A/bin/ano-server" -k 2> /dev/null || true
-          echo "Ano 5.x: ano-boot --init exit $code"
-          for side in "upstream v4.8.3=$UP" "Ano 5.x=$OURS"; do
-            name=${side%%=*} file=${side#*=}
-            if [ ! -f "$file" ]; then echo "$name: no boot log at $file"; continue; fi
-            bt=$(grep -c 'c00000e5' "$file" || true)
-            cx=$(grep -c 'error loading cxcompatdb.so' "$file" || true)
-            echo "$name: Bluetooth driver fails (c00000e5): $([ "$bt" -gt 0 ] && echo yes || echo no) ($bt lines);" \
-              "error loading cxcompatdb.so: $([ "$cx" -gt 0 ] && echo yes || echo no) ($cx lines)"
-            grep -E 'c00000e5|cxcompatdb' "$file" | head -n 6 | cut -c1-240 || true
-          done
-
       # Exit 0: reproduced. Exit 2: equal only by interface; every such file
       # must be explained by a toolchain difference in build-info.txt (Plan 3b
       # records each in spikes/REPORT.md). Exit 1: a real difference.
@@ -715,14 +638,134 @@ jobs:
           path: ${{ runner.temp }}/tokens.tsv
           if-no-files-found: warn
 
-      # The gate's copies of the files a session left (gate/outside) keep their
-      # names, which an artifact may refuse (a colon); gate/outside-paths.txt
-      # names every one.
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: engine-compare
+          path: ${{ runner.temp }}/reports
+          if-no-files-found: warn
+
+  # Plan 3c-5, Task 3: the Mac-state gate on every 5.x build. scan-wine-traces.sh
+  # drives the engine through a short session and judges, with wine_tokens.py
+  # --gate, every new trace the session leaves on the Mac, and the bottle. Its
+  # own runner, beside `check`: it is the first thing there to run the engine,
+  # so what Rosetta translates for it is new, and its reports can be read as
+  # soon as it ends.
+  gate:
+    name: Mac-state gate
+    needs: build
+    if: >-
+      always() && !startsWith(inputs.version, '4.')
+      && (needs.build.result == 'success' || (needs.build.result == 'skipped' && inputs.engine_run != ''))
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Rosetta
+        run: /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+
+      - name: Our engine
+        uses: actions/download-artifact@v8
+        with:
+          name: ano-engine
+          path: ${{ runner.temp }}/ours-download
+          run-id: ${{ inputs.engine_run || github.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Unpack our engine
+        id: unpack
+        run: |
+          mkdir -p "$RUNNER_TEMP/ours" "$RUNNER_TEMP/reports"
+          cd "$RUNNER_TEMP/ours-download"
+          shasum -a 256 -c Libraries.tar.gz.sha256
+          tar -xzf Libraries.tar.gz -C "$RUNNER_TEMP/ours"
+
+      # The self-test first: a session with planted traces (PLANTWINE in a
+      # program's environment, a ~/.cache/plantwine folder, a "plantwine" log
+      # line) must fail the gate with exactly those tokens, each found by its
+      # own capture.
+      - name: The gate sees planted traces
+        if: always() && steps.unpack.outcome == 'success'
+        timeout-minutes: 40
+        run: |
+          R="$RUNNER_TEMP/reports/mac-gate-plant"
+          code=0
+          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" --plant \
+            || code=$?
+          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
+          [ "$code" = 1 ] || { echo "::error::the planted run exited $code, expected 1"; exit 1; }
+          listed=$(awk -F'\t' 'NR > 1 && $2 !~ /^allowlisted/ {print $1}' "$R/tokens.tsv" | LC_ALL=C sort | tr '\n' ' ')
+          [ "$listed" = "PLANTWINE plantwine " ] || { echo "::error::the planted run listed: $listed"; exit 1; }
+          echo "the gate listed exactly the planted tokens: $listed"
+
+      - name: Mac state gate
+        if: always() && steps.unpack.outcome == 'success'
+        timeout-minutes: 40
+        run: |
+          R="$RUNNER_TEMP/reports/mac-gate"
+          code=0
+          scripts/anowine/scan-wine-traces.sh "$RUNNER_TEMP/ours/Libraries" Libraries/ano-tricks "$R" || code=$?
+          [ ! -f "$R/traces.md" ] || cat "$R/traces.md"
+          [ "$code" = 0 ] || { echo "::error::the gate exited $code (1: a token not on the allowlist, 2: harness)"; exit 1; }
+          grep -qx 'gate: every token is on the allowlist' "$R/judge.txt" \
+            || { echo "::error::the gate gave no verdict"; exit 1; }
+
+      # Plan 3c-5, Task 3: engine 5.x's boot log on the runner says the Bluetooth
+      # driver fails to start (c00000e5, an err) and "error loading
+      # cxcompatdb.so" (a warn of the module channel). Does upstream's v4.8.3,
+      # booting a bottle with its own WINE* names, say the same? Both boot here
+      # the same way. Report only; after the gate, so nothing of upstream's is
+      # in it.
+      - name: Upstream's boot warnings (report only)
+        if: always() && steps.unpack.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 25
+        run: |
+          curl -fsSL --retry 8 --retry-delay 5 --retry-all-errors -o "$RUNNER_TEMP/ref.tar.gz" "$REF_URL"
+          echo "$REF_SHA  $RUNNER_TEMP/ref.tar.gz" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/ref"
+          tar -xzf "$RUNNER_TEMP/ref.tar.gz" -C "$RUNNER_TEMP/ref"
+          rm "$RUNNER_TEMP/ref.tar.gz"
+          W="$RUNNER_TEMP/ref/Libraries/Wine"
+          A="$RUNNER_TEMP/ours/Libraries/Ano"
+          UP="$RUNNER_TEMP/reports/upstream-boot.log"
+          OURS="$RUNNER_TEMP/reports/ano-boot-warn.log"
+          # The module channel's warnings on; no mono or Gecko install and no
+          # debugger dialog, so neither boot can wait on a download.
+          # (perl first: macOS drops DYLD_* when it starts a system program.)
+          code=0
+          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 600 env -i HOME="$HOME" PATH=/usr/bin:/bin \
+            WINEPREFIX="$RUNNER_TEMP/ref-bottle" WINEDEBUG=warn+module WINEDLLOVERRIDES="mscoree,mshtml=d;winedbg.exe=d" \
+            DYLD_FALLBACK_LIBRARY_PATH="$W/lib" "$W/bin/wine64" wineboot --init > "$UP" 2>&1 || code=$?
+          env -i WINEPREFIX="$RUNNER_TEMP/ref-bottle" "$W/bin/wineserver" -k 2> /dev/null || true
+          echo "upstream v4.8.3: wineboot --init exit $code"
+          code=0
+          perl -e 'alarm shift; exec @ARGV or die "exec: $!\n"' 600 env -i HOME="$HOME" PATH=/usr/bin:/bin \
+            ANOPREFIX="$RUNNER_TEMP/ano-warn-bottle" ANODEBUG=warn+module ANODLLOVERRIDES="mscoree,mshtml=d;ano-dbg.exe=d" \
+            "$A/bin/ano-loader" ano-boot --init > "$OURS" 2>&1 || code=$?
+          env -i ANOPREFIX="$RUNNER_TEMP/ano-warn-bottle" "$A/bin/ano-server" -k 2> /dev/null || true
+          echo "Ano 5.x: ano-boot --init exit $code"
+          for side in "upstream v4.8.3=$UP" "Ano 5.x=$OURS"; do
+            name=${side%%=*} file=${side#*=}
+            if [ ! -f "$file" ]; then echo "$name: no boot log at $file"; continue; fi
+            bt=$(grep -c 'c00000e5' "$file" || true)
+            cx=$(grep -c 'error loading cxcompatdb.so' "$file" || true)
+            echo "$name: Bluetooth driver fails (c00000e5): $([ "$bt" -gt 0 ] && echo yes || echo no) ($bt lines);" \
+              "error loading cxcompatdb.so: $([ "$cx" -gt 0 ] && echo yes || echo no) ($cx lines)"
+            grep -E 'c00000e5|cxcompatdb' "$file" | head -n 6 | cut -c1-240 || true
+          done
+
+      # The copies of the files a session left (gate/outside) keep their names,
+      # which an artifact may refuse (a colon); gate/outside-paths.txt names
+      # every one.
+      - name: Upload the gate's reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mac-gate
           path: |
             ${{ runner.temp }}/reports
             !${{ runner.temp }}/reports/*/gate/outside/**
