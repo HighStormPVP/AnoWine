@@ -50,7 +50,7 @@ ffmpeg-headless	7.1.1	LGPL-2.1-or-later AND GPL-2.0-or-later AND LGPL-3.0-or-lat
 flac	1.5.0	BSD-3-Clause AND GFDL-1.3-or-later AND GPL-2.0-or-later AND LGPL-2.1-or-later	nix:flac	COPYING.Xiph,COPYING.LGPL,COPYING.GPL,COPYING.FDL	Ano/lib/libFLAC.*	relinked to the bundle and signed again
 fluidsynth	2.4.4	LGPL-2.1-or-later	nix:fluidsynth	LICENSE	Ano/lib/libfluidsynth.*	relinked to the bundle and signed again
 fontconfig	2.16.0	BSD-2-Clause	nix:fontconfig	COPYING	Ano/lib/libfontconfig.*	relinked to the bundle and signed again
-freetype	2.13.3	GPL-2.0-or-later	nix:freetype	LICENSE.TXT,docs/FTL.TXT,docs/GPLv2.TXT	Ano/lib/libfreetype.*	relinked to the bundle and signed again
+freetype	2.13.3	GPL-2.0-or-later	nix:freetype	LICENSE.TXT,docs/FTL.TXT,docs/GPLv2.TXT,src/bdf/README,src/pcf/README	Ano/lib/libfreetype.*	relinked to the bundle and signed again
 fribidi	1.0.16	LGPL-2.1	nix:fribidi	COPYING	Ano/lib/libfribidi.*	relinked to the bundle and signed again
 game-music-emu	0.6.3	LGPL-2.1-or-later	nix:game-music-emu	license.txt,license.gpl2.txt	Ano/lib/libgme.*	relinked to the bundle and signed again
 gdk-pixbuf	2.42.12	LGPL-2.1-or-later	nix:gdk-pixbuf	COPYING	Ano/lib/libgdk_pixbuf-2.*	relinked to the bundle and signed again
@@ -163,7 +163,7 @@ vid.stab	unstable-2022-05-30	GPL-2.0-or-later	nix:vid-stab	LICENSE	Ano/lib/libvi
 vo-aacenc	0.1.3	Apache-2.0	nix:vo-aacenc	COPYING,NOTICE,aacenc/NOTICE,common/NOTICE	Ano/lib/libvo-aacenc.*	relinked to the bundle and signed again
 wavpack	5.8.1	BSD-3-Clause	nix:wavpack	COPYING	Ano/lib/libwavpack.*	relinked to the bundle and signed again
 webrtc-audio-processing	1.3	BSD-3-Clause	nix:webrtc-audio-processing_1	COPYING,webrtc/LICENSE,webrtc/PATENTS	Ano/lib/libwebrtc-audio-coding-1.*,Ano/lib/libwebrtc-audio-processing-1.*	relinked to the bundle and signed again
-wildmidi	0.4.6	LGPL-3.0	nix:wildmidi	COPYING	Ano/lib/libWildMidi.*	relinked to the bundle and signed again
+wildmidi	0.4.6	LGPL-3.0	nix:wildmidi	COPYING,docs/license/LGPLv3.txt,docs/license/GPLv3.txt	Ano/lib/libWildMidi.*	relinked to the bundle and signed again
 x264	0-unstable-2025-01-03	GPL-2.0-or-later	nix:x264	COPYING	Ano/lib/libx264.*	relinked to the bundle and signed again
 x265	4.1	GPL-2.0-or-later	nix:x265	COPYING	Ano/lib/libx265.*	relinked to the bundle and signed again
 xz	5.8.1	GPL-2.0-or-later AND LGPL-2.1-or-later	nix:xz	COPYING,COPYING.0BSD	Ano/lib/liblzma.*	relinked to the bundle and signed again
