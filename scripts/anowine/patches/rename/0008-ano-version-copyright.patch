@@ -1,0 +1,13 @@
+diff --git a/include/common.ver b/include/common.ver
+index a072f54..7a07dea 100644
+--- a/include/common.ver
++++ b/include/common.ver
+@@ -22,7 +22,7 @@
+ #include "ntverp.h"
+ 
+ #ifndef VER_LEGALCOPYRIGHT_STR
+-#define VER_LEGALCOPYRIGHT_STR "Copyright (c) 1993-2026 the Wine project authors (see the file AUTHORS for a complete list)"
++#define VER_LEGALCOPYRIGHT_STR "Copyright (c) 1993-2026 the authors listed in the file AUTHORS"
+ #endif
+ 
+ #ifndef VER_FILEVERSION

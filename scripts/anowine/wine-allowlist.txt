@@ -11,7 +11,7 @@
 
 # license and code-only: the phrases the engine keeps on purpose (Plan 3c-1). A phrase
 # (with a space) or the repo URL (with a slash) is blanked before tokens are taken.
-the Wine project authors	license	Wine's LGPL copyright line in every module's version resource
+the Wine project authors	license	the copyright line of the engine's LICENSE and NOTICES.md (every module's version resource had it up to runtime 5.0.0; patches/rename/0008)
 Wine distribution in the file COPYING.LIB	license	the LGPL notice in the Symbol font's license record
 WineSymbol © (Jon Parshall for CodeWeavers)	license	the Symbol font's copyright line
 github.com/HighStormPVP/AnoWine	code-only	the repo URL, where Wine's winehq.org links now point

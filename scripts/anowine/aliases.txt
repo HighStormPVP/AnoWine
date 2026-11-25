@@ -1,16 +1,19 @@
 # Hidden aliases: old Wine names the engine still answers to, because a closed part
-# (Apple's D3DMetal) uses them and cannot be rebuilt (rename design, decision 4).
+# (Apple's D3DMetal) uses them and cannot be rebuilt (rename design, decision 4, as the
+# owner amended it on 2026-11-25 for runtime 5.0.1).
 # One per line: old<TAB>new<TAB>where<TAB>closed part<TAB>how confirmed
-# Made by scripts/anowine/patches/rename/0002-ano-aliases.patch; each old name is on
-# scripts/anowine/wine-allowlist.txt as category alias.
-Wine builtin DLL	Ano builtin DLL	PE mark at 0x40: ntdll.dll (loader.c), ano-server (mapping.c), setupapi.dll (fakedll.c)	D3DMetal's PE DLLs (d3d11, d3d12, dxgi)	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_unix_call_dispatcher	__ano_unix_call_dispatcher	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_unix_call	__ano_unix_call	ntdll.dll export (ntdll.spec; CW HACK 22435 "Needed by D3DMetal PE DLLs")	D3DMetal's PE DLLs	the engine's own source (ntdll/loader.c, CW HACK 22435); confirm with ano-gptk-wine-names.txt
-__wine_dbg_get_channel_flags	__ano_dbg_get_channel_flags	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_dbg_header	__ano_dbg_header	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_dbg_output	__ano_dbg_output	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_dbg_strdup	__ano_dbg_strdup	ntdll.dll export (ntdll.spec)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_unix_call_funcs	__ano_unix_call_funcs	ntdll.so looks it up in a unix library (virtual.c)	libd3dshared.dylib	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-__wine_unix_call_wow64_funcs	__ano_unix_call_wow64_funcs	ntdll.so looks it up in a unix library (virtual.c)	libd3dshared.dylib	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
-WINED3DMETAL	ANOD3DMETAL	the Unix environment of each engine process, set by ntdll.so (env.c, patches/rename/0005) after its Windows environment is built; never passed to another program	D3DMetal (libd3dshared.dylib reads it to run a game on D3DMetal)	the app sets it for the D3DMetal backend (WineEnvironment.swift); owner's ruling 2026-11-21; check-env-aliases.sh; confirm with ano-gptk-wine-names.txt
-WINEESYNC	ANOESYNC	the Unix environment of each engine process, as WINED3DMETAL	D3DMetal	WhiskyWineVersion.swift: "D3DMetal checks WINEESYNC itself"; owner's ruling 2026-11-21; check-env-aliases.sh; confirm with ano-gptk-wine-names.txt
+# Made by scripts/anowine/patches/rename/0002, 0005 and 0007. Since runtime 5.0.1 no other
+# program can read them: ntdll exports none of them, and the engine's binaries keep the old
+# text encoded (include/ano/hidden.h). Each old name stays on wine-allowlist.txt as category
+# alias until 5.0.1 is published, because the published 5.0.0 still has them as text.
+Wine builtin DLL	Ano builtin DLL	PE mark at 0x40, kept encoded: ntdll.dll (loader.c), ano-server (mapping.c), setupapi.dll (fakedll.c); a module with it gets its old names rewritten (0007)	D3DMetal's PE DLLs (d3d11, d3d12, dxgi)	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_unix_call_dispatcher	__ano_unix_call_dispatcher	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_unix_call	__ano_unix_call	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	the engine's own source (ntdll/loader.c, CW HACK 22435); confirm with ano-gptk-wine-names.txt
+__wine_dbg_get_channel_flags	__ano_dbg_get_channel_flags	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_dbg_header	__ano_dbg_header	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_dbg_output	__ano_dbg_output	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_dbg_strdup	__ano_dbg_strdup	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_unix_call_funcs	__ano_unix_call_funcs	ntdll.so looks it up in a unix library by a decoded name (virtual.c, 0007)	libd3dshared.dylib	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+__wine_unix_call_wow64_funcs	__ano_unix_call_wow64_funcs	ntdll.so looks it up in a unix library by a decoded name (virtual.c, 0007)	libd3dshared.dylib	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
+WINED3DMETAL	ANOD3DMETAL	the Unix environment of an engine process, set by ntdll.so (env.c) only just before it loads a marked module's Mac library (virtual.c, patches/rename/0007); never passed to another program; the name is kept encoded	D3DMetal (libd3dshared.dylib reads it to run a game on D3DMetal)	the app sets it for the D3DMetal backend (WineEnvironment.swift); owner's ruling 2026-11-21; check-env-aliases.sh; confirm with ano-gptk-wine-names.txt
+WINEESYNC	ANOESYNC	the Unix environment of an engine process, as WINED3DMETAL	D3DMetal	WhiskyWineVersion.swift: "D3DMetal checks WINEESYNC itself"; owner's ruling 2026-11-21; check-env-aliases.sh; confirm with ano-gptk-wine-names.txt

@@ -16,6 +16,6 @@ winexe	substring	.NET target type winexe (Win + exe)
 intertwine	word	English word
 intertwined	word	English word
 Intertwined	word	English word
-the Wine project authors	license	Wine's LGPL copyright line in every module's version resource
+the Wine project authors	license	the copyright line of the engine's LICENSE and NOTICES.md (every module's version resource had it up to runtime 5.0.0; patches/rename/0008)
 Wine distribution in the file COPYING.LIB	license	the LGPL notice in LICENSE and in the Symbol font's license record (name ID 13)
 WineSymbol © (Jon Parshall for CodeWeavers)	license	the Symbol font's copyright line (fonts/symbol.sfd, symbol.ttf name ID 0)

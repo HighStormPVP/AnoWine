@@ -1,0 +1,490 @@
+diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
+index 9c0496e..fcb8852 100644
+--- a/dlls/ntdll/loader.c
++++ b/dlls/ntdll/loader.c
+@@ -34,6 +34,7 @@
+ #include "ano/debug.h"
+ #include "ano/list.h"
+ #include "ntdll_misc.h"
++#include "ano/hidden.h"
+ #include "ddk/ntddk.h"
+ #include "ddk/wdm.h"
+ 
+@@ -1075,7 +1076,7 @@ static FARPROC find_ordinal_export( HMODULE module, const IMAGE_EXPORT_DIRECTORY
+  *
+  * Helper for find_named_export.
+  */
+-static int find_name_in_exports( HMODULE module, const IMAGE_EXPORT_DIRECTORY *exports, const char *name )
++static int find_name_in_exports_exact( HMODULE module, const IMAGE_EXPORT_DIRECTORY *exports, const char *name )
+ {
+     const WORD *ordinals = get_rva( module, exports->AddressOfNameOrdinals );
+     const DWORD *names = get_rva( module, exports->AddressOfNames );
+@@ -1092,6 +1093,23 @@ static int find_name_in_exports( HMODULE module, const IMAGE_EXPORT_DIRECTORY *e
+     return -1;
+ }
+ 
++/* Ano (patches/rename/0007): "__ano__x" is a closed part's old name for
++ * "__ano_x", rewritten in its own memory by ano_rewrite_old_names. */
++static int find_name_in_exports( HMODULE module, const IMAGE_EXPORT_DIRECTORY *exports, const char *name )
++{
++    static const char closed_prefix[] = "__ano__", prefix[] = "__ano_";
++    const size_t closed_len = sizeof(closed_prefix) - 1, prefix_len = sizeof(prefix) - 1;
++    int ordinal = find_name_in_exports_exact( module, exports, name );
++    char new_name[256];
++    size_t len;
++
++    if (ordinal != -1 || strncmp( name, closed_prefix, closed_len )) return ordinal;
++    if ((len = strlen( name + closed_len )) >= sizeof(new_name) - prefix_len) return -1;
++    memcpy( new_name, prefix, prefix_len );
++    memcpy( new_name + prefix_len, name + closed_len, len + 1 );
++    return find_name_in_exports_exact( module, exports, new_name );
++}
++
+ 
+ /*************************************************************************
+  *		find_named_export
+@@ -2293,17 +2311,77 @@ static void apply_fuzzy_binary_patches( ANO_MODREF* wm );
+  *
+  * Build the module data for a mapped dll.
+  */
++/*************************************************************************
++ *		ano_rewrite_old_names
++ *
++ * Ano (patches/rename/0007): a module with the old mark is a closed part
++ * (Apple's D3DMetal, scripts/anowine/aliases.txt). It asks for ntdll's
++ * functions by their old names, through its imports and at run time
++ * (RtlFindExportedRoutineByName, GetProcAddress), and ntdll exports only the
++ * new ones. So each old prefix that starts a name in the module's data becomes
++ * "__ano__", which has the same length, in the module's own memory (its file
++ * is untouched), and find_name_in_exports reads "__ano__x" as "__ano_x". Code
++ * and the module's own export names are left alone.
++ */
++static inline BOOL ano_is_name_char( char c )
++{
++    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
++}
++
++static void ano_rewrite_old_names( void *module, const IMAGE_NT_HEADERS *nt )
++{
++    static const char new_prefix[] = "__ano__";
++    const IMAGE_DATA_DIRECTORY *exp = &nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
++    const IMAGE_SECTION_HEADER *sec = IMAGE_FIRST_SECTION( nt );
++    char *exp_start = (char *)module + exp->VirtualAddress, *exp_end = exp_start + exp->Size;
++    char old_prefix[ANO_OLD_PREFIX_LEN + 1];
++    unsigned int i, count = 0;
++
++    /* sections that share a page with code cannot be made writable alone */
++    if (nt->OptionalHeader.SectionAlignment < page_size) return;
++    ano_old_prefix( old_prefix );
++    for (i = 0; i < nt->FileHeader.NumberOfSections; i++)
++    {
++        char *start = (char *)module + sec[i].VirtualAddress, *end, *p;
++        SIZE_T len = sec[i].Misc.VirtualSize ? sec[i].Misc.VirtualSize : sec[i].SizeOfRawData;
++        BOOL writable = FALSE;
++        ULONG old_prot = 0;
++        void *addr = start;
++        SIZE_T size;
++
++        if (sec[i].Characteristics & (IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_CNT_CODE)) continue;
++        if (sec[i].VirtualAddress >= nt->OptionalHeader.SizeOfImage) continue;
++        len = min( len, nt->OptionalHeader.SizeOfImage - sec[i].VirtualAddress );
++        if (len <= ANO_OLD_PREFIX_LEN) continue;
++        size = len;
++        end = start + len - ANO_OLD_PREFIX_LEN;
++        for (p = start; p < end && (p = memchr( p, '_', end - p )); p++)
++        {
++            if (memcmp( p, old_prefix, ANO_OLD_PREFIX_LEN )) continue;
++            if (p > start && ano_is_name_char( p[-1] )) continue;
++            if (!ano_is_name_char( p[ANO_OLD_PREFIX_LEN] )) continue;
++            if (p >= exp_start && p < exp_end) continue;
++            if (!writable)
++            {
++                if (NtProtectVirtualMemory( NtCurrentProcess(), &addr, &size, PAGE_READWRITE, &old_prot )) break;
++                writable = TRUE;
++            }
++            memcpy( p, new_prefix, ANO_OLD_PREFIX_LEN );
++            count++;
++        }
++        if (writable) NtProtectVirtualMemory( NtCurrentProcess(), &addr, &size, old_prot, &old_prot );
++    }
++    TRACE( "%p: %u old names now read as Ano's\n", module, count );
++}
++
+ static NTSTATUS build_module( LPCWSTR load_path, const UNICODE_STRING *nt_name, void **module,
+                               const SECTION_IMAGE_INFORMATION *image_info, const struct file_id *id,
+                               DWORD flags, BOOL system, BOOL redirected, ANO_MODREF **pwm )
+ {
+     static const char builtin_signature[] = "Ano builtin DLL";
+-    /* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt.
+-     * Read through a volatile pointer, so the mark stays one string in the binary. */
+-    static const char alias_signature[] = "Wine builtin DLL";
+-    static const char *volatile alias_mark = alias_signature;
+     char *signature = (char *)((IMAGE_DOS_HEADER *)*module + 1);
+-    BOOL is_builtin;
++    char old_mark[ANO_OLD_MARK_LEN + 1];
++    BOOL is_builtin, is_closed_part;
+     IMAGE_NT_HEADERS *nt;
+     ANO_MODREF *wm;
+     NTSTATUS status;
+@@ -2314,10 +2392,12 @@ static NTSTATUS build_module( LPCWSTR load_path, const UNICODE_STRING *nt_name,
+     map_size = (nt->OptionalHeader.SizeOfImage + page_size - 1) & ~(page_size - 1);
+     if ((status = perform_relocations( *module, nt, map_size ))) return status;
+ 
++    /* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt */
++    is_closed_part = ((char *)nt - signature >= sizeof(old_mark) &&
++                      !memcmp( signature, ano_old_mark( old_mark ), sizeof(old_mark) ));
+     is_builtin = ((char *)nt - signature >= sizeof(builtin_signature) &&
+-                  !memcmp( signature, builtin_signature, sizeof(builtin_signature) )) ||
+-                 ((char *)nt - signature >= sizeof(alias_signature) &&
+-                  !memcmp( signature, alias_mark, sizeof(alias_signature) ));
++                  !memcmp( signature, builtin_signature, sizeof(builtin_signature) )) || is_closed_part;
++    if (is_closed_part) ano_rewrite_old_names( *module, nt );
+ 
+     /* create the MODREF */
+ 
+diff --git a/dlls/ntdll/ntdll.spec b/dlls/ntdll/ntdll.spec
+index 58a3c69..1d5bd6b 100644
+--- a/dlls/ntdll/ntdll.spec
++++ b/dlls/ntdll/ntdll.spec
+@@ -1773,8 +1773,6 @@
+ @ extern -private __ano_unix_call_dispatcher
+ @ extern -private -arch=arm64ec __ano_unix_call_dispatcher_arm64ec
+ @ extern -private __ano_unixlib_handle
+-# Hidden aliases for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt
+-@ extern -private __wine_unix_call_dispatcher __ano_unix_call_dispatcher
+ 
+ # Debugging
+ @ stdcall -norelay __ano_dbg_write(ptr long)
+@@ -1782,10 +1780,6 @@
+ @ cdecl -norelay __ano_dbg_header(long long str)
+ @ cdecl -norelay __ano_dbg_output(str)
+ @ cdecl -norelay __ano_dbg_strdup(str)
+-@ cdecl -norelay __wine_dbg_get_channel_flags(ptr) __ano_dbg_get_channel_flags
+-@ cdecl -norelay __wine_dbg_header(long long str) __ano_dbg_header
+-@ cdecl -norelay __wine_dbg_output(str) __ano_dbg_output
+-@ cdecl -norelay __wine_dbg_strdup(str) __ano_dbg_strdup
+ 
+ # Version
+ @ cdecl ano_get_version()
+@@ -1797,5 +1791,3 @@
+ 
+ # CW HACK 22435
+ @ stdcall __ano_unix_call(int64 long ptr) __ano_unix_call_exported
+-# Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt
+-@ stdcall __wine_unix_call(int64 long ptr) __ano_unix_call_exported
+diff --git a/dlls/ntdll/unix/env.c b/dlls/ntdll/unix/env.c
+index 687ec7e..bd776ca 100644
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -58,6 +58,7 @@
+ #include "ano/condrv.h"
+ #include "ano/debug.h"
+ #include "unix_private.h"
++#include "ano/hidden.h"
+ #include "locale_private.h"
+ #include "error.h"
+ 
+@@ -840,48 +841,56 @@ void init_environment(void)
+ 
+ 
+ /* Ano (patches/rename/0005): Apple's D3DMetal, a closed part Ano cannot
+- * rebuild, reads WINED3DMETAL and WINEESYNC itself. Ano sets ANOD3DMETAL and
+- * ANOESYNC; each process copies them to the old names in its own environment
+- * only, after its Windows environment is built (ano_env_set_aliases), and
+- * hands the old names to no other program: a forked child drops them before
+- * it execs (ano_env_unset_aliases) and every environment passed on skips them
+- * (ano_env_is_alias, ano_env_without_aliases). A child sets them again from
+- * the Ano names. scripts/anowine/aliases.txt lists them. patches/rename/0006
+- * exports ano_env_unset_aliases and ano_env_without_aliases to the other unix
+- * libraries (include/ano/unixlib.h), as ntdll_umbstowcs is; their spawn calls
+- * are listed in scripts/anowine/spawn-sites.txt. */
+-static const char * const ano_env_aliases[][2] =
+-{
+-    { "ANOD3DMETAL", "WINED3DMETAL" },
+-    { "ANOESYNC", "WINEESYNC" },
+-};
++ * rebuild, reads two of Wine's variables itself (its D3DMETAL and ESYNC). Ano
++ * sets ANOD3DMETAL and ANOESYNC; a process copies them to the old names in its
++ * own environment only, just before it loads a closed part's Mac library
++ * (ano_env_set_aliases, called by virtual.c; patches/rename/0007), and hands the
++ * old names to no other program: a forked child drops them before it execs
++ * (ano_env_unset_aliases) and every environment passed on skips them
++ * (ano_env_is_alias, ano_env_without_aliases). The old names are kept encoded
++ * (include/ano/hidden.h). scripts/anowine/aliases.txt lists them.
++ * patches/rename/0006 exports ano_env_unset_aliases and ano_env_without_aliases
++ * to the other unix libraries (include/ano/unixlib.h), as ntdll_umbstowcs is;
++ * their spawn calls are listed in scripts/anowine/spawn-sites.txt. */
++static const char * const ano_env_aliases[] = { "D3DMETAL", "ESYNC" };
++
++/* the Ano name of alias i, or its old name */
++static char *ano_env_alias_name( char out[32], unsigned int i, BOOL old )
++{
++    if (old) ano_old_env_prefix( out );
++    else strcpy( out, "ANO" );
++    return strcat( out, ano_env_aliases[i] );
++}
+ 
+ void ano_env_set_aliases(void)
+ {
++    char name[32], old_name[32];
+     unsigned int i;
+ 
+     for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++)
+     {
+-        const char *value = getenv( ano_env_aliases[i][0] );
+-        if (value) setenv( ano_env_aliases[i][1], value, 1 );
++        const char *value = getenv( ano_env_alias_name( name, i, FALSE ) );
++        if (value) setenv( ano_env_alias_name( old_name, i, TRUE ), value, 1 );
+     }
+ }
+ 
+ void ano_env_unset_aliases(void)
+ {
++    char old_name[32];
+     unsigned int i;
+ 
+-    for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++) unsetenv( ano_env_aliases[i][1] );
++    for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++) unsetenv( ano_env_alias_name( old_name, i, TRUE ) );
+ }
+ 
+ BOOL ano_env_is_alias( const char *entry )
+ {
++    char old_name[32];
+     unsigned int i;
+ 
+     for (i = 0; i < ARRAY_SIZE(ano_env_aliases); i++)
+     {
+-        size_t len = strlen( ano_env_aliases[i][1] );
+-        if (!strncmp( entry, ano_env_aliases[i][1], len ) && entry[len] == '=') return TRUE;
++        size_t len = strlen( ano_env_alias_name( old_name, i, TRUE ) );
++        if (!strncmp( entry, old_name, len ) && entry[len] == '=') return TRUE;
+     }
+     return FALSE;
+ }
+diff --git a/dlls/ntdll/unix/loader.c b/dlls/ntdll/unix/loader.c
+index 21a9823..3ba8a7e 100644
+--- a/dlls/ntdll/unix/loader.c
++++ b/dlls/ntdll/unix/loader.c
+@@ -2229,7 +2229,6 @@ static void start_main_thread(void)
+     init_cpu_info();
+     init_files();
+     init_startup_info();
+-    ano_env_set_aliases();
+     dbg_init();
+     *(ULONG_PTR *)&peb->CloudFileFlags = get_image_address();
+     set_load_order_app_name( main_wargv[0] );
+diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
+index 7e93680..f21e296 100644
+--- a/dlls/ntdll/unix/virtual.c
++++ b/dlls/ntdll/unix/virtual.c
+@@ -90,6 +90,7 @@
+ #include "ano/rbtree.h"
+ #include "unix_private.h"
+ #include "ano/debug.h"
++#include "ano/hidden.h"
+ 
+ ANO_DEFAULT_DEBUG_CHANNEL(virtual);
+ ANO_DECLARE_DEBUG_CHANNEL(module);
+@@ -845,12 +846,33 @@ static NTSTATUS get_unixlib_funcs( void *so_handle, BOOL wow, const void **funcs
+ {
+     *funcs = dlsym( so_handle, wow ? "__ano_unix_call_wow64_funcs" : "__ano_unix_call_funcs" );
+     /* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt */
+-    if (!*funcs) *funcs = dlsym( so_handle, wow ? "__wine_unix_call_wow64_funcs" : "__wine_unix_call_funcs" );
++    if (!*funcs)
++    {
++        char name[64];
++        strcat( ano_old_prefix( name ), wow ? "unix_call_wow64_funcs" : "unix_call_funcs" );
++        *funcs = dlsym( so_handle, name );
++    }
+     if (!*funcs) *entry = dlsym( so_handle, "__ano_unix_lib_init" );
+     return *funcs || *entry ? STATUS_SUCCESS : STATUS_ENTRYPOINT_NOT_FOUND;
+ }
+ 
+ 
++/***********************************************************************
++ *           ano_has_old_mark
++ *
++ * Ano (patches/rename/0007): whether a builtin module is a closed part
++ * (Apple's D3DMetal, scripts/anowine/aliases.txt), by its old mark.
++ */
++static BOOL ano_has_old_mark( const void *module )
++{
++    const IMAGE_DOS_HEADER *dos = module;
++    char old_mark[ANO_OLD_MARK_LEN + 1];
++
++    if (dos->e_magic != IMAGE_DOS_SIGNATURE || dos->e_lfanew < sizeof(*dos) + sizeof(old_mark)) return FALSE;
++    return !memcmp( dos + 1, ano_old_mark( old_mark ), sizeof(old_mark) );
++}
++
++
+ /***********************************************************************
+  *           load_builtin_unixlib
+  */
+@@ -866,6 +888,9 @@ static NTSTATUS load_builtin_unixlib( void *module, BOOL wow, const void **funcs
+     {
+         if (builtin->unix_path && !builtin->unix_handle)
+         {
++            /* a closed part's Mac library reads D3DMetal's variables by their
++             * old names; only a process that loads one has them (env.c) */
++            if (ano_has_old_mark( module )) ano_env_set_aliases();
+             builtin->unix_handle = dlopen( builtin->unix_path, RTLD_NOW );
+             if (!builtin->unix_handle)
+                 WARN_(module)( "failed to load %s: %s\n", debugstr_a(builtin->unix_path), dlerror() );
+diff --git a/dlls/setupapi/fakedll.c b/dlls/setupapi/fakedll.c
+index f7efb8d..9459a2b 100644
+--- a/dlls/setupapi/fakedll.c
++++ b/dlls/setupapi/fakedll.c
+@@ -34,6 +34,7 @@
+ #include "winternl.h"
+ #include "ano/debug.h"
+ #include "ano/list.h"
++#include "ano/hidden.h"
+ #include "ole2.h"
+ #include "atliface.h"
+ 
+@@ -57,12 +58,15 @@ static const char current_arch[] = "none";
+ #endif
+ 
+ static const char builtin_signature[] = "Ano builtin DLL";
+-/* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt.
+- * Read through a volatile pointer, so the mark stays one string in the binary. */
+-static const char alias_signature[] = "Wine builtin DLL";
+-static const char *volatile alias_mark = alias_signature;
+ static const char fakedll_signature[] = "Ano placeholder DLL";
+ 
++/* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt */
++static BOOL has_old_mark( const IMAGE_DOS_HEADER *dos )
++{
++    char old_mark[ANO_OLD_MARK_LEN + 1];
++    return !memcmp( dos + 1, ano_old_mark( old_mark ), sizeof(old_mark) );
++}
++
+ static const unsigned int file_alignment = 512;
+ static const unsigned int section_alignment = 4096;
+ static const unsigned int max_dll_name_len = 64;
+@@ -239,7 +243,7 @@ static int read_file( const WCHAR *name, void **data, SIZE_T *size )
+     if (dos->e_magic != IMAGE_DOS_SIGNATURE) goto done;
+     if (dos->e_lfanew < sizeof(*dos) + 32) goto done;
+     if (memcmp( dos + 1, builtin_signature, strlen(builtin_signature) + 1 ) &&
+-        memcmp( dos + 1, alias_mark, strlen(alias_signature) + 1 ) &&
++        !has_old_mark( dos ) &&
+         memcmp( dos + 1, fakedll_signature, strlen(fakedll_signature) + 1 )) goto done;
+     if (dos->e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS,OptionalHeader.MajorLinkerVersion) > header_size)
+         goto done;
+@@ -381,7 +385,7 @@ static BOOL is_fake_dll( HANDLE h )
+     if (dos->e_magic != IMAGE_DOS_SIGNATURE) return FALSE;
+     if (dos->e_lfanew < size) return FALSE;
+     return (!memcmp( dos + 1, builtin_signature, sizeof(builtin_signature) ) ||
+-            !memcmp( dos + 1, alias_mark, sizeof(alias_signature) ) ||
++            has_old_mark( dos ) ||
+             !memcmp( dos + 1, fakedll_signature, sizeof(fakedll_signature) ));
+ }
+ 
+diff --git a/include/ano/hidden.h b/include/ano/hidden.h
+new file mode 100644
+index 0000000..6ec12a4
+--- /dev/null
++++ b/include/ano/hidden.h
+@@ -0,0 +1,67 @@
++/*
++ * Old names a closed part still uses
++ *
++ * Ano (patches/rename/0007): Apple's D3DMetal, which Ano cannot rebuild, still
++ * uses a few of Wine's names (scripts/anowine/aliases.txt). Ano's binaries keep
++ * them out of their readable text: each is stored with every byte XORed with
++ * ANO_HIDDEN_KEY and decoded in memory when it is needed. The key is read
++ * through a volatile, so the compiler cannot fold a decoded name back into the
++ * binary.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with this library; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
++ */
++
++#ifndef __ANO_HIDDEN_H
++#define __ANO_HIDDEN_H
++
++#define ANO_HIDDEN_KEY 0x5a
++#define ANO_HIDE(c) ((char)((c) ^ ANO_HIDDEN_KEY))
++
++/* decodes len bytes of in into out, which holds len + 1 bytes */
++static inline char *ano_unhide( char *out, const char *in, unsigned int len )
++{
++    volatile unsigned char key = ANO_HIDDEN_KEY;
++    unsigned int i;
++
++    for (i = 0; i < len; i++) out[i] = in[i] ^ key;
++    out[len] = 0;
++    return out;
++}
++
++/* the PE mark at 0x40 of a closed part's DLLs, accepted beside Ano's own */
++#define ANO_OLD_MARK_LEN 16
++static inline char *ano_old_mark( char out[ANO_OLD_MARK_LEN + 1] )
++{
++    static const char hidden[ANO_OLD_MARK_LEN] = { ANO_HIDE('W'), ANO_HIDE('i'), ANO_HIDE('n'), ANO_HIDE('e'), ANO_HIDE(' '), ANO_HIDE('b'), ANO_HIDE('u'), ANO_HIDE('i'), ANO_HIDE('l'), ANO_HIDE('t'), ANO_HIDE('i'), ANO_HIDE('n'), ANO_HIDE(' '), ANO_HIDE('D'), ANO_HIDE('L'), ANO_HIDE('L') };
++    return ano_unhide( out, hidden, ANO_OLD_MARK_LEN );
++}
++
++/* the prefix of the old names of ntdll's functions and unix-call tables */
++#define ANO_OLD_PREFIX_LEN 7
++static inline char *ano_old_prefix( char out[ANO_OLD_PREFIX_LEN + 1] )
++{
++    static const char hidden[ANO_OLD_PREFIX_LEN] = { ANO_HIDE('_'), ANO_HIDE('_'), ANO_HIDE('w'), ANO_HIDE('i'), ANO_HIDE('n'), ANO_HIDE('e'), ANO_HIDE('_') };
++    return ano_unhide( out, hidden, ANO_OLD_PREFIX_LEN );
++}
++
++/* the prefix of the old names of D3DMetal's variables */
++#define ANO_OLD_ENV_PREFIX_LEN 4
++static inline char *ano_old_env_prefix( char out[ANO_OLD_ENV_PREFIX_LEN + 1] )
++{
++    static const char hidden[ANO_OLD_ENV_PREFIX_LEN] = { ANO_HIDE('W'), ANO_HIDE('I'), ANO_HIDE('N'), ANO_HIDE('E') };
++    return ano_unhide( out, hidden, ANO_OLD_ENV_PREFIX_LEN );
++}
++
++#endif  /* __ANO_HIDDEN_H */
+diff --git a/server/mapping.c b/server/mapping.c
+index 81c81dc..8445c7d 100644
+--- a/server/mapping.c
++++ b/server/mapping.c
+@@ -44,6 +44,7 @@
+ #include "process.h"
+ #include "request.h"
+ #include "security.h"
++#include "ano/hidden.h"
+ 
+ /* list of memory ranges, used to store committed info */
+ struct ranges
+@@ -826,11 +827,9 @@ static int load_cfg_header( IMAGE_LOAD_CONFIG_DIRECTORY64 *cfg, IMAGE_DATA_DIREC
+ static unsigned int get_image_params( struct mapping *mapping, file_pos_t file_size, int unix_fd )
+ {
+     static const char builtin_signature[] = "Ano builtin DLL";
+-    /* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt.
+-     * Read through a volatile pointer, so the mark stays one string in the binary. */
+-    static const char alias_signature[] = "Wine builtin DLL";
+-    static const char *volatile alias_mark = alias_signature;
+     static const char fakedll_signature[] = "Ano placeholder DLL";
++    /* Hidden alias for closed parts (Apple's D3DMetal): scripts/anowine/aliases.txt */
++    char old_mark[ANO_OLD_MARK_LEN + 1];
+ 
+     IMAGE_COR20_HEADER clr;
+     IMAGE_SECTION_HEADER *sec;
+@@ -980,7 +979,7 @@ static unsigned int get_image_params( struct mapping *mapping, file_pos_t file_s
+     mapping->image.loader_flags  = !!clr_dir;
+     mapping->image.ano_builtin  = (mz_size == sizeof(mz) &&
+                                     (!memcmp( mz.buffer, builtin_signature, sizeof(builtin_signature) ) ||
+-                                     !memcmp( mz.buffer, alias_mark, sizeof(alias_signature) )));
++                                     !memcmp( mz.buffer, ano_old_mark( old_mark ), sizeof(old_mark) )));
+     mapping->image.ano_fakedll  = (mz_size == sizeof(mz) &&
+                                     !memcmp( mz.buffer, fakedll_signature, sizeof(fakedll_signature) ));
+ 
