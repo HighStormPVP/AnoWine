@@ -65,6 +65,31 @@ Two further rules follow from these (stated by me, not asked):
   (for example "the Wine project authors" in version resources) are kept and allowlisted, and the
   runtime and app carry a notices file.
 
+### Amended by the owner (2026-11-25, runtime 5.0.1)
+
+On runtime 5.0.0 a Windows program could still find "wine" in three places: the copyright line
+in every module's version resource, six old function names in ntdll's export table, and
+`WINEESYNC` (or `WINED3DMETAL`) in the Mac-side environment of every engine process. The owner
+asked for all three to go and chose (AskUserQuestion, 2026-11-25):
+
+- **Decision 4, tightened: no other program can read a hidden alias.**
+  - ntdll exports no old name. When a module with the old `Wine builtin DLL` mark (a closed part)
+    loads, the loader rewrites the `__wine_` prefix inside that module's own memory to `__ano__`
+    (the same length), and an export lookup for `__ano__<name>` answers with `__ano_<name>`.
+    Apple's files on disk are never changed.
+  - The old text our own binaries still need (the mark, the `__wine_` prefix, the unix-call
+    table names, `WINED3DMETAL`, `WINEESYNC`) is stored encoded, so a file or memory scan for
+    "wine" does not find it in our binaries. The CI gate can no longer see it either, so the
+    D3DMetal stand-in test proves it still works.
+  - `WINED3DMETAL` and `WINEESYNC` are set only in a process that is about to load a closed
+    part's Mac library, not in every process.
+- **License notices, narrowed.** The version-resource copyright line reads "Copyright (c)
+  1993-2026 the authors listed in the file AUTHORS": the same authors, credited through the
+  AUTHORS file in `share/ano/licenses/engine/`. License texts (LICENSE, AUTHORS, NOTICES.md, the
+  Symbol font's license record, which points to the license and so stays intact) keep their
+  words.
+- 5.0.1 is built and checked now and published after the owner's D3DMetal test on 5.0.0.
+
 ## Goals
 
 - **G1. No "wine" anywhere** that Ano ships or creates, case-insensitive, wherever the letters mean
