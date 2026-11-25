@@ -686,3 +686,94 @@ per process start. Both are inherited, not caused by the rename.
   in a multi-threaded process.
 - The "Whisky" sweep.
 - The Opera GX test, queued by the owner.
+
+## Runtime 5.0.1: old names hidden
+
+On runtime 5.0.0 a Windows program could still find "wine" in three places:
+- the copyright line in every module's version information;
+- six old function names in ntdll's export list (`__wine_unix_call_dispatcher`, `__wine_unix_call`
+  and four `__wine_dbg_*`);
+- `WINEESYNC` and `WINED3DMETAL` in the Mac-side environment of every engine process.
+
+The owner asked for all three to go (2026-11-25), and runtime 5.0.1 removes them. Plan
+`docs/superpowers/plans/2026-11-25-ano-runtime-501-hidden-names.md`; spec amendment
+"Amended by the owner (2026-11-25, runtime 5.0.1)" in the rename design; the ledger is in
+`.superpowers/sdd/2026-11-25-ano-runtime-501-hidden-names/`.
+
+**How it works** (patches `rename/0007` and `0008`):
+- **Copyright.** `include/common.ver` now says "Copyright (c) 1993-2026 the authors listed in the
+  file AUTHORS". The AUTHORS file and the license texts are unchanged in
+  `share/ano/licenses/engine/`. Ano's own `NOTICES` now credits "the authors listed in
+  licenses/engine/AUTHORS" too.
+- **Old names in a closed part.** Apple's D3DMetal DLLs carry the old mark `Wine builtin DLL` at
+  0x40. When ntdll's loader maps a module with that mark, it rewrites each `__wine_` that starts a
+  name in the module's data to `__ano__` (same length), in memory only. A bare `__wine_` followed
+  by the end of the string or `%` is rewritten too, so names the module builds at run time match.
+  It skips code sections and the module's own export list. A lookup of `__ano__x` answers with
+  ntdll's `__ano_x`. In a marked module, it then falls back to the module's own export with the
+  old name. A forward in a marked module's export list to an old name is read as rewritten. This
+  covers all three ways a DLL finds an ntdll function: its import table, `GetProcAddress` and
+  `RtlFindExportedRoutineByName`. Apple's files on disk are never changed. ntdll exports none of
+  the six old names.
+- **Old text kept encoded.** The engine still needs a few old words: the mark, the `__wine_`
+  prefix, the unix-call table names, `WINED3DMETAL` and `WINEESYNC`. `include/ano/hidden.h`
+  stores them XOR-encoded and decodes them only into a local buffer when needed. A file or memory
+  scan of Ano's own binaries finds none of them.
+- **D3DMetal's two settings.** ntdll.so sets them only just before it loads the Mac library of a
+  module with the old mark. Before 5.0.1 they were set at every process start. Programs the
+  engine starts still get them removed (patches 0005 and 0006).
+
+**Checks** (in `Ano Engine`'s `check` job):
+- **`check-hidden-names.sh`** scans the runtime and a new bottle:
+  - the token scan finds no old name, with the allowlist's 11 alias rows not allowed;
+  - "the Wine project authors" appears nowhere outside `share/ano/licenses/`;
+  - `kernel32.dll` has the new copyright line.
+
+  Its self-test (`test-check-hidden-names.sh`, in Hygiene) has five cases.
+- **`check-aliases.sh`** builds a stand-in DLL with the old mark and checks four things:
+  - it still finds ntdll's functions through its imports, `RtlFindExportedRoutineByName` and
+    `GetProcAddress`;
+  - it finds its own old-named export, a forward to an old ntdll name, and names it builds from
+    the bare prefix and from a `%s` format (`alias_more` returns 0);
+  - its file on disk is unchanged;
+  - an ordinary program (`aliasprobe.exe`) gets NULL for all six old names both ways;
+  - no ntdll export name contains "wine".
+- **`check-env-aliases.sh`** adds a plain builtin DLL (Ano's mark). Its Mac half sees neither
+  setting, while the marked stand-in's Mac half sees both.
+
+**Runs:**
+- **RED:** `Ano Engine` 45568951409, on the published 5.0.0. Exactly the three new steps failed:
+  - 11 readable old names, exactly the alias rows;
+  - the old copyright line in 940 files;
+  - all six names visible to an ordinary program, out of 1,489 exports;
+  - `WINEESYNC=1` in a plain process.
+- **Build 45570946688** stopped at configure. makedep finds an `ano/` header only when
+  `include/Makefile.in` lists it.
+- **Build 45576380150** passed everything except one hit: Ano's own NOTICES sentence.
+- **Build 45598254928** (commit 5e8556c9) was green on every job.
+- **Final review** (a fresh reviewer) found two gaps. A marked module's own old-named exports and
+  its forwards to old ntdll names would stop resolving, and names it builds at run time from the
+  bare prefix would miss. RED: `Ano Engine` 45614216052 (commit fc707e70, on 45598254928's engine)
+  failed only "Hidden aliases for closed parts", with `MORE: alias_more() = 0xf`.
+- **GREEN:** `Ano Engine` 45616091155 (commit 12c7f842), version 5.0.1. Every step is green:
+  - `old names hidden: tokens 0 (11 alias rows not allowed), old copyright 0, new copyright in
+    kernel32.dll`;
+  - `RESULT: alias_call(21) = 42`, `MORE: alias_more() = 0x0`, `PROBE: 1483 ntdll export names
+    read`, `PROBE: ntdll hides the old names`;
+  - `plain: WINED3DMETAL=- WINEESYNC=- (call 0)` beside `unix: WINED3DMETAL=1 WINEESYNC=1
+    (call 0)`;
+  - the gate, graphics, mono, ano-tricks and app-on-engine checks.
+
+  `Libraries.tar.gz` SHA-256 `05998574c5d2010c5ebf0dac2f79e4a63314bbe04c76557d102a778164b246e1`.
+
+**Not proven in CI.** Only Apple's real DLLs can show three things:
+- whether D3DMetal finds ntdll's functions by one of the three paths above;
+- whether its DLLs are page-aligned (a module with smaller sections gets no rewrite);
+- whether it reads its two settings only from its Mac library.
+
+The owner's D3DMetal game test on 5.0.1 answers these (`TESTING-ON-M2.md`, "Ano 9: runtime 5.0.1").
+
+**Release.** 5.0.1 is published only after two things: the owner's D3DMetal test on 5.0.0 comes
+back, and the owner says yes. At the release, the feed, `Ano Feeds` and `Ano Proxy` move to
+v5.0.1, and the 11 `alias` rows leave `wine-allowlist.txt`. The Test Build's gate checks the
+published runtime, so the rows must stay until then.

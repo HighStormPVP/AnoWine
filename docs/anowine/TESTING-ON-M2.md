@@ -185,3 +185,30 @@ take a little longer while Rosetta remakes them.
    ```
 
 4. Send back the last line of each run. If it says "nothing to clean", there was nothing left.
+
+## Ano 9: runtime 5.0.1
+
+Do this once I tell you 5.0.1 is published. That happens after you send the "Ano 9: runtime 5.0.0"
+results. Runtime 5.0.1 is 5.0.0 with the last three ways a Windows program could find "wine"
+removed:
+- the copyright line in every Windows file the engine ships;
+- six old function names;
+- two D3DMetal settings that every program could see.
+
+Your Ano 9 bottles keep working. The first start of each bottle takes a little longer while the
+engine refreshes its Windows files. Report each item as pass or fail.
+
+1. **Update.** Open Ano 9. It says "You are running Ano runtime 5.0.0, but 5.0.1 is available";
+   click **Update**. If you turned off **Automatically check for Ano runtime updates**
+   (**Settings**, **Updates**), turn it on, reopen Ano, and turn it off again afterwards. Then
+   in the Steam bottle, **Generate Stability Diagnostics** says `Ano runtime version: 5.0.1`.
+2. **Steam in your Ano 9 bottle.** Open the Steam bottle you made on 5.0.0. Steam starts already
+   signed in, and a game starts from Ano's **Library**. Send how long the bottle's first start
+   took.
+3. **D3DMetal.** This item matters most. Start the DirectX 12 game from "Ano 9: runtime 5.0.0"
+   item 4 with graphics set to D3DMetal. 5.0.1 changes how D3DMetal finds the engine's functions,
+   and only Apple's real files can show that it works. If the game fails:
+   - say whether it started on 5.0.0;
+   - send a screenshot of any message;
+   - send the newest log from **File**, **Open Logs Folder**.
+4. **DXVK.** Start a game with graphics set to DXVK.
