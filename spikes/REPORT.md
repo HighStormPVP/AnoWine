@@ -583,3 +583,106 @@ could not remove (exit 1). Whether SIP lets root delete there, and the script on
 - the README's upstream text.
 
 A full "Whisky" sweep is a separate follow-up.
+
+## Plan 3c-5: the gate and the release
+
+The rename now has a gate in CI on every engine build and every app build, including what a session
+leaves on the Mac. Runtime 5.0.0 is published, and Ano 9 is out for testing. Plan
+`docs/superpowers/plans/2026-11-24-ano-plan3c5-gate-release.md`; the ledger is in
+`.superpowers/sdd/2026-11-24-ano-plan3c5-gate-release/`.
+
+**Where the gate runs:**
+
+| Build | Job | What it judges |
+|---|---|---|
+| `Ano Engine` 5.x | `Renamed source (Linux)` | the renamed source: the rename patches apply, `check_lengths`, and the spawn-site scan |
+| `Ano Engine` 5.x | `check` | the engine and a new bottle (`wine_tokens.py --gate`), the license texts (`check-licenses.sh`), the alias helpers' links, and the older checks |
+| `Ano Engine` 5.x | `gate` | the Mac-state gate (`scan-wine-traces.sh`) and its planted self-test, plus the upstream boot-warning report |
+| `AnoWine Test Build` | `gate` | the app bundle, judged by its Mach-O facts (`macho_facts.sh`, `wine_tokens.py --skip-macho`); then the app's Mac-state gate (`--app`), on the published runtime from the feed or on `engine_run` |
+
+`AnoWineTraceScan.yml`, the report-only 4.x scan, is gone.
+
+**What the Mac-state gate captures.** The session boots a bottle, runs `cmd /c set`, opens
+`ano-cfg`, `regedit` and `notepad`, and runs the `win10` verb, under a persistent `ano-server`. With
+`--app`, it also runs `ano create` / `ano run` and opens the app for 60 s. Only what is new since
+the start is captured:
+- the processes' command lines, environments and open files;
+- the Windows environment;
+- files created or changed under HOME, the temporary folder, the cache folder and `/private/tmp`;
+- new defaults domains, `launchctl` and `lsappinfo` lines, and LaunchServices;
+- new files in Rosetta's cache;
+- the system log.
+
+Three things are left out of the file capture:
+- the runner's own folders;
+- files dated after the session's end (bazel dates its files years ahead);
+- other apps' sandbox containers, except Ano's own (macOS lets only the owning app write there).
+
+The session gets only the environment the app gives the engine, and harness processes are told apart
+by PID, not text.
+
+The planted run (`PLANTWINE` in a program's environment, `~/.cache/plantwine/x`, a `plantwine` log
+line) must fail with exactly those tokens, each found by its own capture. Otherwise the gate counts
+as blind and exits 2. On the release candidate both runs pass: 92 tokens, all allowlisted, all
+inside the bottle.
+
+The one new `not-wine` entry is `intertwined`, written into helpd's cache by Apple's Help daemon.
+Apple's daemons write 80–550 files into HOME per session. If one ever says "Wine", no category fits
+and the owner must rule.
+
+**Spawn sites** (`spawn_sites.py`, list `spawn-sites.txt`). There are 12 sites:
+- 10 drop the D3DMetal aliases before they start a program;
+  - 5 already did through patch 0005: three calls in ntdll's loader (`build_path_and_exec`,
+    `preloader_exec`), `__ano_unix_spawnvp` and `fork_and_exec`;
+  - 5 do through the new patch 0006: localspl's print command and its two `posix_spawn` calls,
+    msv1_0's `ntlm_auth`, and netapi32's `smbpasswd`, a fifth leak the plan had not listed;
+- 2 are not spawns: msvcrt's own `system()` and wininet's call to it.
+
+Patch 0006 exports the helpers from ntdll.so the way `ntdll_umbstowcs` is exported. A new site, an
+unhandled one, or a listed one that disappears stops the build. In this build only localspl's
+print command and msv1_0's `ntlm_auth` are compiled in: CUPS is off, and there is no samba.
+
+**Licenses** (`licenses.txt`, `collect_licenses.py`, `check-licenses.sh`). There are 146 components
+and 241 license texts, covering 5,608 files; the first component whose globs match a file wins.
+- The texts are the components' own, taken from their sources at the pinned commits.
+- Each nixpkgs line must match nixpkgs at `NIXPKGS_REV` in version and SPDX id.
+- `NOTICES` has a table: component, version, license, source, and what Ano changed.
+- New allowlist entries (`license`) are 7 phrases from texts shipped word for word: Wine's AUTHORS,
+  LICENSE and NOTICES.md, mpg123's AUTHORS, and wine-mono's COPYING.
+- `NOASSERTION` appears for the GPTK shims, whose upstream publishes no license; the owner ruled to
+  ship them as they are. It also appears for six xorg libraries that nixpkgs gives no license; their
+  COPYING files still ship.
+
+**Boot warnings.** Upstream's v4.8.3 shows both of the warnings 5.x shows: the Bluetooth driver
+fails (`c00000e5`; `winebth` there, `anobth` here), and `error loading cxcompatdb.so` appears once
+per process start. Both are inherited, not caused by the rename.
+
+**The release:**
+- **Runtime v5.0.0**, "Latest", published by `Ano Engine`'s new `publish` job (run 45483468315).
+  It is the release candidate from build 45326779119, checked again in the same run. The job
+  refuses notes that don't name the engine's SHA-256, and an engine whose plist names another
+  version. Asset SHA-256 `6e247eca…987b`.
+- **Feed.** `dist/pages/AnoRuntimeVersion.plist` (read by Ano 9 and later), checked by `Ano Feeds`
+  (45502260850): all three feeds have their digest OK.
+- **Proxy.** `Ano Proxy` runs on v5.0.0 (45502403194), and a 4.x layout is refused.
+- **Ano 9.** `ano-test-9` (pre-release, commit 4244bb83): `Ano-9.zip`, `clean-rosetta-cache.sh` and
+  `list-gptk-wine-names.sh`. Test build 45502814878: build and app gate green on the published
+  runtime. Owner test items: `TESTING-ON-M2.md` "Ano 9: runtime 5.0.0".
+
+**Owner's rulings at the release (2026-11-25):**
+- Publish 5.0.0.
+- Let Ano 9's D3DMetal game test decide the aliases instead of the listing. The aliases stay
+  provisional; a failure is fixed in 5.0.1.
+- Ship the GPTK shims as they are.
+- Add a source download for the GPL codecs later.
+
+**Left:**
+- A source download for the runtime's GPL parts: gst-plugins-bad, x264, x265 and the like.
+- Code built into components without its own text shipped: MoltenVK's SPIRV and cereal, DXMT's
+  nvapi headers, the mingw runtime.
+- `libano_net.dylib` has no install name, so the build path is its id.
+- `bundle_libraries` copies the GStreamer plugins twice (about 60 MB).
+- The children that clear the aliases after `fork` (cups.c, netapi32, and 0005's) call `unsetenv`
+  in a multi-threaded process.
+- The "Whisky" sweep.
+- The Opera GX test, queued by the owner.
