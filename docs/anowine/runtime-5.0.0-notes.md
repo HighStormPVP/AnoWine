@@ -12,7 +12,7 @@ Two hidden aliases remain for Apple's closed D3DMetal: `WINED3DMETAL` and `WINEE
 
 **Bottles:** bottles made with an earlier runtime are not converted. Ano 9 lists them but will not open them, so make them again.
 
-**Licenses:** the engine is free software under the GNU Lesser General Public License, version 2.1 or later. Every bundled component's own license text is in `Libraries/Ano/share/ano/licenses/`. `Libraries/Ano/share/ano/NOTICES` lists each component, its license, where its source is, and what Ano changed.
+**Licenses:** the engine is free software under the GNU Lesser General Public License, version 2.1 or later. The bundled components' own license texts are in `Libraries/Ano/share/ano/licenses/`. `Libraries/Ano/share/ano/NOTICES` lists each component, its license, where its source is, and what Ano changed. Two exceptions: the GPTK helper DLLs come from an upstream that publishes no license, and NOTICES says so; some libraries built into a component (for example MoltenVK's) have no text of their own yet.
 
 **Source and build:**
 - Repository: https://github.com/HighStormPVP/AnoWine

@@ -122,10 +122,14 @@ new ones. Report each item as pass or fail, with what it asks you to send.
 3. Install Ano 8 with its install line. It downloads 4.9.0 again.
 4. Import the Game Porting Toolkit again in **Settings**: Ano 9 renamed its copy.
 
-Your old bottles still work in Ano 8, because Ano 9 never changes them.
+Your old bottles still work in Ano 8, because Ano 9 never changes them. Bottles you made in
+Ano 9 stay in Ano 8's list but won't work there; remove them from the list. If you had turned
+off **Automatically check for Ano runtime updates**, turn it off again in Ano 8.
 
-1. **Install.** Install Ano 9 and open it. It offers runtime 5.0.0; accept. **Settings**
-   then shows engine 5.0.0. Send how long the download and setup took.
+1. **Install.** Install Ano 9 and open it. It offers runtime 5.0.0; accept. Send how long
+   the download and setup took. To see the version once you have a bottle (item 3): open
+   the bottle's configuration, and under **Stability** click **Generate Stability
+   Diagnostics**. The report says `Ano runtime version: 5.0.0`.
 2. **Old bottles.** Your Ano 8 bottles are still in the list, marked **Made with an earlier
    Ano**. Clicking one shows "can't be used with this one" instead of opening it.
    Before you start, note the Steam bottle folder's **Date Modified** in Finder; it is the
