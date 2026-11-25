@@ -32,7 +32,15 @@ static NTSTATUS env_values(void *args)
     return 0;
 }
 
-__attribute__((visibility("default"))) const void *__wine_unix_call_funcs[] = {
+/* -DANO_PLAIN builds the Mac half of plaintest.dll (runtime 5.0.1), which has
+ * Ano's own table name, as every module the engine builds does. */
+#ifdef ANO_PLAIN
+#define UNIX_CALL_FUNCS __ano_unix_call_funcs
+#else
+#define UNIX_CALL_FUNCS __wine_unix_call_funcs
+#endif
+
+__attribute__((visibility("default"))) const void *UNIX_CALL_FUNCS[] = {
     (const void *)twice,
     (const void *)env_values,
 };

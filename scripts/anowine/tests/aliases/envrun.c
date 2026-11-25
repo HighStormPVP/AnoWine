@@ -2,7 +2,9 @@
  * alias. Started with ANOD3DMETAL=1 ANOESYNC=1, prints what the Mac half of
  * aliastest.dll reads (as Apple's libd3dshared.dylib would), then what the
  * Windows environment says, then runs a child that pings for a few seconds,
- * so check-env-aliases.sh can look at both processes with ps -E. */
+ * so check-env-aliases.sh can look at both processes with ps -E.
+ * Runtime 5.0.1: first, what the Mac half of plaintest.dll (Ano's own mark)
+ * reads: nothing, because no module with the old mark is loaded yet. */
 #include <stdio.h>
 #include <windows.h>
 
@@ -24,14 +26,24 @@ static const char *windows_value(const char *name, char *buffer, DWORD size)
 int main(void)
 {
     int (WINAPI *alias_env)(struct env_args *);
-    struct env_args env = { "?", "?" };
+    int (WINAPI *plain_env)(struct env_args *);
+    struct env_args env = { "?", "?" }, plain_values = { "?", "?" };
     char d3dmetal[16], esync[16], command[] = "cmd.exe /c ping -n 8 127.0.0.1";
     STARTUPINFOA startup = { sizeof(startup) };
     PROCESS_INFORMATION child;
-    HMODULE module;
+    HMODULE module, plain;
     int result;
 
     SetUnhandledExceptionFilter(on_exception);
+    plain = LoadLibraryA("plaintest.dll");
+    if (!plain)
+    {
+        printf("FAIL: plaintest.dll does not load (error %lu)\n", GetLastError());
+        return 1;
+    }
+    plain_env = (void *)GetProcAddress(plain, "plain_env");
+    result = plain_env ? plain_env(&plain_values) : -3;
+    printf("plain: WINED3DMETAL=%s WINEESYNC=%s (call %d)\n", plain_values.d3dmetal, plain_values.esync, result);
     module = LoadLibraryA("aliastest.dll");
     if (!module)
     {

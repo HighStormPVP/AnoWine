@@ -6,6 +6,8 @@
 # (tests/aliases, loaded as Apple's libd3dshared.dylib is) reads both old
 # names, the Windows environment has neither, and no engine process shows
 # either in its environment (ps -E): the program, its child and the server.
+# Runtime 5.0.1: the engine sets them only for a closed part's Mac library, so
+# the Mac half of plaintest.dll (Ano's own mark), loaded first, reads neither.
 set -euo pipefail
 ENGINE=$1
 BOTTLE=$2
@@ -21,17 +23,21 @@ x86_64-w64-mingw32-dlltool -d "$SRC/ntdll-aliases.def" -l "$WORK/libntdll-aliase
 x86_64-w64-mingw32-gcc -shared -O2 -o "$WORK/aliastest.dll" "$SRC/aliastest.c" "$WORK/libntdll-aliases.a"
 x86_64-w64-mingw32-gcc -O2 -o "$WORK/envrun.exe" "$SRC/envrun.c"
 clang -arch x86_64 -dynamiclib -O2 -o "$WORK/aliastest.so" "$SRC/aliastest_unix.c"
-python3 - "$WORK/aliastest.dll" << 'PY'
+x86_64-w64-mingw32-dlltool -d "$SRC/ntdll-ano.def" -l "$WORK/libntdll-ano.a"
+x86_64-w64-mingw32-gcc -shared -O2 -o "$WORK/plaintest.dll" "$SRC/plaintest.c" "$WORK/libntdll-ano.a"
+clang -arch x86_64 -dynamiclib -O2 -DANO_PLAIN -o "$WORK/plaintest.so" "$SRC/aliastest_unix.c"
+# The closed part's old mark on the stand-in, Ano's own on the plain one.
+python3 - "$WORK/aliastest.dll" "Wine builtin DLL" "$WORK/plaintest.dll" "Ano builtin DLL" << 'PY'
 import struct, sys
-path = sys.argv[1]
-data = bytearray(open(path, "rb").read())
-if struct.unpack_from("<I", data, 0x3C)[0] < 0x60:
-    sys.exit(f"{path}: the PE header starts inside the 32 bytes at 0x40")
-data[0x40:0x60] = b"Wine builtin DLL" + bytes(16)
-open(path, "wb").write(bytes(data))
+for path, mark in zip(sys.argv[1::2], sys.argv[2::2]):
+    data = bytearray(open(path, "rb").read())
+    if struct.unpack_from("<I", data, 0x3C)[0] < 0x60:
+        sys.exit(f"{path}: the PE header starts inside the 32 bytes at 0x40")
+    data[0x40:0x60] = mark.encode() + bytes(32 - len(mark))
+    open(path, "wb").write(bytes(data))
 PY
-cp "$WORK/aliastest.dll" "$PE/"
-cp "$WORK/aliastest.so" "$UNIX/"
+cp "$WORK/aliastest.dll" "$WORK/plaintest.dll" "$PE/"
+cp "$WORK/aliastest.so" "$WORK/plaintest.so" "$UNIX/"
 
 export ANOPREFIX=$BOTTLE DYLD_FALLBACK_LIBRARY_PATH=$ENGINE/lib ANODEBUG=-all
 export ANODLLOVERRIDES="mscoree=d;mshtml=d;ano-dbg.exe=d"
@@ -51,7 +57,7 @@ code=0
 wait "$run" || code=$?
 "$ENGINE/bin/ano-server" -k 2> /dev/null || true
 # The stand-in leaves the engine, or bottles made later get it as a builtin.
-rm -f "$PE/aliastest.dll" "$UNIX/aliastest.so"
+rm -f "$PE/aliastest.dll" "$UNIX/aliastest.so" "$PE/plaintest.dll" "$UNIX/plaintest.so"
 # A Windows program ends its lines with \r\n.
 tr -d '\r' < "$WORK/out.txt" > "$WORK/out.lf"
 cat "$WORK/out.lf"
@@ -64,6 +70,8 @@ grep -q "ANOD3DMETAL=1" "$WORK/ps.txt" || fail "ps -E shows no ANOD3DMETAL=1, so
 if grep -E "WINED3DMETAL=|WINEESYNC=" "$WORK/ps.txt" | cut -c1-300; then
   fail "an engine process shows WINED3DMETAL or WINEESYNC in its environment"
 fi
+grep -qx "plain: WINED3DMETAL=- WINEESYNC=- (call 0)" "$WORK/out.lf" \
+  || fail "a process that loaded no closed part has the old names set"
 grep -qx "unix: WINED3DMETAL=1 WINEESYNC=1 (call 0)" "$WORK/out.lf" \
   || fail "inside the process, the old names are not set (what D3DMetal would read)"
 grep -qx "windows: WINED3DMETAL=- WINEESYNC=-" "$WORK/out.lf" \

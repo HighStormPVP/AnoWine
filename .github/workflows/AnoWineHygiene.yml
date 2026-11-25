@@ -92,6 +92,12 @@ jobs:
         if: ${{ !cancelled() }}
         run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-check-licenses.sh" "$GITHUB_WORKSPACE"
 
+      # Runtime 5.0.1: no readable alias and no old copyright line outside the
+      # license texts, on fixture trees.
+      - name: Hidden names check test
+        if: ${{ !cancelled() }}
+        run: bash "$GITHUB_WORKSPACE/scripts/anowine/test-check-hidden-names.sh" "$GITHUB_WORKSPACE"
+
       # Plan 3c-4c: the owner's script that lists and removes Rosetta's cached
       # translations of the old runtime's files (/var/db/oah), on a fake tree.
       - name: Rosetta cache script test

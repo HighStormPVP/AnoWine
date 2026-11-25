@@ -1,0 +1,4 @@
+LIBRARY ntdll.dll
+EXPORTS
+NtQueryVirtualMemory
+__ano_unix_call

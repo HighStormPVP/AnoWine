@@ -480,7 +480,17 @@ jobs:
         run: |
           python3 scripts/anowine/wine_tokens.py "$RUNNER_TEMP/ours/Libraries" "$RUNNER_TEMP/bottle"             --allowlist scripts/anowine/wine-allowlist.txt --out "$RUNNER_TEMP/tokens.tsv" --gate
 
+      # Runtime 5.0.1: a Windows program finds no "wine" by name. No hidden
+      # alias is readable in the runtime or the bottle (the engine keeps them
+      # encoded), and the old copyright line is only in the license texts.
+      # Before the stand-in steps, which put test DLLs with old names in the engine.
+      - name: Old names hidden from other programs
+        if: always() && steps.bottle.outcome == 'success' && !startsWith(inputs.version, '4.')
+        timeout-minutes: 15
+        run: scripts/anowine/check-hidden-names.sh "$RUNNER_TEMP/ours/Libraries" "$RUNNER_TEMP/bottle"
+
       # Plan 3c-1 Task 4: a stand-in for Apple's D3DMetal must still load.
+      # Runtime 5.0.1: and an ordinary program finds none of the old names.
       - name: Hidden aliases for closed parts
         if: always() && steps.bottle.outcome == 'success'
         timeout-minutes: 15

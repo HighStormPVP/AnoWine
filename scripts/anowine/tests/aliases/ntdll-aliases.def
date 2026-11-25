@@ -5,3 +5,4 @@ __wine_dbg_strdup
 __wine_dbg_output
 NtQueryVirtualMemory
 __wine_unix_call
+RtlFindExportedRoutineByName
