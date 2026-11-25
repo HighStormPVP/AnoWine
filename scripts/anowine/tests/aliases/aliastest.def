@@ -1,0 +1,5 @@
+; aliastest.dll's forward to an old ntdll name, as a closed part's export
+; list may have one (runtime 5.0.1, final review). Its other exports are
+; marked __declspec(dllexport) in aliastest.c.
+EXPORTS
+fwd_dbg_output = ntdll.__wine_dbg_output

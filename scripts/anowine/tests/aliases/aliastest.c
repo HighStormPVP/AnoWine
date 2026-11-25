@@ -4,6 +4,8 @@
  * unix-call table. It loads only if the engine keeps those aliases.
  * Runtime 5.0.1: it also looks old names up at run time, as Wine's winecrt0
  * does (RtlFindExportedRoutineByName) and as any DLL may (GetProcAddress). */
+#include <stdio.h>
+#include <string.h>
 #include <windows.h>
 #include <winternl.h>
 
@@ -40,6 +42,35 @@ __declspec(dllexport) int WINAPI alias_call(int value)
         return -6;
     if (GetProcAddress(ntdll, "__wine_dbg_output") != (FARPROC)__wine_dbg_output) return -7;
     return value;
+}
+
+/* Runtime 5.0.1, final review: other ways a closed part may use an old name.
+ * Its own export with an old name, asked for by a name the engine rewrote;
+ * a forward in its export list to an old ntdll name (aliastest.def); and
+ * names it builds at run time from the bare prefix or from a format. Returns
+ * 0, or one bit for each that does not answer. */
+__declspec(dllexport) int WINAPI __wine_closed_part_export(void)
+{
+    return 7;
+}
+
+static const char *volatile built_prefix = "__wine_";
+static const char *volatile built_format = "__wine_%s";
+
+__declspec(dllexport) int WINAPI alias_more(void)
+{
+    HMODULE self = GetModuleHandleA("aliastest.dll"), ntdll = GetModuleHandleA("ntdll.dll");
+    char built[64];
+    int missed = 0;
+
+    if (GetProcAddress(self, "__wine_closed_part_export") != (FARPROC)__wine_closed_part_export) missed |= 1;
+    if (GetProcAddress(self, "fwd_dbg_output") != (FARPROC)__wine_dbg_output) missed |= 2;
+    strcpy(built, built_prefix);
+    strcat(built, "dbg_output");
+    if (GetProcAddress(ntdll, built) != (FARPROC)__wine_dbg_output) missed |= 4;
+    sprintf(built, built_format, "dbg_strdup");
+    if (GetProcAddress(ntdll, built) != (FARPROC)__wine_dbg_strdup) missed |= 8;
+    return missed;
 }
 
 /* Plan 3c-4a, Task 6: what the Mac half sees of WINED3DMETAL and WINEESYNC. */

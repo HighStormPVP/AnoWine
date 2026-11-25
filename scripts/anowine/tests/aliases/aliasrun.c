@@ -16,8 +16,9 @@ static LONG WINAPI on_exception(EXCEPTION_POINTERS *info)
 int main(void)
 {
     int (WINAPI *call)(int);
+    int (WINAPI *more)(void);
     HMODULE module;
-    int result;
+    int result, missed;
 
     SetUnhandledExceptionFilter(on_exception);
     module = LoadLibraryA("aliastest.dll");
@@ -29,5 +30,8 @@ int main(void)
     call = (void *)GetProcAddress(module, "alias_call");
     result = call ? call(21) : -3;
     printf("RESULT: alias_call(21) = %d\n", result);
-    return result == 42 ? 0 : 1;
+    more = (void *)GetProcAddress(module, "alias_more");
+    missed = more ? more() : -1;
+    printf("MORE: alias_more() = 0x%x\n", missed);
+    return result == 42 && missed == 0 ? 0 : 1;
 }

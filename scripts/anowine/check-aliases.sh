@@ -4,7 +4,9 @@
 # Apple's D3DMetal (tests/aliases): a DLL marked "Wine builtin DLL" that
 # imports ntdll's old names, with a Mac half that exports only the old
 # unix-call table. Prints RESULT and exits 0 only if the call goes through.
-# Runtime 5.0.1: the stand-in also looks old names up at run time, and an
+# Runtime 5.0.1: the stand-in also looks old names up at run time (alias_call),
+# asks for its own old-named export, a forward to an old ntdll name and names
+# built from the old prefix (alias_more, which must return 0), and an
 # ordinary program (aliasprobe.exe) must find none of them in ntdll; the
 # stand-in's file is the same after the run (only its memory is rewritten).
 set -euo pipefail
@@ -17,7 +19,8 @@ PE=$ENGINE/lib/ano/x86_64-windows
 UNIX=$ENGINE/lib/ano/x86_64-unix
 
 x86_64-w64-mingw32-dlltool -d "$SRC/ntdll-aliases.def" -l "$WORK/libntdll-aliases.a"
-x86_64-w64-mingw32-gcc -shared -O2 -o "$WORK/aliastest.dll" "$SRC/aliastest.c" "$WORK/libntdll-aliases.a"
+x86_64-w64-mingw32-gcc -shared -O2 -o "$WORK/aliastest.dll" "$SRC/aliastest.c" "$SRC/aliastest.def" \
+  "$WORK/libntdll-aliases.a"
 x86_64-w64-mingw32-gcc -O2 -o "$WORK/aliasrun.exe" "$SRC/aliasrun.c"
 x86_64-w64-mingw32-gcc -O2 -o "$WORK/aliasprobe.exe" "$SRC/aliasprobe.c"
 clang -arch x86_64 -dynamiclib -O2 -o "$WORK/aliastest.so" "$SRC/aliastest_unix.c"
@@ -56,6 +59,9 @@ echo "aliasprobe.exe exit $probe$([ "$probe" != 142 ] || echo ' (stopped after 1
 fails=0
 grep -q 'RESULT: alias_call(21) = 42' "$WORK/out.txt" \
   || { echo "::error::the stand-in for D3DMetal does not get ntdll's functions by their old names"; fails=1; }
+grep -q 'MORE: alias_more() = 0x0' "$WORK/out.txt" \
+  || { echo "::error::the stand-in misses an old name (alias_more bits: 1 its own old-named export, 2 a forward" \
+    "to an old ntdll name, 4 a name built from the old prefix, 8 one built from a format)"; fails=1; }
 grep -q 'PROBE: ntdll hides the old names' "$WORK/probe.txt" \
   || { echo "::error::an ordinary program finds ntdll's old names"; fails=1; }
 [ "$before" = "$after" ] || { echo "::error::the marked DLL's file changed ($before, then $after)"; fails=1; }
