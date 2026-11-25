@@ -380,6 +380,18 @@ index f7efb8d..9459a2b 100644
              !memcmp( dos + 1, fakedll_signature, sizeof(fakedll_signature) ));
  }
  
+diff --git a/include/Makefile.in b/include/Makefile.in
+index f29905d..841ba5b 100644
+--- a/include/Makefile.in
++++ b/include/Makefile.in
+@@ -1125,6 +1125,7 @@ SOURCES = \
+ 	ano/gdi_driver.h \
+ 	ano/glu.h \
+ 	ano/hid.h \
++	ano/hidden.h \
+ 	ano/http.h \
+ 	ano/iaccessible2.idl \
+ 	ano/irot.idl \
 diff --git a/include/ano/hidden.h b/include/ano/hidden.h
 new file mode 100644
 index 0000000..6ec12a4
