@@ -870,10 +870,11 @@ write_notices() {
   cat << EOF
 Ano engine $VERSION
 
-This engine is a modified copy of software by the Wine project authors,
-with CrossOver's macOS changes. It is distributed under the GNU Lesser
-General Public License, version 2.1 or (at your option) any later version.
-Ano renamed its files, programs and settings and changed how it is built.
+This engine is a modified copy of software by the authors listed in
+licenses/engine/AUTHORS, with CrossOver's macOS changes. It is distributed
+under the GNU Lesser General Public License, version 2.1 or (at your option)
+any later version. Ano renamed its files, programs and settings and changed
+how it is built.
 
 The engine and everything it carries are listed below. The license texts of
 each are in licenses/<component>/, word for word as its source has them.
