@@ -832,6 +832,12 @@ jobs:
 
       # The tag goes on the commit the engine was built from, not on main's
       # head at publish time (runtime 5.0.1, from the 3c-5 final review).
+      # This job's token cannot make a release with a target commit whose
+      # workflow files differ from main's (HTTP 403 at the 5.0.1 release, also
+      # when the tag already existed). Then push the tag first,
+      # git push origin <commit>:refs/tags/v<version>, and dispatch again: a
+      # tag that exists must be on the engine's commit, and the release is
+      # made on it with no target.
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -844,10 +850,25 @@ jobs:
           fi
           target=$(gh run view "$ENGINE_RUN" --repo "$GITHUB_REPOSITORY" --json headSha -q .headSha)
           [ -n "$target" ] || { echo "::error::no head commit for engine run $ENGINE_RUN"; exit 1; }
-          echo "v$VERSION: tag on $target (engine run $ENGINE_RUN)"
+          tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/tags/v$VERSION" -q .sha 2> /dev/null || true)
+          if ! printf '%s' "$tagged" | grep -Eqx '[0-9a-f]{40}'; then
+            tagged=""
+          elif [ "$tagged" != "$target" ]; then
+            echo "::error::tag v$VERSION is on $tagged, not on the engine's commit $target"; exit 1
+          fi
+          if [ -n "$tagged" ]; then
+            echo "v$VERSION: on the pushed tag, at $target (engine run $ENGINE_RUN)"
+            where=(--verify-tag)
+          else
+            echo "v$VERSION: tag on $target (engine run $ENGINE_RUN)"
+            where=(--target "$target")
+          fi
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" \
-            --target "$target" \
+            "${where[@]}" \
             --title "Ano runtime $VERSION" \
             --notes-file "docs/anowine/runtime-$VERSION-notes.md" \
             --latest \
-            "$RUNNER_TEMP/out/Libraries.tar.gz"
+            "$RUNNER_TEMP/out/Libraries.tar.gz" || {
+            [ -n "$tagged" ] || echo "::error::no release made; on HTTP 403, push the tag first (git push origin $target:refs/tags/v$VERSION) and dispatch again"
+            exit 1
+          }
