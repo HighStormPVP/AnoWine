@@ -830,16 +830,23 @@ jobs:
           [ "$got" = "$VERSION" ] || { echo "::error::the engine says $got, not $VERSION"; exit 1; }
           echo "v$VERSION: sha256 $sha"
 
+      # The tag goes on the commit the engine was built from, not on main's
+      # head at publish time (runtime 5.0.1, from the 3c-5 final review).
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
+          ENGINE_RUN: ${{ inputs.engine_run || github.run_id }}
         run: |
           set -euo pipefail
           if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "::error::release v$VERSION already exists"; exit 1
           fi
+          target=$(gh run view "$ENGINE_RUN" --repo "$GITHUB_REPOSITORY" --json headSha -q .headSha)
+          [ -n "$target" ] || { echo "::error::no head commit for engine run $ENGINE_RUN"; exit 1; }
+          echo "v$VERSION: tag on $target (engine run $ENGINE_RUN)"
           gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --target "$target" \
             --title "Ano runtime $VERSION" \
             --notes-file "docs/anowine/runtime-$VERSION-notes.md" \
             --latest \
