@@ -4,8 +4,8 @@
 # One per line: old<TAB>new<TAB>where<TAB>closed part<TAB>how confirmed
 # Made by scripts/anowine/patches/rename/0002, 0005 and 0007. Since runtime 5.0.1 no other
 # program can read them: ntdll exports none of them, and the engine's binaries keep the old
-# text encoded (include/ano/hidden.h). Each old name stays on wine-allowlist.txt as category
-# alias until 5.0.1 is published, because the published 5.0.0 still has them as text.
+# text encoded (include/ano/hidden.h). Since 5.0.1 is published (2026-11-26) none of them is
+# on wine-allowlist.txt: no file of the runtime holds them as text.
 Wine builtin DLL	Ano builtin DLL	PE mark at 0x40, kept encoded: ntdll.dll (loader.c), ano-server (mapping.c), setupapi.dll (fakedll.c); a module with it gets its old names rewritten (0007)	D3DMetal's PE DLLs (d3d11, d3d12, dxgi)	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
 __wine_unix_call_dispatcher	__ano_unix_call_dispatcher	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	provisional: GPTK ABI as Whisky deploys it; confirm with ano-gptk-wine-names.txt
 __wine_unix_call	__ano_unix_call	not exported (since 5.0.1): ntdll.dll rewrites the old prefix to __ano__ in a marked module's own memory and reads __ano__x as __ano_x (loader.c, patches/rename/0007)	D3DMetal's PE DLLs	the engine's own source (ntdll/loader.c, CW HACK 22435); confirm with ano-gptk-wine-names.txt

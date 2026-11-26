@@ -32,8 +32,8 @@ permissions:
 env:
   XRAY_URL: https://github.com/XTLS/Xray-core/releases/download/v26.10.21/Xray-macos-arm64-v8a.zip
   XRAY_SHA256: 926cc55fda2a8757dabe4f22dc98772f218ace025f101bd0b68aee232e59d5dc
-  RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v5.0.0/Libraries.tar.gz
-  RUNTIME_SHA256: 6e247eca99aaa2a4863905a5ba6f3eca112abe5aade85382c9b423768892987b
+  RUNTIME_URL: https://github.com/HighStormPVP/AnoWine/releases/download/v5.0.1/Libraries.tar.gz
+  RUNTIME_SHA256: 05998574c5d2010c5ebf0dac2f79e4a63314bbe04c76557d102a778164b246e1
 
 jobs:
   proxy:
@@ -75,7 +75,7 @@ jobs:
           brew install mingw-w64
           x86_64-w64-mingw32-gcc -O2 -o "$RUNNER_TEMP/bin/netprobe.exe"             "$GITHUB_WORKSPACE/scripts/anowine/proxy-tests/netprobe.c" -lws2_32 -ldnsapi
 
-      # The runtime: the published one (5.0.0), an AnoWine Runtime build
+      # The runtime: the published one (5.0.1), an AnoWine Runtime build
       # (runtime_run_id), or an Ano Engine build (engine_run). All must be engine
       # 5.x (Libraries/Ano): check-proxy.sh refuses a 4.x layout (Libraries/Wine).
       - name: Cache runtime

@@ -16,19 +16,9 @@ Wine distribution in the file COPYING.LIB	license	the LGPL notice in the Symbol 
 WineSymbol © (Jon Parshall for CodeWeavers)	license	the Symbol font's copyright line
 github.com/HighStormPVP/AnoWine	code-only	the repo URL, where Wine's winehq.org links now point
 
-# alias: old names the engine keeps for Apple's D3DMetal (scripts/anowine/aliases.txt,
-# patches/rename/0002-ano-aliases.patch). Provisional until the owner's ano-gptk-wine-names.txt.
-Wine builtin DLL	alias	the PE mark Apple's D3DMetal DLLs carry, accepted beside Ano builtin DLL (aliases.txt; provisional)
-__wine_unix_call_dispatcher	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
-__wine_unix_call	alias	ntdll.dll export D3DMetal's PE DLLs import (CW HACK 22435; aliases.txt)
-__wine_dbg_get_channel_flags	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
-__wine_dbg_header	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
-__wine_dbg_output	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
-__wine_dbg_strdup	alias	ntdll.dll export D3DMetal's PE DLLs import (aliases.txt; provisional)
-__wine_unix_call_funcs	alias	the unix-call table ntdll.so looks up in libd3dshared.dylib (aliases.txt; provisional)
-__wine_unix_call_wow64_funcs	alias	the wow64 unix-call table ntdll.so looks up in libd3dshared.dylib (aliases.txt; provisional)
-WINED3DMETAL	alias	D3DMetal reads it; ntdll.so sets it from ANOD3DMETAL inside each process only (aliases.txt, patches/rename/0005; provisional)
-WINEESYNC	alias	D3DMetal reads it; ntdll.so sets it from ANOESYNC inside each process only (aliases.txt, patches/rename/0005; provisional)
+# alias: none since runtime 5.0.1 (published 2026-11-26). The engine keeps the old names
+# Apple's D3DMetal needs encoded (scripts/anowine/aliases.txt, include/ano/hidden.h), so no
+# file holds them as text; an alias row here needs the owner.
 
 # mono-internal and not-wine: what wine-mono 11.3.0 keeps after its rename (Plan 3c-2, payloads
 # run 44705330083), each read by hand.
