@@ -773,7 +773,13 @@ The owner asked for all three to go (2026-11-25), and runtime 5.0.1 removes them
 
 The owner's D3DMetal game test on 5.0.1 answers these (`TESTING-ON-M2.md`, "Ano 9: runtime 5.0.1").
 
-**Release.** 5.0.1 is published only after two things: the owner's D3DMetal test on 5.0.0 comes
-back, and the owner says yes. At the release, the feed, `Ano Feeds` and `Ano Proxy` move to
-v5.0.1, and the 11 `alias` rows leave `wine-allowlist.txt`. The Test Build's gate checks the
-published runtime, so the rows must stay until then.
+**Release.** The owner has no Apple Account, so no D3DMetal test was possible. They chose to
+publish without it (2026-11-26: "Publish 5.0.1 now. I'll test D3DMetal later."). v5.0.1 is
+"Latest", made by `Ano Engine` 45817437572 from engine run 45616091155, with its tag on 12c7f842.
+Then the feed, `Ano Feeds` and `Ano Proxy` moved to v5.0.1, and the 11 `alias` rows left
+`wine-allowlist.txt`.
+- **First two tries.** Run 45795329714 and its rerun got HTTP 403 "Resource not accessible by
+  integration" from the releases API. The job's token cannot make a release whose target is a
+  commit with workflow files unlike main's, even when the tag already exists.
+- **Now.** The tag is pushed by hand. The job checks that the tag is on the engine's commit, then
+  makes the release on it with `--verify-tag` and no target.
